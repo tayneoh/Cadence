@@ -1,7 +1,7 @@
 /* Cadence service worker — enables offline use.
    Bump CACHE_VERSION whenever index.html or assets change so clients
    pick up the new files instead of a stale cache. */
-const CACHE_VERSION = 'cadence-v2';
+const CACHE_VERSION = 'cadence-v3';
 
 /* The app shell: local files that make up the installable app. */
 const APP_SHELL = [

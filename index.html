@@ -130,6 +130,27 @@
   .swatch:active { transform: scale(0.9); }
   .swatch.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
 
+  /* Custom color swatch: the color input is styled AS the swatch so it's
+     directly tappable (iOS refuses to open the picker from a hidden input). */
+  .custom-swatch-wrap { position: relative; width: 38px; height: 38px;
+    display: inline-block; border-radius: 11px;
+    transition: box-shadow 0.14s ease, transform 0.14s ease; }
+  .custom-swatch-wrap:active { transform: scale(0.9); }
+  .custom-swatch-wrap.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+  .custom-color-input { -webkit-appearance: none; appearance: none;
+    width: 38px; height: 38px; border-radius: 11px; padding: 0;
+    border: 2px dashed var(--border);
+    background: transparent; cursor: pointer; margin: 0; }
+  .custom-swatch-wrap.selected .custom-color-input { border: none; }
+  /* strip the native color-picker padding on all browsers */
+  .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
+  .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
+  .custom-color-input::-moz-color-swatch { border: none; border-radius: 9px; }
+  /* the plus icon overlays the input in the unselected state */
+  .custom-plus { position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); pointer-events: none;
+    color: var(--text-dim); }
+
   input[type="text"], input[type="number"], select {
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 11px; color: var(--text); outline: none;
@@ -646,7 +667,7 @@ function buildUnifiedCalendar() {
    unreachable we don't want every render() to throw. Callers use this
    instead of drawIcons() directly. */
 function drawIcons() {
-  try { if (window.lucide) drawIcons(); } catch (e) { /* swallow */ }
+  try { if (window.lucide) lucide.createIcons(); } catch (e) { /* swallow */ }
 }
 
 let activeTab = 'home';
@@ -858,16 +879,15 @@ function renderNewTab() {
   // custom color: shown as an extra "+" swatch that opens the native picker
   const customSelected = !PALETTE.includes(initColor);
   const customSwatchColor = customSelected ? initColor : (formCustomColor || '#666666');
+  // Custom-color swatch: the color input IS the swatch, not a label wrapping
+  // a hidden input. Programmatic .click() on a hidden color input is refused
+  // by Safari; a directly-tappable, visible input works everywhere.
   const customSwatch = `
-    <label class="swatch ${customSelected?'selected':''} custom-swatch"
-      style="background:${customSelected ? customSwatchColor : 'transparent'};
-             border:2px dashed ${customSelected ? 'transparent' : 'var(--border)'};
-             display:flex; align-items:center; justify-content:center;
-             color:var(--text-dim);" title="Custom color">
-      ${customSelected ? '' : "<i data-lucide='plus' class='w-4 h-4'></i>"}
+    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color">
       <input type="color" id="habitCustomColor" value="${customSwatchColor}"
-        style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;">
-    </label>`;
+        class="custom-color-input" aria-label="Pick a custom color">
+      ${customSelected ? '' : "<i data-lucide='plus' class='custom-plus w-4 h-4'></i>"}
+    </span>`;
 
   const unitOpts = UNIT_PRESETS.map(u =>
     `<option value="${u}" ${u===unitSelectVal?'selected':''}>${u === 'custom' ? 'custom…' : u}</option>`).join('');
@@ -990,19 +1010,19 @@ function renderNewTab() {
     });
   });
 
-  // custom color: open the hidden picker on swatch tap; commit on 'change'
+  // Custom color: the input is the swatch, so we just listen to it.
+  // 'input' fires while the user is sliding through the picker; 'change'
+  // fires when they confirm. We commit on change to avoid re-rendering
+  // the whole form on every hue tick.
   const customInput = root.querySelector('#habitCustomColor');
-  const customLabel = customInput.closest('label');
-  customLabel.addEventListener('click', (e) => {
-    e.preventDefault();
-    customInput.click();
-  });
-  customInput.addEventListener('change', () => {
-    formColor = customInput.value;
-    formCustomColor = customInput.value;
-    renderNewTab();
-    drawIcons();
-  });
+  if (customInput) {
+    customInput.addEventListener('change', () => {
+      formColor = customInput.value;
+      formCustomColor = customInput.value;
+      renderNewTab();
+      drawIcons();
+    });
+  }
 
   // tracking-mode buttons
   root.querySelectorAll('[data-mode]').forEach(btn => {
