@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Cadence — Habit Tracker</title>
+<meta name="description" content="A minimalist daily habit tracker with streaks, a completion calendar, and an iOS widget export. Free and works offline.">
+
+<!-- PWA: makes Cadence installable as an app on iOS & Android -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#fbfaf7">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<!-- iOS "Add to Home Screen" support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cadence">
+<link rel="apple-touch-icon" href="icon-180.png">
+
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Lucide Icons via CDN -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- Distinctive typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<script>
+  // If the Tailwind CDN briefly fails, this block would otherwise crash
+  // the page. Guarding lets the app still load with plain HTML defaults.
+  if (window.tailwind) {
+    tailwind.config = {
+      theme: { extend: { fontFamily: {
+        display: ['Fraunces', 'serif'],
+        mono: ['"Space Mono"', 'monospace'],
+      }}},
+    };
+  }
+</script>
+
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-2: #f4f2ec;
+    --border: #e6e2d8;
+    --text: #161410;
+    --text-dim: #6f6a5f;
+    --text-faint: #a8a297;
+    --gold: #b08d2e;
+    --gold-soft: #f3ead0;
+  }
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    overscroll-behavior-y: none;
+  }
+  body {
+    background-image:
+      radial-gradient(900px 500px at 85% -8%, rgba(176, 141, 46, 0.10), transparent 70%),
+      radial-gradient(700px 460px at 5% 108%, rgba(176, 141, 46, 0.06), transparent 70%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .surface { background: var(--surface); border: 1px solid var(--border); }
+  .surface-2 { background: var(--surface-2); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  .display { font-family: 'Fraunces', serif; }
+
+  /* ---- calendar cells ---- */
+  .cal-cell {
+    aspect-ratio: 1 / 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 11px; font-size: 13px; font-weight: 700;
+    position: relative;
+    transition: transform 0.14s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+    user-select: none; min-height: 44px; gap: 4px;
+  }
+  .cal-cell.toggleable { cursor: pointer; }
+  .cal-cell.toggleable:active { transform: scale(0.88); }
+  @media (hover: hover) { .cal-cell.toggleable:hover { background: var(--surface-2); } }
+  .cal-cell.future { color: var(--text-faint); cursor: not-allowed; opacity: 0.55; }
+  .cal-cell.outside { visibility: hidden; }
+  .cal-cell.today-ring { box-shadow: inset 0 0 0 1.5px var(--gold); }
+  .cal-cell.selected-day { box-shadow: inset 0 0 0 2px var(--text); }
+
+  /* one dot per habit on every day: hollow outline by default,
+     filled with the habit's color once that day is completed;
+     for measure-mode habits, partially filled to show progress */
+  .dot-row { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;
+    align-items: center; max-width: 92%; }
+  .cal-dot {
+    width: 6px; height: 6px; border-radius: 99px;
+    box-sizing: border-box;
+    transition: background-color 0.16s ease, border-color 0.16s ease;
+  }
+  .cal-dot.empty { background: transparent; border: 1.5px solid currentColor; }
+  .cal-dot.full  { border: 1.5px solid transparent; }
+  /* partial-fill: outline + inner fill via inset box-shadow keyed to
+     --pct (0..100). Simpler and crisper than a gradient at 6px. */
+  .cal-dot.partial {
+    background: transparent;
+    border: 1.5px solid currentColor;
+    background-image: linear-gradient(to top, currentColor 0, currentColor var(--pct, 0%),
+      transparent var(--pct, 0%), transparent 100%);
+  }
+
+  /* ---- modal ---- */
+  .modal-backdrop { background: rgba(5,5,7,0.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .modal-enter { animation: modalIn 0.22s cubic-bezier(0.2,0.8,0.2,1); }
+  @keyframes modalIn { from { opacity:0; transform: translateY(14px) scale(0.98);} to { opacity:1; transform: translateY(0) scale(1);} }
+  .card-enter { animation: cardIn 0.32s cubic-bezier(0.2,0.8,0.2,1) backwards; }
+  @keyframes cardIn { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform: translateY(0);} }
+  .tab-enter { animation: tabIn 0.26s cubic-bezier(0.2,0.8,0.2,1); }
+  @keyframes tabIn { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+
+  .swatch { width:38px; height:38px; border-radius:11px; cursor:pointer;
+    transition: transform 0.14s ease, box-shadow 0.14s ease; position: relative; }
+  .swatch:active { transform: scale(0.9); }
+  .swatch.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+
+  /* Custom color swatch: the color input is styled AS the swatch so it's
+     directly tappable (iOS refuses to open the picker from a hidden input). */
+  .custom-swatch-wrap { position: relative; width: 38px; height: 38px;
+    display: inline-block; border-radius: 11px;
+    transition: box-shadow 0.14s ease, transform 0.14s ease; }
+  .custom-swatch-wrap:active { transform: scale(0.9); }
+  .custom-swatch-wrap.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+  .custom-color-input { -webkit-appearance: none; appearance: none;
+    width: 38px; height: 38px; border-radius: 11px; padding: 0;
+    border: 2px dashed var(--border);
+    background: transparent; cursor: pointer; margin: 0; }
+  .custom-swatch-wrap.selected .custom-color-input { border: none; }
+  /* strip the native color-picker padding on all browsers */
+  .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
+  .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
+  .custom-color-input::-moz-color-swatch { border: none; border-radius: 9px; }
+  /* the plus icon overlays the input in the unselected state */
+  .custom-plus { position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); pointer-events: none;
+    color: var(--text-dim); }
+
+  input[type="text"], input[type="number"], select {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 11px; color: var(--text); outline: none;
+    transition: border-color 0.15s ease;
+  }
+  input:focus, select:focus { border-color: var(--text-dim); }
+  input::placeholder { color: var(--text-faint); }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  select {
+    -webkit-appearance:none; appearance:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%236f6a5f' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .btn-press { transition: transform 0.12s ease, background-color 0.15s ease, opacity 0.15s ease; }
+  .btn-press:active { transform: scale(0.96); }
+
+  details > summary { list-style:none; cursor:pointer; }
+  details > summary::-webkit-details-marker { display:none; }
+  details[open] .chevron { transform: rotate(180deg); }
+  .chevron { transition: transform 0.2s ease; }
+
+  .toast { animation: toastIn 0.25s cubic-bezier(0.2,0.8,0.2,1), toastOut 0.3s ease 1.7s forwards; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
+  @keyframes toastOut { to { opacity:0; transform: translateY(20px);} }
+
+  .tab-btn { transition: color 0.16s ease; }
+  .tab-btn.active { color: var(--gold); }
+  .tab-btn.active .tab-icon-wrap { background: var(--gold-soft); }
+  .tab-icon-wrap { transition: background-color 0.16s ease; }
+  /* active tab: heavier icon stroke + tiny lift for clearer feedback */
+  .tab-btn svg { transition: stroke-width 0.16s ease, transform 0.16s ease; }
+  .tab-btn.active svg { stroke-width: 2.4px; transform: translateY(-1px); }
+
+  .check-box { transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.12s ease; }
+  .check-box:active { transform: scale(0.9); }
+
+  .progress-track { background: var(--surface-2); border-radius:99px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:99px; transition: width 0.5s cubic-bezier(0.2,0.8,0.2,1); }
+
+  /* --- range slider for measured habits: 44px touch height, colored thumb --- */
+  .measure-slider { -webkit-appearance:none; appearance:none;
+    background: transparent; height: 44px; padding: 0; margin: 0;
+    outline: none; cursor: pointer;
+  }
+  .measure-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
+  .measure-slider::-moz-range-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
+  .measure-slider::-webkit-slider-thumb { -webkit-appearance:none;
+    width: 22px; height: 22px; border-radius: 99px;
+    background: currentColor; border: 3px solid var(--surface);
+    margin-top: -9px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .measure-slider::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 99px;
+    background: currentColor; border: 3px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* --- safety net: core layout primitives in case the Tailwind CDN
+     is slow or blocked (e.g. opened offline). Mirrors the utilities
+     this app depends on so modals stay hidden and the page stays sane. --- */
+  .hidden { display: none !important; }
+  [id$="Modal"] {
+    position: fixed; inset: 0; z-index: 40;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  [id$="Modal"]:not(.hidden) { display: flex; }
+</style>
+</head>
+
+<body class="min-h-screen">
+
+<div class="relative z-10 max-w-xl mx-auto px-4 pb-32 pt-7 sm:pt-10">
+
+  <!-- ============ HEADER ============ -->
+  <header class="mb-6">
+    <div class="text-[11px] uppercase tracking-[0.22em] text-[var(--text-faint)] mb-1" id="todayLabel"></div>
+    <h1 class="display text-4xl sm:text-5xl font-semibold leading-none tracking-tight">Cadence</h1>
+  </header>
+
+  <!-- storage warning -->
+  <div id="storageWarning" class="hidden mb-6 surface rounded-xl p-4 flex gap-3 items-start" style="border-color:#d99a3a;">
+    <i data-lucide="triangle-alert" class="w-5 h-5 shrink-0 mt-0.5" style="color:#b5651d;"></i>
+    <p class="text-[13px] leading-relaxed text-[var(--text-dim)]">
+      LocalStorage is unavailable here. Habits work this session but
+      <span class="text-[var(--text)] font-bold">will not be saved</span> when you close the page.
+    </p>
+  </div>
+
+  <!-- ============ TABS ============ -->
+  <section id="tab-home" class="tab-panel"></section>
+  <section id="tab-new" class="tab-panel hidden"></section>
+  <section id="tab-calendar" class="tab-panel hidden"></section>
+
+</div>
+
+<!-- ============ BOTTOM TAB BAR ============ -->
+<nav class="fixed bottom-0 left-0 right-0 z-30 surface border-t border-[var(--border)]"
+     style="padding-bottom: env(safe-area-inset-bottom);">
+  <div class="max-w-xl mx-auto grid grid-cols-3">
+    <button data-tab="home" class="tab-btn active flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Home</span>
+    </button>
+    <button data-tab="new" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="plus-circle" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">New</span>
+    </button>
+    <button data-tab="calendar" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="calendar-days" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Calendar</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ DELETE CONFIRM MODAL ============ -->
+<div id="confirmModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
+  <div class="modal-enter surface rounded-2xl w-full max-w-xs p-6 text-center">
+    <div class="surface-2 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border" style="border-color:#e3b3b3;">
+      <i data-lucide="trash-2" class="w-5 h-5" style="color:#b03b3b;"></i>
+    </div>
+    <h2 class="display text-xl font-semibold mb-1.5">Delete habit?</h2>
+    <p class="text-[13px] text-[var(--text-dim)] mb-6 leading-relaxed">
+      <span id="confirmHabitName" class="text-[var(--text)] font-bold"></span> and all its history will be permanently removed.
+    </p>
+    <div class="flex gap-3">
+      <button data-close-modal class="btn-press flex-1 surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold" style="min-height:44px;">Cancel</button>
+      <button id="confirmDeleteBtn" class="btn-press flex-1 rounded-xl h-11 text-sm font-bold" style="min-height:44px; background:#b03b3b; color:#ffffff;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EXPORT MODAL ============ -->
+<div id="exportModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
+  <div class="modal-enter surface rounded-2xl w-full max-w-md p-6 max-h-[88vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="display text-2xl font-semibold">Widget Data</h2>
+      <button data-close-modal class="btn-press surface-2 border border-[var(--border)] rounded-lg w-9 h-9 flex items-center justify-center">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <p class="text-[12px] text-[var(--text-dim)] mb-5 leading-relaxed">Today's snapshot, formatted for an iOS Scriptable widget.</p>
+    <textarea id="exportJson" readonly rows="11"
+      class="w-full surface-2 border border-[var(--border)] rounded-xl p-3.5 text-[11.5px] leading-relaxed font-mono text-[var(--text-dim)] resize-none mb-3"></textarea>
+    <button id="copyJsonBtn"
+      class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 mb-4" style="min-height:44px;">
+      <i data-lucide="clipboard-copy" class="w-4 h-4"></i><span>Copy to Clipboard</span>
+    </button>
+    <details class="surface-2 border border-[var(--border)] rounded-xl overflow-hidden">
+      <summary class="flex items-center justify-between p-3.5 text-[13px] font-bold">
+        <span class="flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-[var(--text-dim)]"></i>Scriptable setup instructions</span>
+        <i data-lucide="chevron-down" class="w-4 h-4 chevron text-[var(--text-dim)]"></i>
+      </summary>
+      <div class="px-3.5 pb-4 pt-1 text-[12.5px] text-[var(--text-dim)] leading-relaxed space-y-3 border-t border-[var(--border)]">
+        <p class="pt-3"><span class="text-[var(--text)] font-bold">Option A — Paste the JSON directly:</span></p>
+        <ol class="list-decimal ml-4 space-y-1.5">
+          <li>Install <span class="text-[var(--text)]">Scriptable</span> from the App Store.</li>
+          <li>Create a new script and paste the JSON above into a <span class="font-mono text-[var(--text)]">const data = {...}</span> variable.</li>
+          <li>Build a <span class="font-mono text-[var(--text)]">ListWidget</span> that loops over <span class="font-mono text-[var(--text)]">data.habits</span> and draws each title, streak, and a checkmark when <span class="font-mono text-[var(--text)]">completedToday</span> is true.</li>
+          <li>Add the Scriptable widget to your Home Screen and select your script. Re-paste the JSON for fresh data.</li>
+        </ol>
+        <p><span class="text-[var(--text)] font-bold">Option B — Fetch from a local server:</span></p>
+        <ol class="list-decimal ml-4 space-y-1.5">
+          <li>Serve this folder: <span class="font-mono text-[var(--text)]">python -m http.server 8000</span></li>
+          <li>Save the JSON as <span class="font-mono text-[var(--text)]">widget.json</span> in that folder.</li>
+          <li>In Scriptable: <span class="font-mono text-[var(--text)]">const r = await new Request('http://&lt;your-ip&gt;:8000/widget.json').loadJSON()</span> — phone and computer on the same Wi-Fi.</li>
+          <li>The widget can then refresh on its own schedule.</li>
+        </ol>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- toast container -->
+<div id="toastRoot" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none"></div>
+
+
+<script>
+/* =====================================================================
+   CADENCE — Single-file Habit Tracker (3-tab edition)
+   Sections:  Data Layer · Habit Management · Stats Calculation ·
+              Calendar Rendering · Tab Rendering (Home/New/Calendar) ·
+              Widget Export · UI Event Bindings
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   DATA LAYER — all LocalStorage access funneled through these functions.
+   --------------------------------------------------------------------- */
+const STORAGE_KEY = 'cadence.habits.v3';
+const LEGACY_KEYS = ['cadence.habits.v2', 'cadence.habits.v1'];
+const SCHEMA_VERSION = 3;
+
+let storageAvailable = true;
+let state = { version: SCHEMA_VERSION, habits: [] };
+
+function checkStorage() {
+  try {
+    const p = '__cadence_probe__';
+    localStorage.setItem(p, '1');
+    localStorage.removeItem(p);
+    return true;
+  } catch (e) { return false; }
+}
+
+/* Repair older/partial saved objects up to the current schema.
+   v1 -> v2 : add `unit` field (defaults to 'times').
+   v2 -> v3 : add `trackingMode` ('check' | 'measure') and `order` (int).
+              Existing habits become 'check' so nothing about their
+              behavior changes. Boolean-valued completions stay boolean;
+              measure-mode completions store a number instead. */
+function migrateData(raw) {
+  const safe = { version: SCHEMA_VERSION, habits: [] };
+  if (!raw || typeof raw !== 'object') return safe;
+  if (Array.isArray(raw.habits)) {
+    safe.habits = raw.habits
+      .filter(h => h && typeof h === 'object')
+      .map((h, i) => ({
+        id: String(h.id || genId()),
+        title: String(h.title || 'Untitled'),
+        goal: Number.isFinite(h.goal) ? h.goal : 1,
+        unit: (typeof h.unit === 'string' && h.unit.trim()) ? h.unit.trim() : 'times',
+        trackingMode: h.trackingMode === 'measure' ? 'measure' : 'check',
+        color: typeof h.color === 'string' ? h.color : PALETTE[0],
+        createdAt: h.createdAt || todayISO(),
+        order: Number.isFinite(h.order) ? h.order : i,
+        completions: (h.completions && typeof h.completions === 'object') ? h.completions : {},
+      }));
+    // stable sort by order so the list respects user-chosen ordering
+    safe.habits.sort((a, b) => a.order - b.order);
+    // normalize orders to consecutive integers
+    safe.habits.forEach((h, i) => { h.order = i; });
+  }
+  return safe;
+}
+
+function loadData() {
+  if (!storageAvailable) return { version: SCHEMA_VERSION, habits: [] };
+  try {
+    // accept current key first, then progressively older keys, so upgrading
+    // users don't lose data
+    let rawStr = localStorage.getItem(STORAGE_KEY);
+    for (const k of LEGACY_KEYS) { if (!rawStr) rawStr = localStorage.getItem(k); }
+    if (!rawStr) return { version: SCHEMA_VERSION, habits: [] };
+    return migrateData(JSON.parse(rawStr));
+  } catch (e) {
+    console.warn('loadData failed, starting fresh:', e);
+    return { version: SCHEMA_VERSION, habits: [] };
+  }
+}
+
+function saveData() {
+  if (!storageAvailable) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn('saveData failed:', e);
+    storageAvailable = false;
+    document.getElementById('storageWarning').classList.remove('hidden');
+  }
+}
+
+/* ---- date helpers — local "YYYY-MM-DD" keys throughout ---- */
+function pad(n) { return String(n).padStart(2, '0'); }
+function toISO(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayISO() { return toISO(new Date()); }
+function fromISO(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(iso, delta) { const d = fromISO(iso); d.setDate(d.getDate()+delta); return toISO(d); }
+function genId() { return 'h_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---- palette + unit presets ---- */
+const PALETTE = [
+  '#b08d2e', // gold
+  '#3f7d6e', // pine
+  '#3a6ea5', // slate blue
+  '#a8456f', // rose
+  '#7d4ba8', // violet
+  '#bf4a3a', // brick
+  '#2a6f4e', // forest
+  '#c9761a', // amber
+  '#5a5f8a', // dusk
+  '#8a3a5e', // wine
+];
+const UNIT_PRESETS = ['times', 'minutes', 'count', 'distance', 'custom'];
+
+/* ---------------------------------------------------------------------
+   HABIT MANAGEMENT
+   --------------------------------------------------------------------- */
+function addHabit(title, goal, unit, color, trackingMode) {
+  state.habits.push({
+    id: genId(),
+    title: title.trim(),
+    goal: Math.max(1, Math.min(9999, Math.round(goal) || 1)),
+    unit: unit.trim() || 'times',
+    trackingMode: trackingMode === 'measure' ? 'measure' : 'check',
+    color,
+    createdAt: todayISO(),
+    order: state.habits.length,
+    completions: {},
+  });
+  saveData();
+}
+
+/* Update an existing habit's editable fields in place. History is
+   preserved. If trackingMode changes, we don't touch existing
+   completion values — old values remain readable in their old shape,
+   and future completions use the new mode. */
+function updateHabit(id, patch) {
+  const h = state.habits.find(x => x.id === id);
+  if (!h) return;
+  if (typeof patch.title === 'string') h.title = patch.title.trim() || h.title;
+  if (Number.isFinite(patch.goal)) h.goal = Math.max(1, Math.min(9999, Math.round(patch.goal)));
+  if (typeof patch.unit === 'string') h.unit = patch.unit.trim() || h.unit;
+  if (typeof patch.color === 'string') h.color = patch.color;
+  if (patch.trackingMode === 'check' || patch.trackingMode === 'measure') {
+    h.trackingMode = patch.trackingMode;
+  }
+  saveData();
+}
+
+function deleteHabit(id) {
+  state.habits = state.habits.filter(h => h.id !== id);
+  state.habits.forEach((h, i) => { h.order = i; });
+  saveData();
+}
+
+/* Move a habit up (delta = -1) or down (delta = +1) in the list.
+   No-ops silently at the ends. */
+function reorderHabit(id, delta) {
+  const idx = state.habits.findIndex(h => h.id === id);
+  if (idx < 0) return;
+  const target = idx + delta;
+  if (target < 0 || target >= state.habits.length) return;
+  const [moved] = state.habits.splice(idx, 1);
+  state.habits.splice(target, 0, moved);
+  state.habits.forEach((h, i) => { h.order = i; });
+  saveData();
+}
+
+/* --- completion primitives ---
+   For check-mode: value is a boolean (true when done).
+   For measure-mode: value is a number (how much was logged that day).
+   A day counts as "done" when value >= goal (or === true for check).  */
+
+function isDayDone(habit, dateISO) {
+  const v = habit.completions[dateISO];
+  if (habit.trackingMode === 'measure') return Number.isFinite(v) && v >= habit.goal;
+  return !!v;
+}
+
+/* 0..1 fraction of the day's goal that has been logged.
+   Used for the calendar dots' partial-fill state and progress rings. */
+function dayProgress(habit, dateISO) {
+  const v = habit.completions[dateISO];
+  if (habit.trackingMode === 'measure') {
+    if (!Number.isFinite(v) || v <= 0) return 0;
+    return Math.min(1, v / habit.goal);
+  }
+  return v ? 1 : 0;
+}
+
+/* Toggle (check-mode) or log a value (measure-mode) for a date.
+   Future dates ignored. Passing a number always sets that number;
+   passing undefined toggles binary/reset semantics. */
+function toggleCompletion(habitId, dateISO, value) {
+  if (dateISO > todayISO()) return;
+  const habit = state.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  if (habit.trackingMode === 'measure') {
+    if (typeof value === 'number') {
+      if (value <= 0) delete habit.completions[dateISO];
+      else habit.completions[dateISO] = Math.max(0, Math.round(value));
+    } else {
+      // tap without a value: toggle between full-goal and cleared
+      if (isDayDone(habit, dateISO)) delete habit.completions[dateISO];
+      else habit.completions[dateISO] = habit.goal;
+    }
+  } else {
+    if (habit.completions[dateISO]) delete habit.completions[dateISO];
+    else habit.completions[dateISO] = true;
+  }
+  saveData();
+}
+
+/* ---------------------------------------------------------------------
+   STATS CALCULATION
+   --------------------------------------------------------------------- */
+
+/* Current streak: consecutive completed days ending today. An incomplete
+   today does NOT break it (day still in progress); a missed yesterday does. */
+function currentStreak(habit) {
+  const today = todayISO();
+  let streak = 0;
+  let cursor = isDayDone(habit, today) ? today : addDays(today, -1);
+  while (isDayDone(habit, cursor)) {
+    streak++;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+/* Completion rate: completed days / all days from createdAt..today inclusive. */
+function completionRate(habit) {
+  const today = todayISO();
+  const start = habit.createdAt > today ? today : habit.createdAt;
+  let total = 0, done = 0, cursor = start;
+  while (cursor <= today) {
+    total++;
+    if (isDayDone(habit, cursor)) done++;
+    cursor = addDays(cursor, 1);
+  }
+  return total === 0 ? 0 : Math.round((done / total) * 100);
+}
+
+/* ---------------------------------------------------------------------
+   CALENDAR RENDERING
+   --------------------------------------------------------------------- */
+const WEEKDAYS = ['M','T','W','T','F','S','S'];
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+
+const calNow = new Date();
+let calView = { year: calNow.getFullYear(), month: calNow.getMonth() };
+let selectedDay = todayISO();
+
+function shiftCalMonth(delta) {
+  let m = calView.month + delta, y = calView.year;
+  if (m < 0) { m = 11; y--; }
+  if (m > 11) { m = 0; y++; }
+  calView = { year: y, month: m };
+  renderCalendarTab();
+}
+
+/* Unified month grid: each day shows colored dots for habits completed
+   that day. Tapping a non-future day selects it for the breakdown panel. */
+function buildUnifiedCalendar() {
+  const today = todayISO();
+  const firstDay = new Date(calView.year, calView.month, 1);
+  const leadingBlanks = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(calView.year, calView.month + 1, 0).getDate();
+
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-7 gap-1.5';
+
+  WEEKDAYS.forEach(w => {
+    const h = document.createElement('div');
+    h.className = 'text-center text-[10px] font-bold text-[var(--text-faint)] pb-1';
+    h.textContent = w;
+    grid.appendChild(h);
+  });
+
+  for (let i = 0; i < leadingBlanks; i++) {
+    const b = document.createElement('div');
+    b.className = 'cal-cell outside';
+    grid.appendChild(b);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const iso = `${calView.year}-${pad(calView.month+1)}-${pad(day)}`;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+
+    const isFuture = iso > today;
+    const isToday = iso === today;
+
+    const num = document.createElement('span');
+    num.textContent = day;
+    cell.appendChild(num);
+
+    // one dot per habit: hollow if nothing logged, filled if goal met,
+    // partial (with fill up to progress %) for measure-mode in between
+    const dots = document.createElement('div');
+    dots.className = 'dot-row';
+    state.habits.forEach(h => {
+      const prog = dayProgress(h, iso);
+      const d = document.createElement('span');
+      if (prog >= 1) {
+        d.className = 'cal-dot full';
+        d.style.background = h.color;
+      } else if (prog > 0) {
+        d.className = 'cal-dot partial';
+        d.style.color = h.color;
+        d.style.setProperty('--pct', Math.round(prog * 100) + '%');
+      } else {
+        d.className = 'cal-dot empty';
+        d.style.color = h.color;
+      }
+      const val = h.completions[iso];
+      d.title = h.title +
+        (prog >= 1 ? ' — done' :
+         prog > 0 ? ` — ${val} / ${h.goal} ${h.unit}` : '');
+      dots.appendChild(d);
+    });
+    cell.appendChild(dots);
+
+    if (isToday) cell.classList.add('today-ring');
+    if (iso === selectedDay) cell.classList.add('selected-day');
+    if (isFuture) {
+      cell.classList.add('future');
+    } else {
+      cell.classList.add('toggleable');
+      cell.addEventListener('click', () => { selectedDay = iso; renderCalendarTab(); });
+    }
+    grid.appendChild(cell);
+  }
+  return grid;
+}
+
+/* ---------------------------------------------------------------------
+   TAB RENDERING
+   --------------------------------------------------------------------- */
+/* Small wrapper: Lucide is loaded from a CDN, so if it's temporarily
+   unreachable we don't want every render() to throw. Callers use this
+   instead of drawIcons() directly. */
+function drawIcons() {
+  try { if (window.lucide) lucide.createIcons(); } catch (e) { /* swallow */ }
+}
+
+let activeTab = 'home';
+
+function render() {
+  const now = new Date();
+  document.getElementById('todayLabel').textContent =
+    now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+  if (activeTab === 'home') renderHomeTab();
+  else if (activeTab === 'new') renderNewTab();
+  else renderCalendarTab();
+
+  drawIcons();
+}
+
+/* ---- HOME TAB: today's checklist on top, stats below ---- */
+function renderHomeTab() {
+  const root = document.getElementById('tab-home');
+  const today = todayISO();
+
+  if (state.habits.length === 0) {
+    root.innerHTML = emptyStateHTML(
+      'sprout', 'Begin a cadence',
+      'Track the small things you do every day. Create your first habit to start building momentum.',
+      'Go to New Habit', "switchTab('new')");
+    return;
+  }
+
+  const doneCount = state.habits.filter(h => isDayDone(h, today)).length;
+  const totalCount = state.habits.length;
+  const dayPct = Math.round((doneCount / totalCount) * 100);
+  const longestActive = Math.max(0, ...state.habits.map(currentStreak));
+  const avgRate = Math.round(state.habits.reduce((s,h) => s + completionRate(h), 0) / totalCount);
+
+  let checklist = '';
+  state.habits.forEach((h, idx) => {
+    const done = isDayDone(h, today);
+    const streak = currentStreak(h);
+    const rawVal = h.completions[today];
+    const currentVal = Number.isFinite(rawVal) ? rawVal : (rawVal ? h.goal : 0);
+    const prog = dayProgress(h, today);
+
+    if (h.trackingMode === 'measure') {
+      // measured habit: progress bar + slider + quick "+1" button
+      checklist += `
+        <div class="card-enter surface rounded-2xl p-4"
+             style="animation-delay:${idx*0.04}s;">
+          <div class="flex items-center gap-3.5 mb-3">
+            <span class="shrink-0 w-3 h-3 rounded-full" style="background:${h.color}"></span>
+            <span class="min-w-0 flex-1">
+              <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
+              <span class="text-[11px] text-[var(--text-dim)]">
+                <span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)} today
+              </span>
+            </span>
+            ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${h.color}">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
+          </div>
+          <div class="progress-track h-1.5 mb-3">
+            <div class="progress-fill" style="width:${Math.round(prog*100)}%; background:${h.color};" data-measured-bar="${h.id}"></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
+              data-measured-slider="${h.id}"
+              class="flex-1 measure-slider" style="color:${h.color}; accent-color:${h.color};">
+            <button data-measured-inc="${h.id}"
+              class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
+              style="min-height:44px; min-width:44px;">+1</button>
+          </div>
+        </div>`;
+    } else {
+      // check-mode habit: tap-to-toggle button (unchanged behavior)
+      checklist += `
+        <button data-toggle-today="${h.id}"
+          class="card-enter btn-press w-full surface rounded-2xl p-4 flex items-center gap-3.5 text-left"
+          style="animation-delay:${idx*0.04}s; min-height:44px;">
+          <span class="check-box shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center"
+            style="border-color:${done ? h.color : 'var(--border)'}; background:${done ? h.color : 'transparent'};">
+            ${done ? "<i data-lucide='check' class='w-4 h-4' style='color:#ffffff'></i>" : ''}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
+            <span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>
+          </span>
+          ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${h.color}">
+              <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
+        </button>`;
+    }
+  });
+
+  root.innerHTML = `
+    <div class="tab-enter space-y-6">
+      <div class="surface rounded-2xl p-5">
+        <div class="flex items-baseline justify-between mb-3">
+          <h2 class="display text-2xl font-semibold">Today</h2>
+          <span class="text-[13px] text-[var(--text-dim)] font-bold">${doneCount} / ${totalCount} done</span>
+        </div>
+        <div class="progress-track h-2.5 mb-1.5">
+          <div class="progress-fill" style="width:${dayPct}%; background:${dayPct===100 ? 'var(--gold)' : 'var(--text)'};"></div>
+        </div>
+        <p class="text-[11px] text-[var(--text-dim)]">${
+          dayPct === 100 ? 'Every habit complete — nice work.' :
+          dayPct === 0 ? 'Nothing checked off yet today.' :
+          dayPct + "% of today's habits complete."}</p>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Today's habits</h3>
+        <div class="space-y-2.5">${checklist}</div>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">At a glance</h3>
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="surface rounded-2xl p-4">
+            <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)] mb-1.5">Habits</div>
+            <div class="display text-3xl font-semibold leading-none">${totalCount}</div>
+          </div>
+          <div class="surface rounded-2xl p-4">
+            <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)] mb-1.5">Top streak</div>
+            <div class="flex items-baseline gap-1">
+              <span class="display text-3xl font-semibold leading-none">${longestActive}</span>
+              <span class="text-[11px] text-[var(--text-dim)]">d</span>
+            </div>
+          </div>
+          <div class="surface rounded-2xl p-4">
+            <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)] mb-1.5">Avg rate</div>
+            <div class="flex items-baseline gap-0.5">
+              <span class="display text-3xl font-semibold leading-none">${avgRate}</span>
+              <span class="text-[11px] text-[var(--text-dim)]">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="exportBtn"
+        class="btn-press w-full surface rounded-2xl h-12 flex items-center justify-center gap-2.5 text-sm font-bold"
+        style="min-height:48px;">
+        <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
+      </button>
+    </div>`;
+
+  root.querySelectorAll('[data-toggle-today]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggleCompletion(btn.dataset.toggleToday, today);
+      render();
+    });
+  });
+
+  // measured-habit slider: live update while dragging, save on release
+  root.querySelectorAll('[data-measured-slider]').forEach(slider => {
+    const id = slider.dataset.measuredSlider;
+    const h = state.habits.find(x => x.id === id);
+    slider.addEventListener('input', () => {
+      const v = parseInt(slider.value, 10);
+      const bar = root.querySelector(`[data-measured-bar="${id}"]`);
+      const label = root.querySelector(`[data-measured-val="${id}"]`);
+      if (bar) bar.style.width = Math.round((v / h.goal) * 100) + '%';
+      if (label) label.textContent = v;
+    });
+    slider.addEventListener('change', () => {
+      toggleCompletion(id, today, parseInt(slider.value, 10));
+      render();
+    });
+  });
+
+  // +1 button: bump the current value by 1 (capped at goal)
+  root.querySelectorAll('[data-measured-inc]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.measuredInc;
+      const h = state.habits.find(x => x.id === id);
+      if (!h) return;
+      const cur = Number.isFinite(h.completions[today]) ? h.completions[today] : 0;
+      toggleCompletion(id, today, Math.min(cur + 1, h.goal));
+      render();
+    });
+  });
+
+  root.querySelector('#exportBtn').addEventListener('click', openExportModal);
+}
+
+/* ---- NEW HABIT TAB: creation form + existing-habit list ---- */
+let formColor = PALETTE[0];
+let formTrackingMode = 'check';  // 'check' | 'measure'
+let formCustomColor = null;      // hex string when user picks via the color input
+let editingId = null;            // when set, form is editing an existing habit
+
+function renderNewTab() {
+  const root = document.getElementById('tab-new');
+  const isEditing = !!editingId;
+  const editing = isEditing ? state.habits.find(h => h.id === editingId) : null;
+
+  // seed form state from the habit when editing, otherwise use current form defaults
+  const initTitle = editing ? editing.title : '';
+  const initGoal  = editing ? editing.goal : 1;
+  const initUnit  = editing ? editing.unit : 'times';
+  const initColor = editing ? editing.color : formColor;
+  const initMode  = editing ? editing.trackingMode : formTrackingMode;
+
+  // does the initial unit match a preset, or is it custom?
+  const unitIsPreset = UNIT_PRESETS.filter(u => u !== 'custom').includes(initUnit);
+  const unitSelectVal = unitIsPreset ? initUnit : 'custom';
+
+  // color palette + custom-color slot
+  const swatches = PALETTE.map(c =>
+    `<div class="swatch ${c===initColor?'selected':''}" data-color="${c}" style="background:${c}"></div>`
+  ).join('');
+  // custom color: shown as an extra "+" swatch that opens the native picker
+  const customSelected = !PALETTE.includes(initColor);
+  const customSwatchColor = customSelected ? initColor : (formCustomColor || '#666666');
+  // Custom-color swatch: the color input IS the swatch, not a label wrapping
+  // a hidden input. Programmatic .click() on a hidden color input is refused
+  // by Safari; a directly-tappable, visible input works everywhere.
+  const customSwatch = `
+    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color">
+      <input type="color" id="habitCustomColor" value="${customSwatchColor}"
+        class="custom-color-input" aria-label="Pick a custom color">
+      ${customSelected ? '' : "<i data-lucide='plus' class='custom-plus w-4 h-4'></i>"}
+    </span>`;
+
+  const unitOpts = UNIT_PRESETS.map(u =>
+    `<option value="${u}" ${u===unitSelectVal?'selected':''}>${u === 'custom' ? 'custom…' : u}</option>`).join('');
+
+  // existing habits list
+  let existing = '';
+  if (state.habits.length === 0) {
+    existing = `<p class="text-[12px] text-[var(--text-dim)] px-1">No habits yet — create your first above.</p>`;
+  } else {
+    state.habits.forEach((h, i) => {
+      const isFirst = i === 0, isLast = i === state.habits.length - 1;
+      existing += `
+        <div class="surface rounded-xl p-3.5 flex items-center gap-2">
+          <div class="flex flex-col shrink-0">
+            <button data-move-up="${h.id}" ${isFirst?'disabled':''}
+              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isFirst?'opacity-30 cursor-not-allowed':''}"
+              aria-label="Move up">
+              <i data-lucide="chevron-up" class="w-4 h-4 text-[var(--text-dim)]"></i>
+            </button>
+            <button data-move-down="${h.id}" ${isLast?'disabled':''}
+              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isLast?'opacity-30 cursor-not-allowed':''}"
+              aria-label="Move down">
+              <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)]"></i>
+            </button>
+          </div>
+          <span class="shrink-0 w-3 h-3 rounded-full ml-1" style="background:${h.color}"></span>
+          <div class="min-w-0 flex-1 pl-1">
+            <div class="display text-base font-semibold truncate">${escapeHtml(h.title)}</div>
+            <div class="text-[11px] text-[var(--text-dim)]">
+              ${h.goal} ${escapeHtml(h.unit)} / day
+              ${h.trackingMode === 'measure' ? "&middot; <span style='color:var(--gold)'>measured</span>" : ''}
+            </div>
+          </div>
+          <button data-edit="${h.id}"
+            class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg w-9 h-9 flex items-center justify-center"
+            aria-label="Edit" style="min-height:44px;min-width:44px;">
+            <i data-lucide="pencil" class="w-4 h-4 text-[var(--text-dim)]"></i>
+          </button>
+          <button data-delete="${h.id}"
+            class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg w-9 h-9 flex items-center justify-center"
+            aria-label="Delete" style="min-height:44px;min-width:44px;">
+            <i data-lucide="trash-2" class="w-4 h-4 text-[var(--text-dim)]"></i>
+          </button>
+        </div>`;
+    });
+  }
+
+  root.innerHTML = `
+    <div class="tab-enter space-y-6">
+      <div class="surface rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="display text-2xl font-semibold">${isEditing ? 'Edit Habit' : 'New Habit'}</h2>
+          ${isEditing ? `<button id="cancelEditBtn" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold">Cancel</button>` : ''}
+        </div>
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Title</label>
+        <input id="habitTitle" type="text" placeholder="e.g. Drink water" maxlength="40" value="${escapeHtml(initTitle)}"
+          class="w-full px-4 py-3 text-sm mb-5">
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Tracking</label>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
+            style="border-color:${initMode==='check' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+            <div class="flex items-center gap-2 mb-0.5">
+              <i data-lucide="check-square" class="w-4 h-4" style="color:${initMode==='check' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+              <span class="text-[13px] font-bold">Checkbox</span>
+            </div>
+            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Tap once to mark done.</div>
+          </button>
+          <button data-mode="measure" class="mode-btn ${initMode==='measure'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
+            style="border-color:${initMode==='measure' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+            <div class="flex items-center gap-2 mb-0.5">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4" style="color:${initMode==='measure' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+              <span class="text-[13px] font-bold">Measured</span>
+            </div>
+            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Log progress toward a goal.</div>
+          </button>
+        </div>
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Daily Goal</label>
+        <div class="flex items-center gap-2.5 mb-2.5">
+          <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
+            class="w-20 px-3 py-3 text-sm text-center font-bold">
+          <select id="habitUnit" class="flex-1 px-4 py-3 text-sm">${unitOpts}</select>
+        </div>
+        <input id="habitCustomUnit" type="text" placeholder="Enter custom unit (e.g. chapters)" maxlength="16"
+          value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
+          class="w-full px-4 py-3 text-sm ${unitIsPreset ? 'hidden' : ''}">
+        <div class="mb-5"></div>
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2.5">Color</label>
+        <div id="colorPalette" class="flex flex-wrap gap-2.5 mb-6">${swatches}${customSwatch}</div>
+
+        <p id="habitFormError" class="hidden text-[12px] mb-3" style="color:#b03b3b;"></p>
+
+        <button id="saveHabitBtn"
+          class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold flex items-center justify-center gap-2"
+          style="min-height:48px;">
+          <i data-lucide="check" class="w-4 h-4"></i> ${isEditing ? 'Save Changes' : 'Create Habit'}
+        </button>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Your habits (${state.habits.length})</h3>
+        <div class="space-y-2.5">${existing}</div>
+      </div>
+    </div>`;
+
+  // sync form state variables to what's rendered so subsequent submits use them
+  formColor = initColor;
+  formTrackingMode = initMode;
+
+  // preset color swatches
+  root.querySelectorAll('.swatch[data-color]').forEach(sw => {
+    sw.addEventListener('click', () => {
+      formColor = sw.dataset.color;
+      formCustomColor = null;
+      renderNewTab();     // re-render to refresh selection ring
+      drawIcons();
+    });
+  });
+
+  // Custom color: the input is the swatch, so we just listen to it.
+  // 'input' fires while the user is sliding through the picker; 'change'
+  // fires when they confirm. We commit on change to avoid re-rendering
+  // the whole form on every hue tick.
+  const customInput = root.querySelector('#habitCustomColor');
+  if (customInput) {
+    customInput.addEventListener('change', () => {
+      formColor = customInput.value;
+      formCustomColor = customInput.value;
+      renderNewTab();
+      drawIcons();
+    });
+  }
+
+  // tracking-mode buttons
+  root.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      formTrackingMode = btn.dataset.mode;
+      renderNewTab();
+      drawIcons();
+    });
+  });
+
+  // unit dropdown reveals custom text field
+  const unitSel = root.querySelector('#habitUnit');
+  const customUnit = root.querySelector('#habitCustomUnit');
+  unitSel.addEventListener('change', () => {
+    if (unitSel.value === 'custom') { customUnit.classList.remove('hidden'); customUnit.focus(); }
+    else customUnit.classList.add('hidden');
+  });
+
+  root.querySelector('#saveHabitBtn').addEventListener('click', submitHabit);
+  root.querySelector('#habitTitle').addEventListener('keydown', e => { if (e.key === 'Enter') submitHabit(); });
+
+  // cancel edit
+  const cancelBtn = root.querySelector('#cancelEditBtn');
+  if (cancelBtn) cancelBtn.addEventListener('click', () => {
+    editingId = null;
+    formColor = PALETTE[0];
+    formTrackingMode = 'check';
+    formCustomColor = null;
+    renderNewTab();
+    drawIcons();
+  });
+
+  // reorder / edit / delete buttons on existing habits
+  root.querySelectorAll('[data-move-up]').forEach(btn => {
+    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveUp, -1); renderNewTab(); drawIcons(); } });
+  });
+  root.querySelectorAll('[data-move-down]').forEach(btn => {
+    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveDown, 1); renderNewTab(); drawIcons(); } });
+  });
+  root.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingId = btn.dataset.edit;
+      renderNewTab();
+      drawIcons();
+      root.querySelector('#habitTitle')?.focus();
+    });
+  });
+  root.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const h = state.habits.find(x => x.id === btn.dataset.delete);
+      if (h) openConfirm(h);
+    });
+  });
+}
+
+function submitHabit() {
+  const root = document.getElementById('tab-new');
+  const title = root.querySelector('#habitTitle').value.trim();
+  const goal = parseInt(root.querySelector('#habitGoal').value, 10);
+  const unitSel = root.querySelector('#habitUnit');
+  const customUnit = root.querySelector('#habitCustomUnit');
+  const unit = unitSel.value === 'custom' ? customUnit.value.trim() : unitSel.value;
+  const err = root.querySelector('#habitFormError');
+
+  if (!title) { return showFormError(err, 'Please enter a habit title.'); }
+  if (!Number.isFinite(goal) || goal < 1) { return showFormError(err, 'Daily goal must be at least 1.'); }
+  if (unitSel.value === 'custom' && !unit) { return showFormError(err, 'Please enter a custom unit.'); }
+
+  if (editingId) {
+    updateHabit(editingId, { title, goal, unit, color: formColor, trackingMode: formTrackingMode });
+    editingId = null;
+    showToast('Habit updated');
+  } else {
+    addHabit(title, goal, unit, formColor, formTrackingMode);
+    showToast('Habit created');
+  }
+  formColor = PALETTE[0];
+  formTrackingMode = 'check';
+  formCustomColor = null;
+  switchTab('home');
+}
+
+function showFormError(el, msg) {
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+/* ---- CALENDAR TAB: unified month grid + per-day breakdown ---- */
+function renderCalendarTab() {
+  const root = document.getElementById('tab-calendar');
+
+  if (state.habits.length === 0) {
+    root.innerHTML = emptyStateHTML(
+      'calendar-days', 'Nothing to track yet',
+      'Create a habit and your completion history will show up here as a monthly calendar.',
+      'Go to New Habit', "switchTab('new')");
+    return;
+  }
+
+  const today = todayISO();
+  const selDate = fromISO(selectedDay);
+  const selLabel = selDate.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  const isFutureSel = selectedDay > today;
+
+  let breakdown = '';
+  state.habits.forEach(h => {
+    const done = isDayDone(h, selectedDay);
+    const prog = dayProgress(h, selectedDay);
+    const val = h.completions[selectedDay];
+    const numVal = Number.isFinite(val) ? val : (val ? h.goal : 0);
+    const statusLabel = done ? 'Done'
+      : (h.trackingMode === 'measure' && prog > 0) ? `${numVal} / ${h.goal}`
+      : 'Missed';
+    breakdown += `
+      <button data-toggle-day="${h.id}" ${isFutureSel ? 'disabled' : ''}
+        class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl p-3.5 flex items-center gap-3 text-left ${isFutureSel ? 'opacity-40 cursor-not-allowed' : ''}"
+        style="min-height:44px;">
+        <span class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center relative overflow-hidden"
+          style="border-color:${prog > 0 ? h.color : 'var(--border)'};">
+          ${prog >= 1
+            ? `<span style="position:absolute;inset:0;background:${h.color};display:flex;align-items:center;justify-content:center;"><i data-lucide='check' class='w-3.5 h-3.5' style='color:#ffffff'></i></span>`
+            : prog > 0
+              ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:0.55;"></span>`
+              : ''}
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="text-sm font-bold block truncate ${prog > 0 ? '' : 'text-[var(--text-dim)]'}">${escapeHtml(h.title)}</span>
+          <span class="text-[10px] text-[var(--text-faint)]">
+            ${h.goal} ${escapeHtml(h.unit)} / day${h.trackingMode === 'measure' ? ' &middot; measured' : ''}
+          </span>
+        </span>
+        <span class="text-[11px] font-bold" style="color:${done ? h.color : prog > 0 ? h.color : 'var(--text-faint)'}">${statusLabel}</span>
+      </button>`;
+  });
+
+  root.innerHTML = `
+    <div class="tab-enter space-y-6">
+      <div class="surface rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <button id="prevMonth" class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center" aria-label="Previous month" style="min-height:44px;min-width:44px;">
+            <i data-lucide="chevron-left" class="w-4 h-4 text-[var(--text-dim)]"></i>
+          </button>
+          <span class="display text-xl font-semibold">${MONTHS[calView.month]} ${calView.year}</span>
+          <button id="nextMonth" class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center" aria-label="Next month" style="min-height:44px;min-width:44px;">
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-dim)]"></i>
+          </button>
+        </div>
+        <div id="calGrid"></div>
+        <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
+          ${state.habits.map(h => `
+            <span class="flex items-center gap-1.5 text-[11px] text-[var(--text-dim)]">
+              <span class="w-2.5 h-2.5 rounded-full" style="background:${h.color}"></span>${escapeHtml(h.title)}
+            </span>`).join('')}
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-baseline justify-between mb-3 px-1">
+          <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">${selectedDay === today ? 'Today' : 'Selected day'}</h3>
+          <span class="text-[12px] text-[var(--text-dim)] font-bold">${selLabel}</span>
+        </div>
+        ${isFutureSel ? '<p class="text-[12px] text-[var(--text-faint)] px-1 mb-2">Future date — not editable.</p>' : ''}
+        <div class="space-y-2.5">${breakdown}</div>
+      </div>
+    </div>`;
+
+  root.querySelector('#calGrid').appendChild(buildUnifiedCalendar());
+  root.querySelector('#prevMonth').addEventListener('click', () => shiftCalMonth(-1));
+  root.querySelector('#nextMonth').addEventListener('click', () => shiftCalMonth(1));
+
+  root.querySelectorAll('[data-toggle-day]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      toggleCompletion(btn.dataset.toggleDay, selectedDay);
+      renderCalendarTab();
+      drawIcons();
+    });
+  });
+
+  drawIcons();
+}
+
+/* shared empty-state markup */
+function emptyStateHTML(icon, title, body, btnLabel, btnAction) {
+  return `
+    <div class="tab-enter text-center py-16 px-6">
+      <div class="surface-2 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-[var(--border)]">
+        <i data-lucide="${icon}" class="w-7 h-7 text-[var(--text-dim)]"></i>
+      </div>
+      <h2 class="display text-2xl font-semibold mb-2">${title}</h2>
+      <p class="text-[13px] text-[var(--text-dim)] leading-relaxed max-w-[280px] mx-auto mb-6">${body}</p>
+      <button onclick="${btnAction}"
+        class="btn-press inline-flex items-center gap-2 bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 px-5 text-sm font-bold"
+        style="min-height:44px;">
+        <i data-lucide="arrow-right" class="w-4 h-4"></i> ${btnLabel}
+      </button>
+    </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------------------------------------------------------------
+   WIDGET EXPORT
+   The JSON snapshot consumed by an iOS Scriptable widget.
+   NOTE: LocalStorage can't be read by an iOS widget. If this file is
+   served via a local server (`python -m http.server`), save this payload
+   as widget.json beside index.html and let Scriptable fetch it over LAN
+   (see in-modal Option B) — no server code needed here.
+   --------------------------------------------------------------------- */
+function buildWidgetPayload() {
+  const today = todayISO();
+  return {
+    generated: new Date().toISOString(),
+    date: today,
+    habits: state.habits.map(h => {
+      const raw = h.completions[today];
+      const actualToday = Number.isFinite(raw) ? raw : (raw ? h.goal : 0);
+      return {
+        id: h.id,
+        title: h.title,
+        color: h.color,
+        goal: h.goal,
+        unit: h.unit,
+        trackingMode: h.trackingMode,
+        completedToday: isDayDone(h, today),
+        actualToday,                                          // useful for measured habits
+        progressToday: Math.round(dayProgress(h, today) * 100), // 0-100
+        currentStreak: currentStreak(h),
+        completionRate: completionRate(h),
+      };
+    }),
+  };
+}
+
+function openExportModal() {
+  document.getElementById('exportJson').value = JSON.stringify(buildWidgetPayload(), null, 2);
+  showModal('exportModal');
+  drawIcons();
+}
+
+async function copyWidgetJson() {
+  const ta = document.getElementById('exportJson');
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    ok = true;
+  } catch (e) {
+    ta.removeAttribute('readonly');
+    ta.select();
+    try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+    ta.setAttribute('readonly', '');
+    window.getSelection()?.removeAllRanges();
+  }
+  const btn = document.getElementById('copyJsonBtn');
+  const label = btn.querySelector('span');
+  if (ok) {
+    label.textContent = 'Copied!';
+    showToast('Widget data copied to clipboard');
+    setTimeout(() => { label.textContent = 'Copy to Clipboard'; }, 1800);
+  } else {
+    label.textContent = 'Copy failed — select manually';
+    setTimeout(() => { label.textContent = 'Copy to Clipboard'; }, 2200);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   UI: MODALS, TOASTS, TABS
+   --------------------------------------------------------------------- */
+function showModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+function hideModal(id) { const m = document.getElementById(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+function showToast(msg) {
+  const root = document.getElementById('toastRoot');
+  const t = document.createElement('div');
+  t.className = 'toast surface rounded-xl px-4 py-2.5 text-[13px] font-bold flex items-center gap-2 shadow-2xl';
+  t.innerHTML = `<span style="color:var(--gold)">●</span> ${escapeHtml(msg)}`;
+  root.appendChild(t);
+  setTimeout(() => t.remove(), 2100);
+}
+
+function switchTab(tab) {
+  // leaving the new-habit form: clear any in-progress edit so returning
+  // to it starts fresh instead of resuming a stale editing session
+  if (activeTab === 'new' && tab !== 'new') {
+    editingId = null;
+    formCustomColor = null;
+  }
+  activeTab = tab;
+  ['home','new','calendar'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  window.scrollTo({ top: 0 });
+  render();
+}
+
+let pendingDeleteId = null;
+function openConfirm(habit) {
+  pendingDeleteId = habit.id;
+  document.getElementById('confirmHabitName').textContent = habit.title;
+  showModal('confirmModal');
+}
+
+/* ---------------------------------------------------------------------
+   UI EVENT BINDINGS
+   --------------------------------------------------------------------- */
+function bindEvents() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+    if (pendingDeleteId) {
+      deleteHabit(pendingDeleteId);
+      pendingDeleteId = null;
+      hideModal('confirmModal');
+      showToast('Habit deleted');
+      render();
+    }
+  });
+
+  document.getElementById('copyJsonBtn').addEventListener('click', copyWidgetJson);
+
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = btn.closest('[id$="Modal"]');
+      if (modal) hideModal(modal.id);
+    });
+  });
+  ['confirmModal','exportModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target.id === id) hideModal(id);
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['confirmModal','exportModal'].forEach(id => hideModal(id));
+  });
+}
+
+/* ---------------------------------------------------------------------
+   INIT
+   --------------------------------------------------------------------- */
+function init() {
+  storageAvailable = checkStorage();
+  if (!storageAvailable) document.getElementById('storageWarning').classList.remove('hidden');
+
+  state = loadData();
+  saveData();              // normalize storage to the v2 key/shape
+  bindEvents();
+  render();
+  drawIcons();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+/* ---------------------------------------------------------------------
+   PWA: register the service worker so the app installs and works offline.
+   Service workers require an http(s) origin — they are silently skipped
+   when the file is opened directly via file://, which is fine.
+   --------------------------------------------------------------------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
