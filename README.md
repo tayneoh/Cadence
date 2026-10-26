@@ -84,5 +84,12 @@ That tells every installed copy to fetch the fresh files.
 Each person's habits are saved with their browser's LocalStorage, on
 their own device. Nothing is uploaded anywhere. That keeps the app free
 and private, but it also means data does not sync between devices and is
-lost if a user clears their browser data. The "Export Widget Data" button
-in the app produces a JSON snapshot anyone can copy out.
+lost if a user clears their browser data. Use **Settings → Your data** to save a backup file of everything (habits, full check-in
+history, to-dos) and load it back later or on another device. The "Export
+Widget Data" button is only a summary for the iOS widget, not a backup.
+
+Data is tied to the site's address. Editing and redeploying the files at
+the same URL keeps everyone's data; moving to a different host or URL
+starts with an empty app, so save a backup first and restore it there.
+When changing the saved data's shape, keep the `cadence.habits.v3`
+storage key and add a step to `migrateData` in `index.html`.

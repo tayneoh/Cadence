@@ -50,7 +50,22 @@
     --text-dim: #6f6a5f;
     --text-faint: #a8a297;
     --gold: #b08d2e;
-    --gold-soft: #f3ead0;
+    --gold-soft: color-mix(in srgb, var(--gold) 18%, var(--surface));
+    --wk-cell: #dedbd3;
+    color-scheme: light;
+  }
+  /* dark theme: chosen in Settings, or following the device when set to System */
+  :root[data-theme="dark"] {
+    --bg: #14130f; --surface: #1d1b17; --surface-2: #27241f; --border: #38342c;
+    --text: #f1ede4; --text-dim: #a8a295; --text-faint: #6f6a5f; --wk-cell: #34312a;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      --bg: #14130f; --surface: #1d1b17; --surface-2: #27241f; --border: #38342c;
+      --text: #f1ede4; --text-dim: #a8a295; --text-faint: #6f6a5f; --wk-cell: #34312a;
+      color-scheme: dark;
+    }
   }
   * { -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -61,8 +76,8 @@
   }
   body {
     background-image:
-      radial-gradient(900px 500px at 85% -8%, rgba(176, 141, 46, 0.10), transparent 70%),
-      radial-gradient(700px 460px at 5% 108%, rgba(176, 141, 46, 0.06), transparent 70%);
+      radial-gradient(900px 500px at 85% -8%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 70%),
+      radial-gradient(700px 460px at 5% 108%, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%);
     background-attachment: fixed;
   }
   body::before {
@@ -115,6 +130,63 @@
     background-image: linear-gradient(to top, currentColor 0, currentColor var(--pct, 0%),
       transparent var(--pct, 0%), transparent 100%);
   }
+
+  /* ---- weekly checkbox board: habit label + one circle per day ----
+     Phones: each label sits on its own line above its seven circles.
+     Wider screens: label on the left, circles to the right. */
+  .wk-grid { display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 8px 4px; align-items: center; justify-items: center; }
+  .wk-corner { display: none; }
+  .wk-head { text-align: center; font-size: 10px; font-weight: 700;
+    color: var(--text-faint); line-height: 1.25; }
+  .wk-head.is-today { color: var(--gold); }
+  .wk-label { grid-column: 1 / -1; justify-self: stretch; margin-top: 6px;
+    padding: 8px 10px; font-size: 12px; line-height: 1.3;
+    border-bottom: 2px solid var(--text); border-radius: 4px 4px 0 0;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wk-label small { font-size: 10px; color: var(--text-dim); margin-left: 6px; }
+  .wk-cell { width: 36px; height: 36px; border-radius: 99px; background: var(--wk-cell);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.12s ease; }
+  .wk-cell:active { transform: scale(0.88); }
+  .wk-cell.today { box-shadow: 0 0 0 2px var(--gold); }
+  .wk-cell:disabled { opacity: 0.45; cursor: not-allowed; }
+  .wk-box { width: 18px; height: 18px; border: 2px solid var(--text); border-radius: 3px;
+    background: var(--surface); position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; }
+  @media (min-width: 480px) {
+    .wk-grid { grid-template-columns: minmax(0, 1fr) repeat(7, 40px); gap: 10px 4px; }
+    .wk-corner { display: block; }
+    .wk-label { grid-column: auto; margin-top: 0; }
+    .wk-label small { display: block; margin-left: 0; }
+    .wk-cell { width: 40px; height: 40px; }
+    .wk-box { width: 20px; height: 20px; }
+  }
+
+  /* ---- year heatmap ---- */
+  .yr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .yr-day { aspect-ratio: 1 / 1; border-radius: 2px; background: var(--surface-2); cursor: pointer; }
+  .yr-day.outside { visibility: hidden; }
+  .yr-day.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); cursor: default; }
+  .yr-day.today { box-shadow: 0 0 0 1.5px var(--text); }
+
+  /* segmented control for calendar views */
+  .seg-btn { transition: background-color 0.15s ease, color 0.15s ease; }
+  .seg-btn.active { background: var(--text); color: var(--bg); }
+
+  .todo-row .todo-del { opacity: 0.5; }
+  @media (hover: hover) { .todo-row .todo-del { opacity: 0; } .todo-row:hover .todo-del { opacity: 1; } }
+
+  /* on/off switch used in Settings */
+  .switch { position: relative; width: 44px; height: 26px; border-radius: 99px; flex-shrink: 0;
+    background: var(--border); transition: background-color 0.16s ease; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    border-radius: 99px; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    transition: transform 0.16s ease; }
+  .switch[aria-checked="true"] { background: var(--gold); }
+  .switch[aria-checked="true"]::after { transform: translateX(18px); }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 
   /* ---- modal ---- */
   .modal-backdrop { background: rgba(5,5,7,0.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
@@ -231,6 +303,7 @@
   <header class="mb-6">
     <div class="text-[11px] uppercase tracking-[0.22em] text-[var(--text-faint)] mb-1" id="todayLabel"></div>
     <h1 class="display text-4xl sm:text-5xl font-semibold leading-none tracking-tight">Cadence</h1>
+    <p id="greeting" class="hidden text-[13px] text-[var(--text-dim)] mt-2"></p>
   </header>
 
   <!-- storage warning -->
@@ -246,13 +319,14 @@
   <section id="tab-home" class="tab-panel"></section>
   <section id="tab-new" class="tab-panel hidden"></section>
   <section id="tab-calendar" class="tab-panel hidden"></section>
+  <section id="tab-settings" class="tab-panel hidden"></section>
 
 </div>
 
 <!-- ============ BOTTOM TAB BAR ============ -->
 <nav class="fixed bottom-0 left-0 right-0 z-30 surface border-t border-[var(--border)]"
      style="padding-bottom: env(safe-area-inset-bottom);">
-  <div class="max-w-xl mx-auto grid grid-cols-3">
+  <div class="max-w-xl mx-auto grid grid-cols-4">
     <button data-tab="home" class="tab-btn active flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
       <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Home</span>
@@ -264,6 +338,10 @@
     <button data-tab="calendar" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
       <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="calendar-days" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Calendar</span>
+    </button>
+    <button data-tab="settings" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="settings" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Settings</span>
     </button>
   </div>
 </nav>
@@ -326,6 +404,21 @@
   </div>
 </div>
 
+<!-- ============ RESTORE CONFIRM MODAL ============ -->
+<div id="restoreModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
+  <div class="modal-enter surface rounded-2xl w-full max-w-xs p-6 text-center">
+    <div class="surface-2 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border border-[var(--border)]">
+      <i data-lucide="history" class="w-5 h-5 text-[var(--text-dim)]"></i>
+    </div>
+    <h2 class="display text-xl font-semibold mb-1.5">Restore backup?</h2>
+    <p id="restoreSummary" class="text-[13px] text-[var(--text-dim)] mb-6 leading-relaxed"></p>
+    <div class="flex gap-3">
+      <button data-close-modal class="btn-press flex-1 surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold" style="min-height:44px;">Cancel</button>
+      <button id="confirmRestoreBtn" class="btn-press flex-1 bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold" style="min-height:44px;">Restore</button>
+    </div>
+  </div>
+</div>
+
 <!-- toast container -->
 <div id="toastRoot" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none"></div>
 
@@ -343,10 +436,42 @@
    --------------------------------------------------------------------- */
 const STORAGE_KEY = 'cadence.habits.v3';
 const LEGACY_KEYS = ['cadence.habits.v2', 'cadence.habits.v1'];
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 5;
+const LAST_BACKUP_KEY = 'cadence.lastBackup';
+const PRE_RESTORE_KEY = 'cadence.preRestore';
 
 let storageAvailable = true;
-let state = { version: SCHEMA_VERSION, habits: [] };
+
+const DEFAULT_SETTINGS = {
+  name: '',
+  theme: 'system',        // 'system' | 'light' | 'dark'
+  accent: '#b08d2e',
+  weekStart: 1,           // 1 = Monday, 0 = Sunday
+  calDefault: 'month',    // view the Calendar tab opens on
+  showTodos: true,
+  showWeek: true,
+  showStats: true,
+  badge: false,           // habits-left count on the home-screen icon
+};
+
+function emptyState() {
+  return { version: SCHEMA_VERSION, habits: [], todos: [], settings: { ...DEFAULT_SETTINGS } };
+}
+
+/* keep only known settings with valid values; anything else falls back */
+function cleanSettings(raw) {
+  const out = { ...DEFAULT_SETTINGS };
+  if (!raw || typeof raw !== 'object') return out;
+  if (typeof raw.name === 'string') out.name = raw.name.slice(0, 30);
+  if (['system','light','dark'].includes(raw.theme)) out.theme = raw.theme;
+  if (typeof raw.accent === 'string' && /^#[0-9a-f]{6}$/i.test(raw.accent)) out.accent = raw.accent;
+  if (raw.weekStart === 0 || raw.weekStart === 1) out.weekStart = raw.weekStart;
+  if (['day','week','month','year'].includes(raw.calDefault)) out.calDefault = raw.calDefault;
+  ['showTodos','showWeek','showStats','badge'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  return out;
+}
+
+let state = emptyState();
 
 function checkStorage() {
   try {
@@ -362,9 +487,12 @@ function checkStorage() {
    v2 -> v3 : add `trackingMode` ('check' | 'measure') and `order` (int).
               Existing habits become 'check' so nothing about their
               behavior changes. Boolean-valued completions stay boolean;
-              measure-mode completions store a number instead. */
+              measure-mode completions store a number instead.
+   v3 -> v4 : add top-level `todos` (quick to-do list). Habits untouched;
+              the storage key stays the same so nothing has to move.
+   v4 -> v5 : add top-level `settings` (personalization), defaults filled in. */
 function migrateData(raw) {
-  const safe = { version: SCHEMA_VERSION, habits: [] };
+  const safe = emptyState();
   if (!raw || typeof raw !== 'object') return safe;
   if (Array.isArray(raw.habits)) {
     safe.habits = raw.habits
@@ -385,21 +513,39 @@ function migrateData(raw) {
     // normalize orders to consecutive integers
     safe.habits.forEach((h, i) => { h.order = i; });
   }
+  if (Array.isArray(raw.todos)) {
+    safe.todos = raw.todos
+      .filter(t => t && typeof t === 'object' && typeof t.text === 'string')
+      .map(t => ({
+        id: String(t.id || genId()),
+        text: t.text.slice(0, 120),
+        done: !!t.done,
+        createdAt: t.createdAt || todayISO(),
+      }));
+  }
+  safe.settings = cleanSettings(raw.settings);
   return safe;
 }
 
 function loadData() {
-  if (!storageAvailable) return { version: SCHEMA_VERSION, habits: [] };
+  if (!storageAvailable) return emptyState();
   try {
     // accept current key first, then progressively older keys, so upgrading
     // users don't lose data
     let rawStr = localStorage.getItem(STORAGE_KEY);
     for (const k of LEGACY_KEYS) { if (!rawStr) rawStr = localStorage.getItem(k); }
-    if (!rawStr) return { version: SCHEMA_VERSION, habits: [] };
-    return migrateData(JSON.parse(rawStr));
+    if (!rawStr) return emptyState();
+    try {
+      return migrateData(JSON.parse(rawStr));
+    } catch (e) {
+      // unreadable data: stash the raw string before init() overwrites it,
+      // so it can still be recovered by hand
+      try { localStorage.setItem('cadence.unreadable', rawStr); } catch (_) {}
+      throw e;
+    }
   } catch (e) {
     console.warn('loadData failed, starting fresh:', e);
-    return { version: SCHEMA_VERSION, habits: [] };
+    return emptyState();
   }
 }
 
@@ -536,6 +682,26 @@ function toggleCompletion(habitId, dateISO, value) {
   saveData();
 }
 
+/* ---- quick to-do list: one-off tasks, separate from habits ---- */
+function addTodo(text) {
+  const t = text.trim().slice(0, 120);
+  if (!t) return;
+  state.todos.push({ id: genId(), text: t, done: false, createdAt: todayISO() });
+  saveData();
+}
+function toggleTodo(id) {
+  const t = state.todos.find(x => x.id === id);
+  if (t) { t.done = !t.done; saveData(); }
+}
+function deleteTodo(id) {
+  state.todos = state.todos.filter(t => t.id !== id);
+  saveData();
+}
+function clearDoneTodos() {
+  state.todos = state.todos.filter(t => !t.done);
+  saveData();
+}
+
 /* ---------------------------------------------------------------------
    STATS CALCULATION
    --------------------------------------------------------------------- */
@@ -569,13 +735,27 @@ function completionRate(habit) {
 /* ---------------------------------------------------------------------
    CALENDAR RENDERING
    --------------------------------------------------------------------- */
-const WEEKDAYS = ['M','T','W','T','F','S','S'];
+const WEEKDAY_LETTERS = ['S','M','T','W','T','F','S'];   // indexed by Date.getDay()
+
+/* column (0..6) of a date in a week that starts on the chosen day */
+function weekCol(date) { return (date.getDay() - state.settings.weekStart + 7) % 7; }
+function weekdayLabels() {
+  return Array.from({ length: 7 }, (_, i) => WEEKDAY_LETTERS[(i + state.settings.weekStart) % 7]);
+}
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
 
 const calNow = new Date();
 let calView = { year: calNow.getFullYear(), month: calNow.getMonth() };
 let selectedDay = todayISO();
+let calMode = 'month';               // 'day' | 'week' | 'month' | 'year'
+let calYear = calNow.getFullYear();  // year shown in the year view
+let weekStart = startOfWeek(todayISO());
+
+/* weeks start on Monday or Sunday, per Settings */
+function startOfWeek(iso) {
+  return addDays(iso, -weekCol(fromISO(iso)));
+}
 
 function shiftCalMonth(delta) {
   let m = calView.month + delta, y = calView.year;
@@ -585,18 +765,106 @@ function shiftCalMonth(delta) {
   renderCalendarTab();
 }
 
+/* move the active view one step back/forward (day, week, month or year) */
+function shiftCalView(delta) {
+  if (calMode === 'day') {
+    const next = addDays(selectedDay, delta);
+    if (next > todayISO()) return;
+    selectedDay = next;
+  } else if (calMode === 'week') {
+    weekStart = addDays(weekStart, delta * 7);
+  } else if (calMode === 'year') {
+    calYear += delta;
+  } else {
+    return shiftCalMonth(delta);
+  }
+  renderCalendarTab();
+}
+
+/* 0..1 share of all habits finished on a date (measured habits count
+   partially). Drives the year heatmap's shading. */
+function dayScore(iso) {
+  if (!state.habits.length) return 0;
+  return state.habits.reduce((s, h) => s + dayProgress(h, iso), 0) / state.habits.length;
+}
+
+/* Weekly board: one row per habit, one checkbox per day, Monday first.
+   Shared by the Home tab (current week) and the Calendar week view. */
+function weekGridHTML(start) {
+  const today = todayISO();
+  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  let html = '<div class="wk-grid"><div class="wk-corner"></div>';
+  days.forEach(iso => {
+    html += `<div class="wk-head ${iso === today ? 'is-today' : ''}">${WEEKDAY_LETTERS[fromISO(iso).getDay()]}<br>${fromISO(iso).getDate()}</div>`;
+  });
+  state.habits.forEach(h => {
+    const doneThisWeek = days.filter(iso => isDayDone(h, iso)).length;
+    html += `<div class="wk-label" style="background:${h.color}22;" title="${escapeHtml(h.title)}">
+        ${escapeHtml(h.title)}<small>${doneThisWeek} / 7 this week</small></div>`;
+    days.forEach(iso => {
+      const prog = dayProgress(h, iso);
+      const future = iso > today;
+      const inner = prog >= 1
+        ? `<i data-lucide="check" class="w-3.5 h-3.5" style="color:var(--text); stroke-width:3.5;"></i>`
+        : prog > 0
+          ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:0.6;"></span>`
+          : '';
+      html += `<button class="wk-cell ${iso === today ? 'today' : ''}" data-week-toggle="${h.id}" data-date="${iso}"
+          ${future ? 'disabled' : ''} aria-label="${escapeHtml(h.title)} on ${iso}">
+          <span class="wk-box" style="${prog >= 1 ? `background:${h.color}33;` : ''}">${inner}</span></button>`;
+    });
+  });
+  return html + '</div>';
+}
+
+function bindWeekGrid(root, rerender) {
+  root.querySelectorAll('[data-week-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      toggleCompletion(btn.dataset.weekToggle, btn.dataset.date);
+      rerender();
+    });
+  });
+}
+
+/* Year view: twelve mini months, each day shaded by how much got done. */
+function yearHTML(year) {
+  const today = todayISO();
+  let html = '<div class="grid grid-cols-3 gap-x-3 gap-y-4">';
+  for (let m = 0; m < 12; m++) {
+    const first = new Date(year, m, 1);
+    const blanks = weekCol(first);
+    const days = new Date(year, m + 1, 0).getDate();
+    let cells = '';
+    for (let i = 0; i < blanks; i++) cells += '<span class="yr-day outside"></span>';
+    for (let d = 1; d <= days; d++) {
+      const iso = `${year}-${pad(m+1)}-${pad(d)}`;
+      if (iso > today) { cells += '<span class="yr-day future"></span>'; continue; }
+      const score = dayScore(iso);
+      const bg = score > 0 ? `background:color-mix(in srgb, var(--gold) ${Math.round(20 + 80 * score)}%, var(--surface-2));` : '';
+      cells += `<span class="yr-day ${iso === today ? 'today' : ''}" style="${bg}" data-year-day="${iso}"
+        title="${iso}: ${Math.round(score * 100)}%"></span>`;
+    }
+    html += `<div>
+        <button data-year-month="${m}" class="text-[11px] font-bold mb-1.5 text-[var(--text-dim)] block">${MONTHS[m].slice(0,3)}</button>
+        <div class="yr-grid">${cells}</div>
+      </div>`;
+  }
+  return html + '</div>';
+}
+
 /* Unified month grid: each day shows colored dots for habits completed
    that day. Tapping a non-future day selects it for the breakdown panel. */
 function buildUnifiedCalendar() {
   const today = todayISO();
   const firstDay = new Date(calView.year, calView.month, 1);
-  const leadingBlanks = (firstDay.getDay() + 6) % 7;
+  const leadingBlanks = weekCol(firstDay);
   const daysInMonth = new Date(calView.year, calView.month + 1, 0).getDate();
 
   const grid = document.createElement('div');
   grid.className = 'grid grid-cols-7 gap-1.5';
 
-  WEEKDAYS.forEach(w => {
+  weekdayLabels().forEach(w => {
     const h = document.createElement('div');
     h.className = 'text-center text-[10px] font-bold text-[var(--text-faint)] pb-1';
     h.textContent = w;
@@ -677,9 +945,20 @@ function render() {
   document.getElementById('todayLabel').textContent =
     now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
 
+  const greet = document.getElementById('greeting');
+  const name = state.settings.name.trim();
+  greet.classList.toggle('hidden', !name);
+  if (name) {
+    const hr = now.getHours();
+    greet.textContent = `${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}, ${name}.`;
+  }
+
   if (activeTab === 'home') renderHomeTab();
   else if (activeTab === 'new') renderNewTab();
+  else if (activeTab === 'settings') renderSettingsTab();
   else renderCalendarTab();
+
+  updateAppBadge();
 
   drawIcons();
 }
@@ -780,7 +1059,14 @@ function renderHomeTab() {
         <div class="space-y-2.5">${checklist}</div>
       </div>
 
-      <div>
+      ${state.settings.showTodos ? todoSectionHTML() : ''}
+
+      ${state.settings.showWeek ? `<div>
+        <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">This week</h3>
+        <div class="surface rounded-2xl p-4">${weekGridHTML(startOfWeek(today))}</div>
+      </div>` : ''}
+
+      ${state.settings.showStats ? `<div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">At a glance</h3>
         <div class="grid grid-cols-3 gap-2.5">
           <div class="surface rounded-2xl p-4">
@@ -802,13 +1088,7 @@ function renderHomeTab() {
             </div>
           </div>
         </div>
-      </div>
-
-      <button id="exportBtn"
-        class="btn-press w-full surface rounded-2xl h-12 flex items-center justify-center gap-2.5 text-sm font-bold"
-        style="min-height:48px;">
-        <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
-      </button>
+      </div>` : ''}
     </div>`;
 
   root.querySelectorAll('[data-toggle-today]').forEach(btn => {
@@ -847,7 +1127,63 @@ function renderHomeTab() {
     });
   });
 
-  root.querySelector('#exportBtn').addEventListener('click', openExportModal);
+  bindWeekGrid(root, render);
+  bindTodos(root);
+}
+
+/* ---- quick to-do card (Home tab) ---- */
+function todoSectionHTML() {
+  const open = state.todos.filter(t => !t.done).length;
+  const doneN = state.todos.length - open;
+  const rows = state.todos.map(t => `
+    <div class="todo-row flex items-center gap-3 py-1.5">
+      <button data-todo-toggle="${t.id}" class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center"
+        style="border-color:${t.done ? 'var(--gold)' : 'var(--border)'}; background:${t.done ? 'var(--gold)' : 'transparent'}; min-width:24px;"
+        aria-label="${t.done ? 'Mark not done' : 'Mark done'}">
+        ${t.done ? "<i data-lucide='check' class='w-3.5 h-3.5' style='color:#ffffff'></i>" : ''}
+      </button>
+      <span class="flex-1 min-w-0 text-[13px] break-words ${t.done ? 'line-through text-[var(--text-faint)]' : ''}">${escapeHtml(t.text)}</span>
+      <button data-todo-del="${t.id}" class="todo-del shrink-0 w-8 h-8 flex items-center justify-center" aria-label="Remove">
+        <i data-lucide="x" class="w-4 h-4 text-[var(--text-dim)]"></i>
+      </button>
+    </div>`).join('');
+  return `
+    <div>
+      <div class="flex items-baseline justify-between mb-3 px-1">
+        <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">Quick to-do</h3>
+        ${doneN ? `<button id="todoClearDone" class="text-[11px] font-bold text-[var(--text-dim)]">Clear ${doneN} done</button>` : ''}
+      </div>
+      <div class="surface rounded-2xl p-4">
+        <form id="todoForm" class="flex gap-2 ${state.todos.length ? 'mb-2' : ''}">
+          <input id="todoInput" type="text" maxlength="120" placeholder="Add a task…" autocomplete="off"
+            class="flex-1 min-w-0 px-3.5 py-2.5 text-sm">
+          <button type="submit" class="btn-press shrink-0 bg-[var(--text)] text-[var(--bg)] rounded-xl px-4 text-sm font-bold"
+            style="min-height:44px;" aria-label="Add task"><i data-lucide="plus" class="w-4 h-4"></i></button>
+        </form>
+        ${rows}
+      </div>
+    </div>`;
+}
+
+function bindTodos(root) {
+  const form = root.querySelector('#todoForm');
+  if (!form) return;
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const input = root.querySelector('#todoInput');
+    if (!input.value.trim()) return;
+    addTodo(input.value);
+    render();
+    // keep the keyboard up so several tasks can be added in a row
+    document.getElementById('todoInput')?.focus();
+  });
+  root.querySelectorAll('[data-todo-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => { toggleTodo(btn.dataset.todoToggle); render(); });
+  });
+  root.querySelectorAll('[data-todo-del]').forEach(btn => {
+    btn.addEventListener('click', () => { deleteTodo(btn.dataset.todoDel); render(); });
+  });
+  root.querySelector('#todoClearDone')?.addEventListener('click', () => { clearDoneTodos(); render(); });
 }
 
 /* ---- NEW HABIT TAB: creation form + existing-habit list ---- */
@@ -1175,23 +1511,10 @@ function showFormError(el, msg) {
   el.classList.remove('hidden');
 }
 
-/* ---- CALENDAR TAB: unified month grid + per-day breakdown ---- */
-function renderCalendarTab() {
-  const root = document.getElementById('tab-calendar');
+/* ---- CALENDAR TAB: day / week / month / year views ---- */
 
-  if (state.habits.length === 0) {
-    root.innerHTML = emptyStateHTML(
-      'calendar-days', 'Nothing to track yet',
-      'Create a habit and your completion history will show up here as a monthly calendar.',
-      'Go to New Habit', "switchTab('new')");
-    return;
-  }
-
-  const today = todayISO();
-  const selDate = fromISO(selectedDay);
-  const selLabel = selDate.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
-  const isFutureSel = selectedDay > today;
-
+/* per-habit rows for one date; tapping toggles that habit for the date */
+function dayBreakdownHTML(isFutureSel) {
   let breakdown = '';
   state.habits.forEach(h => {
     const done = isDayDone(h, selectedDay);
@@ -1223,40 +1546,125 @@ function renderCalendarTab() {
       </button>`;
   });
 
-  root.innerHTML = `
-    <div class="tab-enter space-y-6">
-      <div class="surface rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <button id="prevMonth" class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center" aria-label="Previous month" style="min-height:44px;min-width:44px;">
-            <i data-lucide="chevron-left" class="w-4 h-4 text-[var(--text-dim)]"></i>
-          </button>
-          <span class="display text-xl font-semibold">${MONTHS[calView.month]} ${calView.year}</span>
-          <button id="nextMonth" class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center" aria-label="Next month" style="min-height:44px;min-width:44px;">
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-dim)]"></i>
-          </button>
-        </div>
-        <div id="calGrid"></div>
-        <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
-          ${state.habits.map(h => `
-            <span class="flex items-center gap-1.5 text-[11px] text-[var(--text-dim)]">
-              <span class="w-2.5 h-2.5 rounded-full" style="background:${h.color}"></span>${escapeHtml(h.title)}
-            </span>`).join('')}
-        </div>
-      </div>
+  return breakdown;
+}
 
+function renderCalendarTab() {
+  const root = document.getElementById('tab-calendar');
+
+  if (state.habits.length === 0) {
+    root.innerHTML = emptyStateHTML(
+      'calendar-days', 'Nothing to track yet',
+      'Create a habit and your completion history will show up here as a monthly calendar.',
+      'Go to New Habit', "switchTab('new')");
+    return;
+  }
+
+  const today = todayISO();
+  const selDate = fromISO(selectedDay);
+  const selLabel = selDate.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  const isFutureSel = selectedDay > today;
+
+  const modes = [['day','Day'],['week','Week'],['month','Month'],['year','Year']];
+  const seg = `
+    <div class="surface rounded-xl p-1 grid grid-cols-4 gap-1">
+      ${modes.map(([m, label]) => `
+        <button data-cal-mode="${m}" class="seg-btn btn-press rounded-lg h-9 text-[12px] font-bold ${calMode === m ? 'active' : 'text-[var(--text-dim)]'}">${label}</button>`).join('')}
+    </div>`;
+
+  // header title for each view
+  let title;
+  if (calMode === 'day') {
+    title = selLabel;
+  } else if (calMode === 'week') {
+    const end = addDays(weekStart, 6);
+    const fmt = iso => fromISO(iso).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+    title = `${fmt(weekStart)} – ${fmt(end)}`;
+  } else if (calMode === 'year') {
+    title = String(calYear);
+  } else {
+    title = `${MONTHS[calView.month]} ${calView.year}`;
+  }
+  const atEnd = (calMode === 'day' && selectedDay >= today);
+  const nav = `
+    <div class="flex items-center justify-between mb-4">
+      <button id="calPrev" class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center" aria-label="Previous" style="min-height:44px;min-width:44px;">
+        <i data-lucide="chevron-left" class="w-4 h-4 text-[var(--text-dim)]"></i>
+      </button>
+      <span class="display text-xl font-semibold text-center px-2">${title}</span>
+      <button id="calNext" ${atEnd ? 'disabled' : ''} class="btn-press surface-2 border border-[var(--border)] rounded-lg flex items-center justify-center ${atEnd ? 'opacity-30 cursor-not-allowed' : ''}" aria-label="Next" style="min-height:44px;min-width:44px;">
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-dim)]"></i>
+      </button>
+    </div>`;
+
+  const legend = `
+    <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
+      ${state.habits.map(h => `
+        <span class="flex items-center gap-1.5 text-[11px] text-[var(--text-dim)]">
+          <span class="w-2.5 h-2.5 rounded-full" style="background:${h.color}"></span>${escapeHtml(h.title)}
+        </span>`).join('')}
+    </div>`;
+
+  const dayList = `
       <div>
         <div class="flex items-baseline justify-between mb-3 px-1">
           <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">${selectedDay === today ? 'Today' : 'Selected day'}</h3>
           <span class="text-[12px] text-[var(--text-dim)] font-bold">${selLabel}</span>
         </div>
         ${isFutureSel ? '<p class="text-[12px] text-[var(--text-faint)] px-1 mb-2">Future date — not editable.</p>' : ''}
-        <div class="space-y-2.5">${breakdown}</div>
-      </div>
-    </div>`;
+        <div class="space-y-2.5">${dayBreakdownHTML(isFutureSel)}</div>
+      </div>`;
 
-  root.querySelector('#calGrid').appendChild(buildUnifiedCalendar());
-  root.querySelector('#prevMonth').addEventListener('click', () => shiftCalMonth(-1));
-  root.querySelector('#nextMonth').addEventListener('click', () => shiftCalMonth(1));
+  let body;
+  if (calMode === 'day') {
+    const doneN = state.habits.filter(h => isDayDone(h, selectedDay)).length;
+    body = `
+      <div class="surface rounded-2xl p-5">
+        ${nav}
+        <p class="text-[12px] text-[var(--text-dim)] text-center -mt-2 mb-4">${doneN} / ${state.habits.length} habits done</p>
+        <div class="space-y-2.5">${dayBreakdownHTML(isFutureSel)}</div>
+      </div>`;
+  } else if (calMode === 'week') {
+    body = `
+      <div class="surface rounded-2xl p-5">
+        ${nav}
+        ${weekGridHTML(weekStart)}
+      </div>`;
+  } else if (calMode === 'year') {
+    body = `
+      <div class="surface rounded-2xl p-5">
+        ${nav}
+        ${yearHTML(calYear)}
+        <p class="text-[11px] text-[var(--text-faint)] mt-4">Darker days mean more habits done. Tap a day to open it.</p>
+      </div>`;
+  } else {
+    body = `
+      <div class="surface rounded-2xl p-5">
+        ${nav}
+        <div id="calGrid"></div>
+        ${legend}
+      </div>
+      ${dayList}`;
+  }
+
+  root.innerHTML = `<div class="tab-enter space-y-6">${seg}${body}</div>`;
+
+  const calGrid = root.querySelector('#calGrid');
+  if (calGrid) calGrid.appendChild(buildUnifiedCalendar());
+  root.querySelector('#calPrev').addEventListener('click', () => shiftCalView(-1));
+  root.querySelector('#calNext').addEventListener('click', () => shiftCalView(1));
+
+  root.querySelectorAll('[data-cal-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      calMode = btn.dataset.calMode;
+      // line the other views up with the selected day when switching
+      const sel = fromISO(selectedDay);
+      weekStart = startOfWeek(selectedDay);
+      calView = { year: sel.getFullYear(), month: sel.getMonth() };
+      calYear = sel.getFullYear();
+      renderCalendarTab();
+    });
+  });
 
   root.querySelectorAll('[data-toggle-day]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1264,6 +1672,19 @@ function renderCalendarTab() {
       toggleCompletion(btn.dataset.toggleDay, selectedDay);
       renderCalendarTab();
       drawIcons();
+    });
+  });
+
+  bindWeekGrid(root, renderCalendarTab);
+
+  root.querySelectorAll('[data-year-day]').forEach(el => {
+    el.addEventListener('click', () => { selectedDay = el.dataset.yearDay; calMode = 'day'; renderCalendarTab(); });
+  });
+  root.querySelectorAll('[data-year-month]').forEach(el => {
+    el.addEventListener('click', () => {
+      calView = { year: calYear, month: Number(el.dataset.yearMonth) };
+      calMode = 'month';
+      renderCalendarTab();
     });
   });
 
@@ -1357,6 +1778,301 @@ async function copyWidgetJson() {
 }
 
 /* ---------------------------------------------------------------------
+   SETTINGS — personalization, home layout, icon badge, data tools.
+   Settings are saved inside the main state, so backups carry them too.
+   --------------------------------------------------------------------- */
+function updateSetting(key, value) {
+  state.settings[key] = value;
+  saveData();
+  applySettings();
+}
+
+/* push theme + accent onto the page */
+function applySettings() {
+  const { theme, accent } = state.settings;
+  const root = document.documentElement;
+  if (theme === 'system') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', theme);
+  root.style.setProperty('--gold', accent);
+  const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#14130f' : '#fbfaf7');
+}
+
+/* Home-screen icon badge = habits still open today. Works in the
+   installed app on iOS 16.4+ (needs notification permission) and on
+   Android/desktop Chrome and Edge. Silently does nothing elsewhere. */
+function updateAppBadge() {
+  if (!('setAppBadge' in navigator)) return;
+  try {
+    const left = state.habits.filter(h => !isDayDone(h, todayISO())).length;
+    if (state.settings.badge && left > 0) navigator.setAppBadge(left).catch(() => {});
+    else navigator.clearAppBadge().catch(() => {});
+  } catch (e) { /* unsupported */ }
+}
+
+async function setBadgeEnabled(on) {
+  if (on && 'Notification' in window && Notification.permission !== 'granted') {
+    let result = 'denied';
+    try { result = await Notification.requestPermission(); } catch (e) {}
+    if (result !== 'granted') {
+      showToast('Allow notifications for Cadence to show the badge');
+      on = false;
+    }
+  }
+  updateSetting('badge', on);
+  render();
+}
+
+function settingsRow(label, hint, control) {
+  return `
+    <div class="flex items-center gap-3 py-3 border-t border-[var(--border)] first:border-t-0">
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-bold">${label}</div>
+        ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
+      </div>
+      ${control}
+    </div>`;
+}
+
+function segHTML(key, options) {
+  return `
+    <div class="surface-2 border border-[var(--border)] rounded-lg p-0.5 flex shrink-0">
+      ${options.map(([val, label]) => `
+        <button data-seg="${key}" data-val="${val}"
+          class="seg-btn rounded-md px-2.5 h-8 text-[11px] font-bold ${String(state.settings[key]) === String(val) ? 'active' : 'text-[var(--text-dim)]'}">${label}</button>`).join('')}
+    </div>`;
+}
+
+function switchHTML(key) {
+  return `<button data-switch="${key}" role="switch" aria-checked="${!!state.settings[key]}" class="switch" aria-label="${key}"></button>`;
+}
+
+function renderSettingsTab() {
+  const root = document.getElementById('tab-settings');
+  const st = state.settings;
+  const last = readLastBackup();
+  const lastLabel = last
+    ? 'Last backup: ' + new Date(last).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })
+    : 'No backup saved from this device yet.';
+  const badgeSupported = 'setAppBadge' in navigator;
+  const accents = PALETTE.map(c =>
+    `<button data-accent="${c}" class="swatch ${c === st.accent ? 'selected' : ''}" style="background:${c}; width:30px; height:30px; border-radius:9px;" aria-label="Accent ${c}"></button>`).join('');
+  const section = (title, body) => `
+    <div>
+      <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${title}</h3>
+      <div class="surface rounded-2xl px-4 py-1">${body}</div>
+    </div>`;
+
+  root.innerHTML = `
+    <div class="tab-enter space-y-6">
+      <h2 class="display text-3xl font-semibold px-1">Settings</h2>
+
+      ${section('Personalize',
+        settingsRow('Your name', 'Shown in a greeting at the top.',
+          `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
+        settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
+        `<div class="py-3 border-t border-[var(--border)]">
+           <div class="text-[13px] font-bold mb-2.5">Accent color</div>
+           <div class="flex flex-wrap gap-2.5">${accents}</div>
+         </div>` +
+        settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']])) +
+        settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']]))
+      )}
+
+      ${section('Home screen',
+        settingsRow('Quick to-do', '', switchHTML('showTodos')) +
+        settingsRow('This week board', '', switchHTML('showWeek')) +
+        settingsRow('At a glance stats', '', switchHTML('showStats'))
+      )}
+
+      ${section('App icon',
+        settingsRow('Badge with habits left', badgeSupported
+          ? 'Shows how many habits are still open today on the Cadence icon. On iPhone this works once Cadence is added to your Home Screen.'
+          : "This browser can't put a badge on the app icon. On iPhone, add Cadence to your Home Screen and open it from there.",
+          badgeSupported ? switchHTML('badge') : '')
+      )}
+
+      ${section('Your data',
+        `<div class="py-3">
+           <p class="text-[12px] text-[var(--text-dim)] leading-relaxed mb-1">
+             Habits, check-in history (where streaks come from), to-dos and these settings live only in this browser.
+             A backup file lets you keep a copy, move to another device, or recover after clearing browser data.
+           </p>
+           <p class="text-[12px] font-bold mb-3" style="color:${last ? 'var(--text)' : '#b5651d'}">${lastLabel}</p>
+           <button id="downloadBackupBtn"
+             class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 mb-2.5" style="min-height:44px;">
+             <i data-lucide="download" class="w-4 h-4"></i><span>Save backup file</span>
+           </button>
+           <label for="restoreFileInput"
+             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 cursor-pointer" style="min-height:44px;">
+             <i data-lucide="upload" class="w-4 h-4"></i><span>Restore from file…</span>
+           </label>
+           <input id="restoreFileInput" type="file" accept=".json,application/json,text/plain" class="visually-hidden">
+           <p class="text-[11px] text-[var(--text-faint)] mt-3 leading-relaxed">
+             Restoring replaces what's here now. You can undo it right after.
+           </p>
+         </div>`
+      )}
+
+      ${section('Widget',
+        `<div class="py-3">
+           <p class="text-[12px] text-[var(--text-dim)] leading-relaxed mb-3">
+             iPhone and Android only allow Home Screen widgets from installed App Store / Play Store apps, so a website can't add one.
+             The icon badge above is the built-in option. For a full widget, the free Scriptable app can show this data.
+           </p>
+           <button id="exportBtn"
+             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2" style="min-height:44px;">
+             <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
+           </button>
+         </div>`
+      )}
+    </div>`;
+
+  const nameInput = root.querySelector('#setName');
+  nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
+
+  root.querySelectorAll('[data-seg]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.seg;
+      const val = key === 'weekStart' ? Number(btn.dataset.val) : btn.dataset.val;
+      updateSetting(key, val);
+      if (key === 'weekStart') weekStart = startOfWeek(selectedDay);
+      if (key === 'calDefault') calMode = val;
+      render();
+    });
+  });
+  root.querySelectorAll('[data-accent]').forEach(btn => {
+    btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); render(); });
+  });
+  root.querySelectorAll('[data-switch]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.switch;
+      const next = !state.settings[key];
+      if (key === 'badge') return setBadgeEnabled(next);
+      updateSetting(key, next);
+      render();
+    });
+  });
+
+  root.querySelector('#downloadBackupBtn').addEventListener('click', downloadBackup);
+  root.querySelector('#restoreFileInput').addEventListener('change', e => {
+    handleRestoreFile(e.target.files[0]);
+    e.target.value = '';   // allow picking the same file again
+  });
+  root.querySelector('#exportBtn').addEventListener('click', openExportModal);
+}
+
+/* ---------------------------------------------------------------------
+   BACKUP & RESTORE
+   A backup is the full saved state (every completion, so streaks come
+   back exactly), wrapped with a little metadata. Restore runs it through
+   migrateData, so older backups load into newer versions of the app.
+   --------------------------------------------------------------------- */
+function buildBackup() {
+  return { app: 'cadence', kind: 'backup', exportedAt: new Date().toISOString(), data: state };
+}
+
+function readLastBackup() {
+  try { return localStorage.getItem(LAST_BACKUP_KEY); } catch (e) { return null; }
+}
+
+async function downloadBackup() {
+  const json = JSON.stringify(buildBackup(), null, 2);
+  const filename = `cadence-backup-${todayISO()}.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+  let saved = false;
+  // phones: the share sheet is the dependable way to save a file
+  // (Files, iCloud Drive, email…), especially from a home-screen app
+  if (matchMedia('(pointer: coarse)').matches && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Cadence backup' });
+        saved = true;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;   // user closed the sheet
+    }
+  }
+  if (!saved) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  try { localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString()); } catch (e) {}
+  showToast('Backup saved');
+  render();
+}
+
+let pendingRestore = null;
+
+function handleRestoreFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try { parsed = JSON.parse(reader.result); } catch (e) { parsed = null; }
+    // accept the wrapped backup format, or a bare saved state
+    const raw = parsed && parsed.kind === 'backup' ? parsed.data : parsed;
+    if (!raw || !Array.isArray(raw.habits)) {
+      showToast("That file isn't a Cadence backup");
+      return;
+    }
+    pendingRestore = migrateData(raw);
+    const when = parsed.exportedAt
+      ? ' from ' + new Date(parsed.exportedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' })
+      : '';
+    const days = pendingRestore.habits.reduce((n, h) => n + Object.keys(h.completions).length, 0);
+    document.getElementById('restoreSummary').textContent =
+      `The backup${when} has ${pendingRestore.habits.length} habits, ${days} check-ins and ` +
+      `${pendingRestore.todos.length} to-dos. It will replace the ${state.habits.length} habits here now.`;
+    showModal('restoreModal');
+    drawIcons();
+  };
+  reader.onerror = () => showToast("Couldn't read that file");
+  reader.readAsText(file);
+}
+
+function confirmRestore() {
+  if (!pendingRestore) return;
+  // keep the pre-restore data so the toast's undo (and manual recovery) works
+  try { localStorage.setItem(PRE_RESTORE_KEY, JSON.stringify(state)); } catch (e) {}
+  state = pendingRestore;
+  pendingRestore = null;
+  saveData();
+  hideModal('restoreModal');
+  applySettings();
+  render();
+  showUndoRestore();
+}
+
+function undoRestore() {
+  try {
+    const prev = localStorage.getItem(PRE_RESTORE_KEY);
+    if (!prev) return;
+    state = migrateData(JSON.parse(prev));
+    saveData();
+    applySettings();
+    render();
+    showToast('Restore undone');
+  } catch (e) { showToast("Couldn't undo the restore"); }
+}
+
+/* toast with an Undo button; stays up longer than a normal toast */
+function showUndoRestore() {
+  const root = document.getElementById('toastRoot');
+  const t = document.createElement('div');
+  t.className = 'surface rounded-xl px-4 py-2.5 text-[13px] font-bold flex items-center gap-3 shadow-2xl pointer-events-auto';
+  t.innerHTML = `<span><span style="color:var(--gold)">●</span> Backup restored</span>
+    <button class="underline" style="color:var(--gold)">Undo</button>`;
+  t.querySelector('button').addEventListener('click', () => { t.remove(); undoRestore(); });
+  root.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
+}
+
+/* ---------------------------------------------------------------------
    UI: MODALS, TOASTS, TABS
    --------------------------------------------------------------------- */
 function showModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.add('flex'); }
@@ -1380,7 +2096,7 @@ function switchTab(tab) {
     formCustomColor = null;
   }
   activeTab = tab;
-  ['home','new','calendar'].forEach(t => {
+  ['home','new','calendar','settings'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1416,6 +2132,7 @@ function bindEvents() {
   });
 
   document.getElementById('copyJsonBtn').addEventListener('click', copyWidgetJson);
+  document.getElementById('confirmRestoreBtn').addEventListener('click', confirmRestore);
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1423,13 +2140,13 @@ function bindEvents() {
       if (modal) hideModal(modal.id);
     });
   });
-  ['confirmModal','exportModal'].forEach(id => {
+  ['confirmModal','exportModal','restoreModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
       if (e.target.id === id) hideModal(id);
     });
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') ['confirmModal','exportModal'].forEach(id => hideModal(id));
+    if (e.key === 'Escape') ['confirmModal','exportModal','restoreModal'].forEach(id => hideModal(id));
   });
 }
 
@@ -1441,7 +2158,12 @@ function init() {
   if (!storageAvailable) document.getElementById('storageWarning').classList.remove('hidden');
 
   state = loadData();
-  saveData();              // normalize storage to the v2 key/shape
+  saveData();              // normalize storage to the current key/shape
+  applySettings();
+  calMode = state.settings.calDefault;
+  weekStart = startOfWeek(todayISO());
+  // System theme: follow the device when it flips between light and dark
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applySettings);
   bindEvents();
   render();
   drawIcons();
