@@ -20,7 +20,7 @@
 <!-- Tailwind CSS via CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Lucide Icons via CDN -->
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
 <!-- Distinctive typography -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,158 +198,220 @@
   .home-edit-body { pointer-events: none; }
 
   /* ---- app styles (Settings -> Appearance) ----
-     classic is the base look above; the others override fonts, shapes
-     and surfaces. Colors still come from the theme + accent. */
-  [data-style="minimal"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background-image: none; }
+     Style changes shapes, surfaces and textures; Font (data-font) changes
+     type. They are picked separately. Colors come from theme + accent. */
+  [data-style="minimal"] body { background-image: none; }
   [data-style="minimal"] body::before { display: none; }
-  [data-style="minimal"] .display { font-family: inherit; letter-spacing: -0.02em; }
   [data-style="minimal"] .surface { box-shadow: none; }
   [data-style="minimal"] .rounded-2xl { border-radius: 12px; }
   [data-style="minimal"] .rounded-xl { border-radius: 10px; }
-  [data-style="minimal"] .tracking-\[0\.18em\], [data-style="minimal"] .tracking-\[0\.22em\] { letter-spacing: 0.06em; }
-
-  [data-style="soft"] body { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
-    background-image:
+  [data-style="soft"] body { background-image:
       radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%),
       radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
   [data-style="soft"] body::before { display: none; }
-  [data-style="soft"] .display { font-family: inherit; font-weight: 700; }
   [data-style="soft"] .surface { border-color: transparent; box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
   [data-style="soft"] nav.surface { box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
   [data-style="soft"] .rounded-2xl { border-radius: 26px; }
   [data-style="soft"] .rounded-xl { border-radius: 18px; }
   [data-style="soft"] .rounded-lg { border-radius: 14px; }
   [data-style="soft"] .wk-label { border-bottom: none; border-radius: 12px; }
-
   [data-style="bold"] body { background-image: none; }
   [data-style="bold"] body::before { display: none; }
-  [data-style="bold"] .display { font-family: 'Space Mono', monospace; font-weight: 700;
-    text-transform: uppercase; letter-spacing: -0.03em; }
   [data-style="bold"] .surface { border: 2px solid var(--text); box-shadow: 4px 4px 0 var(--text); }
   [data-style="bold"] nav.surface { box-shadow: none; border-width: 2px 0 0 0; }
   [data-style="bold"] .rounded-2xl { border-radius: 6px; }
   [data-style="bold"] .rounded-xl, [data-style="bold"] .rounded-lg { border-radius: 4px; }
   [data-style="bold"] .wk-cell, [data-style="bold"] .wk-pill { border-radius: 4px; }
-
-  /* Styles below bring their own palette. `:not(#_)` lifts specificity
-     above the light/dark theme rules so the palette wins either way;
-     the accent color (set inline on <html>) still applies on top. */
-  [data-style="paper"] body { font-family: Georgia, 'Iowan Old Style', serif;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(58,110,165,0.12) 27px, rgba(58,110,165,0.12) 28px); }
-  :root[data-style="paper"]:not(#_) { --bg: #fdf9ee; --surface: #fffdf6; --surface-2: #f6f0de; --border: #e5dcc3;
-    --text: #2a2520; --text-dim: #6e6455; --text-faint: #a59a86; --wk-cell: #ece4cd; color-scheme: light; }
+  /* Paper, Newspaper and Neon add lines and glow but keep the theme colors */
+  [data-style="paper"] body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, color-mix(in srgb, var(--text) 8%, transparent) 27px, color-mix(in srgb, var(--text) 8%, transparent) 28px); }
   [data-style="paper"] body::before { display: none; }
-  [data-style="paper"] .surface { box-shadow: 0 1px 0 #e5dcc3, 0 4px 10px rgba(80,60,20,0.07); }
+  [data-style="paper"] .surface { box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,0.06); }
   [data-style="paper"] .rounded-2xl { border-radius: 4px; }
-  [data-style="paper"] .display { font-style: italic; }
-
-  :root[data-style="newspaper"]:not(#_) { --bg: #f7f5f0; --surface: #f7f5f0; --surface-2: #ecebe5; --border: #1a1a1a;
-    --text: #111111; --text-dim: #444444; --text-faint: #777777; --wk-cell: #e2e0da; color-scheme: light; }
-  [data-style="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; background-image: none; }
+  [data-style="newspaper"] body { background-image: none; }
   [data-style="newspaper"] body::before { display: none; }
-  [data-style="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
-  [data-style="newspaper"] h1.display { border-bottom: 4px double #111; padding-bottom: 6px; }
-  [data-style="newspaper"] .surface { border: 1px solid #111; box-shadow: none; }
+  [data-style="newspaper"] h1.display { border-bottom: 4px double var(--text); padding-bottom: 6px; }
+  [data-style="newspaper"] .surface { border: 1px solid var(--text); box-shadow: none; }
   [data-style="newspaper"] .rounded-2xl, [data-style="newspaper"] .rounded-xl, [data-style="newspaper"] .rounded-lg { border-radius: 0; }
-
-  :root[data-style="neon"]:not(#_) { --bg: #090914; --surface: #12122a; --surface-2: #1b1b3a; --border: #2c2c5a;
-    --text: #ecebff; --text-dim: #a3a1d6; --text-faint: #6b69a3; --wk-cell: #23234a; color-scheme: dark; }
   [data-style="neon"] body { background-image:
-      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 25%, transparent), transparent 70%),
-      radial-gradient(600px 500px at 0% 100%, rgba(255, 0, 170, 0.18), transparent 70%); }
+      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%),
+      radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
   [data-style="neon"] body::before { display: none; }
-  [data-style="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
-    text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
+  [data-style="neon"] .display { text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
   [data-style="neon"] .surface { box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent),
     0 0 22px color-mix(in srgb, var(--gold) 18%, transparent); }
   [data-style="neon"] .wk-box { border-color: var(--text-dim); }
-
   /* ---- texture / font styles: these keep the theme colors and only
      change type, surfaces and backgrounds. Patterns are drawn with
      color-mix on --text so they work in light and dark. ---- */
-  [data-style="glass"] body { background-image:
-      radial-gradient(520px 380px at 85% 5%, color-mix(in srgb, var(--text) 9%, transparent), transparent 70%),
-      radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 7%, transparent), transparent 70%),
-      radial-gradient(520px 380px at 75% 95%, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%); }
+  /* Glass: "liquid glass". A white-to-light-grey ground with a few soft
+     grey shapes for the glass to bend, and panels that are almost clear:
+     a faint grey tint, a strong blur-and-boost of what's behind, a bright
+     rim lit from the top left. */
+  :root[data-style="glass"][data-mode="light"]:not(#_) { --bg: #f3f4f6; --surface-2: rgba(120,124,134,0.10); }
+  :root[data-style="glass"][data-mode="dark"]:not(#_) { --surface-2: rgba(255,255,255,0.07); }
+  :root[data-style="glass"]:not(#_) { --border: color-mix(in srgb, var(--text) 18%, transparent); }
+  [data-style="glass"] body { background-attachment: fixed; background-image:
+      radial-gradient(260px 200px at 82% 12%, #d6d9df, transparent 70%),
+      radial-gradient(300px 220px at 10% 38%, #dfe1e6, transparent 70%),
+      radial-gradient(280px 220px at 88% 66%, #d9dce2, transparent 70%),
+      radial-gradient(300px 240px at 18% 92%, #e1e3e8, transparent 70%),
+      linear-gradient(180deg, #ffffff 0%, #eceef1 100%); }
+  [data-mode="dark"][data-style="glass"] body { background-image:
+      radial-gradient(260px 200px at 82% 12%, #34373d, transparent 70%),
+      radial-gradient(300px 220px at 10% 38%, #2c2f34, transparent 70%),
+      radial-gradient(280px 220px at 88% 66%, #303338, transparent 70%),
+      radial-gradient(300px 240px at 18% 92%, #2a2c31, transparent 70%),
+      linear-gradient(180deg, #1b1c1f 0%, #0f1012 100%); }
   [data-style="glass"] body::before { display: none; }
-  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 38%, transparent);
-    border: 1px solid color-mix(in srgb, #ffffff 45%, transparent);
-    backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent), 0 8px 32px rgba(0,0,0,0.08); }
-  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  [data-style="glass"] .surface {
+    background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(150,155,165,0.10) 45%, rgba(255,255,255,0.18) 100%);
+    border: 1px solid rgba(255,255,255,0.7);
+    -webkit-backdrop-filter: blur(5px) saturate(1.8) brightness(1.04);
+    backdrop-filter: blur(5px) saturate(1.8) brightness(1.04);
+    box-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.95), inset -1px -1px 0 rgba(255,255,255,0.45),
+      inset 0 0 22px rgba(255,255,255,0.35), 0 0 0 1px rgba(0,0,0,0.05), 0 10px 28px rgba(30,34,44,0.12); }
+  [data-mode="dark"][data-style="glass"] .surface {
+    background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.07) 100%);
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.28), inset -1px -1px 0 rgba(255,255,255,0.10),
+      inset 0 0 22px rgba(255,255,255,0.06), 0 12px 30px rgba(0,0,0,0.4); }
+  [data-style="glass"] nav.surface { -webkit-backdrop-filter: blur(14px) saturate(1.8); backdrop-filter: blur(14px) saturate(1.8); }
+  [data-style="glass"] .score-ring::before { background: var(--bg); }
   [data-style="glass"] .rounded-2xl { border-radius: 22px; }
-  [data-style="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
-
-  [data-style="typewriter"] body, [data-style="typewriter"] .display {
-    font-family: 'American Typewriter', 'Courier New', Courier, monospace; }
-  [data-style="typewriter"] .display { font-weight: 700; letter-spacing: 0; }
   [data-style="typewriter"] body::before { opacity: 0.07; }
   [data-style="typewriter"] .surface { border-style: dashed; box-shadow: none; }
   [data-style="typewriter"] .rounded-2xl, [data-style="typewriter"] .rounded-xl { border-radius: 3px; }
-
-  [data-style="handwritten"] body, [data-style="handwritten"] .display {
-    font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; }
-  [data-style="handwritten"] .display { font-weight: 700; }
   [data-style="handwritten"] body { background-image: none; }
-  [data-style="handwritten"] .surface { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent);
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important; box-shadow: none; }
+  [data-style="handwritten"] .surface { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important; box-shadow: none; }
   [data-style="handwritten"] .check-box, [data-style="handwritten"] .wk-box { border-radius: 4px 7px 3px 6px; }
-
-  [data-style="editorial"] body { font-family: 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; background-image: none; }
+  [data-style="editorial"] body { background-image: none; }
   [data-style="editorial"] body::before { display: none; }
-  [data-style="editorial"] .display { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif;
-    font-weight: 400; font-style: italic; letter-spacing: -0.01em; }
-  [data-style="editorial"] h1.display { font-size: 3.2rem; font-style: normal; }
   [data-style="editorial"] .surface { background: transparent; border-width: 0 0 1px 0; border-radius: 0 !important; box-shadow: none; }
   [data-style="editorial"] nav.surface { background: var(--bg); border-width: 1px 0 0 0; }
-  [data-style="editorial"] .tracking-\[0\.18em\] { letter-spacing: 0.3em; }
-
-  [data-style="geometric"] body, [data-style="geometric"] .display {
-    font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; }
-  [data-style="geometric"] .display { font-weight: 700; letter-spacing: 0.01em; }
   [data-style="geometric"] body { background-image: none; }
   [data-style="geometric"] body::before { display: none; }
   [data-style="geometric"] .rounded-2xl, [data-style="geometric"] .rounded-xl, [data-style="geometric"] .rounded-lg { border-radius: 0; }
   [data-style="geometric"] .surface { box-shadow: none; }
   [data-style="geometric"] .wk-cell, [data-style="geometric"] .wk-pill { border-radius: 0; }
-
-  [data-style="graph"] body { font-family: 'Space Mono', ui-monospace, monospace; background-image:
+  [data-style="graph"] body { background-image:
       linear-gradient(color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px);
-    background-size: 20px 20px; }
+      linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px); background-size: 20px 20px; }
   [data-style="graph"] body::before { display: none; }
-  [data-style="graph"] .display { font-family: 'Space Mono', monospace; font-weight: 700; }
   [data-style="graph"] .rounded-2xl { border-radius: 4px; }
-
-  [data-style="dotted"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; background-image:
-      radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) 1.2px, transparent 1.4px);
-    background-size: 18px 18px; }
+  [data-style="dotted"] body { background-image:
+      radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) 1.2px, transparent 1.4px); background-size: 18px 18px; }
   [data-style="dotted"] body::before { display: none; }
-  [data-style="dotted"] .display { font-family: inherit; font-weight: 700; }
   [data-style="dotted"] .rounded-2xl { border-radius: 20px; }
-
-  [data-style="linen"] body { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; background-image:
+  [data-style="linen"] body { background-image:
       repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px); }
   [data-style="linen"] body::before { opacity: 0.06; }
-  [data-style="linen"] .display { font-family: 'Baskerville', Georgia, serif; font-weight: 600; }
   [data-style="linen"] .surface { background-image:
       repeating-linear-gradient(45deg, color-mix(in srgb, var(--text) 2.5%, transparent) 0 1px, transparent 1px 4px); }
-
   [data-style="outline"] body { background-image: none; }
   [data-style="outline"] body::before { display: none; }
   [data-style="outline"] .surface { background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 55%, transparent); box-shadow: none; }
   [data-style="outline"] nav.surface { background: var(--bg); }
   [data-style="outline"] .surface-2 { background: transparent; }
-  [data-style="outline"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; letter-spacing: -0.02em; }
-
-  [data-style="elevated"] body { font-family: -apple-system, system-ui, sans-serif; background-image: none; }
+  [data-style="elevated"] body { background-image: none; }
   [data-style="elevated"] body::before { display: none; }
-  [data-style="elevated"] .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
-  [data-style="elevated"] .surface { border-color: transparent;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
+  [data-style="elevated"] .surface { border-color: transparent; box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
   [data-style="elevated"] .rounded-2xl { border-radius: 18px; }
+
+  /* ---- fonts: each style's type, usable with any style ---- */
+  [data-font="minimal"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  [data-font="minimal"] .display { font-family: inherit; letter-spacing: -0.02em; }
+  [data-font="minimal"] .tracking-\[0\.18em\], [data-font="minimal"] .tracking-\[0\.22em\] { letter-spacing: 0.06em; }
+  [data-font="soft"] body { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; }
+  [data-font="soft"] .display { font-family: inherit; font-weight: 700; }
+  [data-font="bold"] .display { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; }
+  [data-font="paper"] body { font-family: Georgia, 'Iowan Old Style', serif; }
+  [data-font="paper"] .display { font-style: italic; }
+  [data-font="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; }
+  [data-font="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
+  [data-font="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800; }
+  [data-font="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+  [data-font="typewriter"] body, [data-font="typewriter"] .display { font-family: 'American Typewriter', 'Courier New', Courier, monospace; }
+  [data-font="typewriter"] .display { font-weight: 700; letter-spacing: 0; }
+  [data-font="handwritten"] body, [data-font="handwritten"] .display { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; }
+  [data-font="handwritten"] .display { font-weight: 700; }
+  [data-font="editorial"] body { font-family: 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; }
+  [data-font="editorial"] .display { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-weight: 400; font-style: italic; letter-spacing: -0.01em; }
+  [data-font="editorial"] h1.display { font-size: 3.2rem; font-style: normal; }
+  [data-font="editorial"] .tracking-\[0\.18em\] { letter-spacing: 0.3em; }
+  [data-font="geometric"] body, [data-font="geometric"] .display { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; }
+  [data-font="geometric"] .display { font-weight: 700; letter-spacing: 0.01em; }
+  [data-font="graph"] body { font-family: 'Space Mono', ui-monospace, monospace; }
+  [data-font="graph"] .display { font-family: 'Space Mono', monospace; font-weight: 700; }
+  [data-font="dotted"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; }
+  [data-font="dotted"] .display { font-family: inherit; font-weight: 700; }
+  [data-font="linen"] body { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; }
+  [data-font="linen"] .display { font-family: 'Baskerville', Georgia, serif; font-weight: 600; }
+  [data-font="outline"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; letter-spacing: -0.02em; }
+  [data-font="elevated"] body { font-family: -apple-system, system-ui, sans-serif; }
+  [data-font="elevated"] .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ---- Settings: each style button is drawn in its own style ---- */
+  .sv-chip { height: 46px; font-size: 13px; font-weight: 600; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; transition: transform 0.12s ease; }
+  .sv-chip.active { background: var(--surface); color: var(--text); outline: 2px solid var(--gold); outline-offset: 2px; }
+  .sv-chip[data-val="minimal"] { border-radius: 6px; }
+  .sv-chip[data-val="soft"] { background: var(--surface-2); border-color: transparent; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .sv-chip[data-val="bold"] { border: 2px solid var(--text); border-radius: 4px; box-shadow: 3px 3px 0 var(--text); }
+  .sv-chip[data-val="paper"] { border-radius: 2px; background-image: repeating-linear-gradient(to bottom, transparent 0 11px, color-mix(in srgb, var(--text) 10%, transparent) 11px 12px); }
+  .sv-chip[data-val="newspaper"] { border: 1px solid var(--text); border-bottom: 4px double var(--text); border-radius: 0; }
+  .sv-chip[data-val="glass"] { background: linear-gradient(145deg, color-mix(in srgb, var(--text) 10%, transparent), color-mix(in srgb, var(--text) 3%, transparent)); border: 1px solid color-mix(in srgb, #ffffff 55%, transparent); border-radius: 14px; box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 70%, transparent); }
+  .sv-chip[data-val="neon"] { text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 80%, transparent); border-color: color-mix(in srgb, var(--gold) 55%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 35%, transparent); }
+  .sv-chip[data-val="typewriter"] { border-style: dashed; border-color: var(--text-dim); border-radius: 3px; }
+  .sv-chip[data-val="handwritten"] { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
+  .sv-chip[data-val="editorial"] { background: transparent; border-width: 0 0 1px 0; border-color: var(--text); border-radius: 0; }
+  .sv-chip[data-val="geometric"] { border-radius: 0; }
+  .sv-chip[data-val="graph"] { border-radius: 3px; background-image: linear-gradient(color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px); background-size: 8px 8px; }
+  .sv-chip[data-val="dotted"] { border-radius: 14px; background-image: radial-gradient(color-mix(in srgb, var(--text) 22%, transparent) 1px, transparent 1.3px); background-size: 7px 7px; }
+  .sv-chip[data-val="linen"] { background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px); }
+  .sv-chip[data-val="outline"] { background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 60%, transparent); }
+  .sv-chip[data-val="elevated"] { border-color: transparent; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.08), 0 10px 22px rgba(0,0,0,0.10); }
+  /* font buttons: a plain box, each label set in that font */
+  .fv-chip { height: 46px; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .fv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .fv-chip[data-val="classic"] { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
+  .fv-chip[data-val="minimal"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 500; }
+  .fv-chip[data-val="soft"] { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="bold"] { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; }
+  .fv-chip[data-val="paper"] { font-family: Georgia, 'Iowan Old Style', serif; font-style: italic; }
+  .fv-chip[data-val="newspaper"] { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; }
+  .fv-chip[data-val="glass"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; }
+  .fv-chip[data-val="neon"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 800; }
+  .fv-chip[data-val="typewriter"] { font-family: 'American Typewriter', 'Courier New', Courier, monospace; font-weight: 700; }
+  .fv-chip[data-val="handwritten"] { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; font-weight: 700; font-size: 14px; }
+  .fv-chip[data-val="editorial"] { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-style: italic; font-size: 15px; }
+  .fv-chip[data-val="geometric"] { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="graph"] { font-family: 'Space Mono', monospace; font-weight: 700; }
+  .fv-chip[data-val="dotted"] { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="linen"] { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; font-weight: 600; font-size: 14px; }
+  .fv-chip[data-val="outline"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; font-size: 14px; }
+  .fv-chip[data-val="elevated"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 700; }
+  /* week style buttons: a tiny sample of the board */
+  .wv-chip { height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
+  .wv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .wv-row { display: flex; align-items: center; gap: 4px; height: 16px; }
+  .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
+  .wv-circle i { width: 7px; height: 7px; border: 1.5px solid var(--text); border-radius: 2px; }
+  .wv-circle.on i { background: color-mix(in srgb, var(--gold) 45%, transparent); }
+  .wv-tile { width: 16px; height: 16px; border-radius: 4px; background: var(--wk-cell); }
+  .wv-tile.on { background: var(--gold); }
+  .wv-dot { width: 10px; height: 10px; border-radius: 99px; border: 1.5px solid var(--gold); }
+  .wv-dot.on { background: var(--gold); }
+  .wv-pill { width: 18px; height: 11px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wv-pill.on { background: var(--gold); border-color: var(--gold); }
+  .wv-bar { width: 76px; height: 11px; border-radius: 4px; display: flex; gap: 2px; }
+  .wv-bar span { flex: 1; border-radius: 2px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wv-bar span.on { background: var(--gold); border-color: var(--gold); }
+  .wv-plain { font-size: 13px; font-weight: 700; letter-spacing: 4px; color: var(--gold); }
+  .wv-chip > span:last-child { font-size: 11px; font-weight: 700; }
 
   /* week style: bars (seven segments per habit) */
   .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
@@ -362,6 +424,45 @@
   .wk-plain { width: 28px; height: 32px; display: flex; align-items: center; justify-content: center;
     font-size: 18px; font-weight: 700; color: var(--text-faint); border-radius: 8px; }
   .wk-plain.today { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+
+  /* ---- progress chart, levels, badges (all designs) ---- */
+  .chart-tab { flex: 1; height: 32px; border-radius: 99px; font-size: 11px; font-weight: 700;
+    border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 0.04em; text-transform: uppercase; }
+  .chart-tab.active { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+  .chart { display: flex; align-items: stretch; gap: 8px; height: 150px; }
+  .chart.is-thin { gap: 2px; }
+  .chart-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+  .chart-bar { display: block; width: 100%; max-width: 38px; border-radius: 10px 10px 4px 4px;
+    background: color-mix(in srgb, var(--gold) 28%, var(--surface-2)); transition: height 0.4s cubic-bezier(0.2,0.8,0.2,1); }
+  .chart-bar.is-current { background: var(--gold); }
+  .chart-bar.is-empty { background: var(--surface-2); }
+  .chart-label { font-size: 10px; font-weight: 700; color: var(--text-faint); height: 12px; white-space: nowrap; overflow: hidden; max-width: 100%; }
+  .chart-label.is-current { color: var(--text); }
+
+  .badge-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .badge-row::-webkit-scrollbar { display: none; }
+  .badge { flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .badge-ic { width: 52px; height: 52px; border-radius: 99px; display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); color: var(--text-faint); border: 2px solid var(--border); }
+  .badge.earned .badge-ic { background: color-mix(in srgb, var(--gold) 18%, var(--surface)); color: var(--gold); border-color: var(--gold); }
+  .badge-label { font-size: 9px; font-weight: 800; line-height: 1.2; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint); }
+  .badge.earned .badge-label { color: var(--text-dim); }
+
+  .score-ring { --pct: 0; position: relative; flex-shrink: 0; width: 104px; height: 104px; border-radius: 99px;
+    background: conic-gradient(var(--gold) calc(var(--pct) * 1%), var(--surface-2) 0);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-ring::before { content: ""; position: absolute; inset: 10px; border-radius: 99px; background: var(--surface); }
+  .score-num small { font-size: 16px; font-weight: 700; margin-left: 1px; }
+  .score-num { position: relative; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .score-cap { position: relative; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-top: 2px; }
+  .mini-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; font-size: 11px; font-weight: 700;
+    background: var(--surface-2); color: var(--text-dim); }
+  .mini-chip svg { color: var(--gold); }
+  .stat-ic { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--gold) 15%, var(--surface)); color: var(--gold); }
+  .dash-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); }
+  .dash-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-top: 2px; }
 
   /* ---- year heatmap ---- */
   .yr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -451,6 +552,15 @@
   @keyframes toastIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
   @keyframes toastOut { to { opacity:0; transform: translateY(20px);} }
 
+  .tab-row { grid-template-columns: repeat(4, 1fr); }
+  [data-layout="focus"] .tab-row { grid-template-columns: repeat(5, 1fr); }
+  [data-layout="full"] .tab-btn[data-tab="stats"] { display: none; }
+  /* Focus layout: New becomes a raised round button in the middle */
+  [data-layout="focus"] .tab-new { position: relative; }
+  [data-layout="focus"] .tab-new .tab-icon-wrap { width: 54px; height: 54px; padding: 0; border-radius: 999px; margin-top: -26px;
+    background: var(--gold) !important; color: var(--bg); box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 35%, transparent); }
+  [data-layout="focus"] .tab-new .tab-icon-wrap svg { width: 24px; height: 24px; }
+  [data-layout="focus"] .tab-new > span:last-child { display: none; }
   .tab-btn { transition: color 0.16s ease; }
   .tab-btn.active { color: var(--gold); }
   .tab-btn.active .tab-icon-wrap { background: var(--gold-soft); }
@@ -500,7 +610,7 @@
 <div class="relative z-10 max-w-xl mx-auto px-4 pb-32 pt-7 sm:pt-10">
 
   <!-- ============ HEADER ============ -->
-  <header class="mb-6">
+  <header id="appHeader" class="mb-6">
     <div class="text-[11px] uppercase tracking-[0.22em] text-[var(--text-faint)] mb-1" id="todayLabel"></div>
     <h1 class="display text-4xl sm:text-5xl font-semibold leading-none tracking-tight">Cadence</h1>
     <p id="greeting" class="hidden text-[13px] text-[var(--text-dim)] mt-2"></p>
@@ -517,6 +627,7 @@
 
   <!-- ============ TABS ============ -->
   <section id="tab-home" class="tab-panel"></section>
+  <section id="tab-stats" class="tab-panel hidden"></section>
   <section id="tab-new" class="tab-panel hidden"></section>
   <section id="tab-calendar" class="tab-panel hidden"></section>
   <section id="tab-settings" class="tab-panel hidden"></section>
@@ -526,13 +637,17 @@
 <!-- ============ BOTTOM TAB BAR ============ -->
 <nav class="fixed bottom-0 left-0 right-0 z-30 surface border-t border-[var(--border)]"
      style="padding-bottom: env(safe-area-inset-bottom);">
-  <div class="max-w-xl mx-auto grid grid-cols-4">
+  <div class="tab-row max-w-xl mx-auto grid">
     <button data-tab="home" class="tab-btn active flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
       <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Home</span>
     </button>
-    <button data-tab="new" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
-      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="plus-circle" class="w-5 h-5"></i></span>
+    <button data-tab="stats" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="chart-column" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Stats</span>
+    </button>
+    <button data-tab="new" class="tab-btn tab-new flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">New</span>
     </button>
     <button data-tab="calendar" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
@@ -648,13 +763,22 @@ const DEFAULT_SETTINGS = {
   accent: '#b08d2e',
   weekStart: 1,           // 1 = Monday, 0 = Sunday
   calDefault: 'month',    // view the Calendar tab opens on
-  style: 'classic',       // whole-app look: 'classic' | 'minimal' | 'soft' | 'bold'
+  style: 'classic',       // shapes, surfaces and textures: a key of APP_STYLES
+  font: 'auto',           // type: 'auto' follows the style, or a key of APP_STYLES
   weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
-  homeOrder: ['summary', 'habits', 'todos', 'week', 'stats'],
+  habitColors: false,     // color-code habits instead of using the accent for all
+  layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
+  homeOrder: ['summary', 'habits', 'todos', 'chart', 'stats', 'milestones', 'week'],
   showSummary: true,
+  showChart: true,
+  showMilestones: true,
   showTodos: true,
   showWeek: true,
   showStats: true,
+  homeChart: false,       // Focus layout: Stats sections can also be added to Home
+  homeGlance: false,
+  homeWeek: false,
+  homeMilestones: false,
   badge: false,           // habits-left count on the home-screen icon
 };
 
@@ -667,13 +791,47 @@ const APP_STYLES = [
 ];
 const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
   ['bars','Bars'],['plain','Plain']];
+/* light or dark, after resolving Auto against the device */
+function effectiveMode() {
+  const t = state.settings.theme;
+  return t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+
+/* the color to draw a habit with: its own color when color-coding is
+   on, otherwise the accent */
+function hc(h) {
+  return state.settings.habitColors ? h.color : state.settings.accent;
+}
+
+/* dark or light ink for text/icons drawn on top of a filled color */
+function inkOn(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return '#ffffff';
+  const n = parseInt(m[1], 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.7 ? '#111111' : '#ffffff';
+}
+function accentHex() { return state.settings.accent; }
+
+/* in the Focus layout these belong to Home; the rest live in Stats and
+   can be added to Home too through their `homeToggle` (off by default) */
+const FOCUS_HOME = ['summary', 'habits', 'todos'];
+
 const HOME_SECTIONS = {
   summary: { label: 'Today summary', toggle: 'showSummary' },
   habits:  { label: "Today's habits", toggle: null },          // always shown
   todos:   { label: 'Quick to-do', toggle: 'showTodos' },
-  week:    { label: 'This week', toggle: 'showWeek' },
-  stats:   { label: 'At a glance', toggle: 'showStats' },
+  week:    { label: 'This week', toggle: 'showWeek', homeToggle: 'homeWeek' },
+  stats:   { label: 'At a glance', toggle: 'showStats', homeToggle: 'homeGlance' },
+  chart:   { label: 'Progress chart', toggle: 'showChart', homeToggle: 'homeChart' },
+  milestones: { label: 'Milestones', toggle: 'showMilestones', homeToggle: 'homeMilestones' },
 };
+
+/* the setting that shows or hides a section on the given page */
+function sectionToggle(key, page) {
+  const meta = HOME_SECTIONS[key];
+  return state.settings.layout === 'focus' && page === 'home' && meta.homeToggle ? meta.homeToggle : meta.toggle;
+}
 
 function emptyState() {
   return { version: SCHEMA_VERSION, habits: [], todos: [], settings: { ...DEFAULT_SETTINGS } };
@@ -689,14 +847,16 @@ function cleanSettings(raw) {
   if (raw.weekStart === 0 || raw.weekStart === 1) out.weekStart = raw.weekStart;
   if (['day','week','month','year'].includes(raw.calDefault)) out.calDefault = raw.calDefault;
   if (APP_STYLES.some(([v]) => v === raw.style)) out.style = raw.style;
+  if (raw.font === 'auto' || APP_STYLES.some(([v]) => v === raw.font)) out.font = raw.font;
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
+  if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
   if (Array.isArray(raw.homeOrder)) {
     // keep known sections in the saved order, then append any new ones
     const known = DEFAULT_SETTINGS.homeOrder;
     const order = raw.homeOrder.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i);
     out.homeOrder = [...order, ...known.filter(k => !order.includes(k))];
   }
-  ['showSummary','showTodos','showWeek','showStats','badge'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','homeChart','homeGlance','homeWeek','homeMilestones','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -961,6 +1121,111 @@ function completionRate(habit) {
   return total === 0 ? 0 : Math.round((done / total) * 100);
 }
 
+/* ---- daily score, history totals and gamification ----
+   Everything here is derived from the saved completions, so nothing new
+   is stored and old data earns its badges right away. */
+
+/* headline for the share of today's habits that are done */
+function progressMessage(pct) {
+  if (pct >= 100) return 'All done today';
+  if (pct >= 70) return 'Almost there';
+  if (pct >= 40) return 'Keep it going';
+  if (pct > 0) return 'Good start';
+  return 'Fresh start';
+}
+
+/* longest run of consecutive done days this habit has ever had */
+function longestStreak(h) {
+  const days = Object.keys(h.completions).filter(d => isDayDone(h, d)).sort();
+  let best = 0, run = 0, prev = null;
+  days.forEach(d => {
+    run = prev && addDays(prev, 1) === d ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = d;
+  });
+  return best;
+}
+
+function totalCheckins() {
+  return state.habits.reduce((n, h) => n + Object.keys(h.completions).filter(d => isDayDone(h, d)).length, 0);
+}
+
+/* days where every habit that existed that day was finished */
+function perfectDayStats() {
+  const today = todayISO();
+  if (!state.habits.length) return { count: 0, current: 0, best: 0 };
+  let cursor = state.habits.reduce((m, h) => h.createdAt < m ? h.createdAt : m, today);
+  // also count history logged before a habit's createdAt (e.g. back-filled days)
+  state.habits.forEach(h => Object.keys(h.completions).forEach(d => { if (d < cursor) cursor = d; }));
+  let count = 0, run = 0, best = 0;
+  while (cursor <= today) {
+    const active = state.habits.filter(h => h.createdAt <= cursor || h.completions[cursor] !== undefined);
+    const perfect = active.length > 0 && active.every(h => isDayDone(h, cursor));
+    if (perfect) { count++; run++; best = Math.max(best, run); }
+    else if (cursor !== today) run = 0;   // an unfinished today doesn't break the run
+    cursor = addDays(cursor, 1);
+  }
+  return { count, current: run, best };
+}
+
+function badgeList() {
+  const best = Math.max(0, ...state.habits.map(longestStreak));
+  const checkins = totalCheckins();
+  const perfect = perfectDayStats();
+  const b = (id, label, icon, have, goal, unit) =>
+    ({ id, label, icon, have: Math.min(have, goal), goal, unit, earned: have >= goal });
+  return [
+    b('first',  'First check-in',   'sparkles',     checkins, 1, 'check-in'),
+    b('s3',     '3-day streak',     'flame',        best, 3, 'days'),
+    b('s7',     '7-day streak',     'flame',        best, 7, 'days'),
+    b('p1',     'Perfect day',      'star',         perfect.count, 1, 'perfect day'),
+    b('c50',    '50 check-ins',     'circle-check', checkins, 50, 'check-ins'),
+    b('s14',    '14-day streak',    'flame',        best, 14, 'days'),
+    b('p7',     'Perfect week',     'crown',        perfect.best, 7, 'perfect days in a row'),
+    b('c100',   '100 check-ins',    'medal',        checkins, 100, 'check-ins'),
+    b('s30',    '30-day streak',    'trophy',       best, 30, 'days'),
+    b('c500',   '500 check-ins',    'gem',          checkins, 500, 'check-ins'),
+    b('s100',   '100-day streak',   'mountain',     best, 100, 'days'),
+  ];
+}
+
+/* ---- progress chart: one bar per habit / day / day of month / month ---- */
+let chartRange = 'week';   // 'day' | 'week' | 'month' | 'year'
+
+function chartData(range) {
+  const today = todayISO();
+  const now = fromISO(today);
+  if (range === 'day') {
+    return state.habits.map(h => ({ label: h.title.slice(0, 4), value: dayProgress(h, today), current: true, color: hc(h) }));
+  }
+  if (range === 'month') {
+    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Array.from({ length: days }, (_, i) => {
+      const iso = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(i+1)}`;
+      return { label: [1, 8, 15, 22, 29].includes(i + 1) ? String(i + 1) : '', value: iso > today ? null : dayScore(iso), current: iso === today };
+    });
+  }
+  if (range === 'year') {
+    return MONTHS.map((m, i) => {
+      const first = `${now.getFullYear()}-${pad(i+1)}-01`;
+      if (first > today) return { label: m[0], value: null, current: false };
+      const days = new Date(now.getFullYear(), i + 1, 0).getDate();
+      let sum = 0, n = 0;
+      for (let d = 1; d <= days; d++) {
+        const iso = `${now.getFullYear()}-${pad(i+1)}-${pad(d)}`;
+        if (iso > today) break;
+        sum += dayScore(iso); n++;
+      }
+      return { label: m[0], value: n ? sum / n : 0, current: i === now.getMonth() };
+    });
+  }
+  const start = startOfWeek(today);
+  return Array.from({ length: 7 }, (_, i) => {
+    const iso = addDays(start, i);
+    return { label: WEEKDAY_LETTERS[fromISO(iso).getDay()], value: iso > today ? null : dayScore(iso), current: iso === today };
+  });
+}
+
 /* ---------------------------------------------------------------------
    CALENDAR RENDERING
    --------------------------------------------------------------------- */
@@ -1036,19 +1301,19 @@ function weekGridHTML(start) {
   const cellAttrs = (h, iso) =>
     `data-week-toggle="${h.id}" data-date="${iso}" ${iso > today ? 'disabled' : ''} aria-label="${escapeHtml(h.title)} on ${iso}"`;
   const partial = (h, prog, opacity) => prog > 0 && prog < 1
-    ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:${opacity};"></span>` : '';
+    ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:${opacity};"></span>` : '';
   const countOf = h => days.filter(iso => isDayDone(h, iso)).length;
 
   if (style === 'dots') {
     let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
     state.habits.forEach(h => {
       html += `<div class="wk-dots-label" title="${escapeHtml(h.title)}">
-          <span class="w-2 h-2 rounded-full shrink-0" style="background:${h.color}"></span>
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${hc(h)}"></span>
           <span class="truncate">${escapeHtml(h.title)}</span></div>`;
       days.forEach(iso => {
         const prog = dayProgress(h, iso);
         html += `<button class="wk-dot-btn ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
-            <span class="wk-dot" style="border-color:${h.color}; ${prog >= 1 ? `background:${h.color};` : ''}">${partial(h, prog, 0.7)}</span></button>`;
+            <span class="wk-dot" style="border-color:${hc(h)}; ${prog >= 1 ? `background:${hc(h)};` : ''}">${partial(h, prog, 0.7)}</span></button>`;
       });
       html += `<div class="wk-dots-count">${countOf(h)}/7</div>`;
     });
@@ -1060,7 +1325,7 @@ function weekGridHTML(start) {
     state.habits.forEach(h => {
       html += `<div>
           <div class="flex items-center gap-2 mb-2">
-            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${h.color}"></span>
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${hc(h)}"></span>
             <span class="text-[13px] font-bold truncate flex-1">${escapeHtml(h.title)}</span>
             <span class="text-[11px] text-[var(--text-dim)] shrink-0">${countOf(h)} / 7</span>
           </div>
@@ -1069,7 +1334,7 @@ function weekGridHTML(start) {
         const prog = dayProgress(h, iso);
         const done = prog >= 1;
         html += `<button class="wk-pill ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
-            style="${done ? `background:${h.color}; border-color:${h.color}; color:#ffffff;` : ''}">
+            style="${done ? `background:${hc(h)}; border-color:${hc(h)}; color:${inkOn(hc(h))};` : ''}">
             ${partial(h, prog, 0.35)}<span class="relative">${letter(iso)}</span></button>`;
       });
       html += '</div></div>';
@@ -1089,7 +1354,7 @@ function weekGridHTML(start) {
       days.forEach(iso => {
         const prog = dayProgress(h, iso);
         html += `<button class="wk-bar ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
-            <span style="position:absolute;left:0;top:0;bottom:0;width:${Math.round(prog*100)}%;background:${h.color};"></span></button>`;
+            <span style="position:absolute;left:0;top:0;bottom:0;width:${Math.round(prog*100)}%;background:${hc(h)};"></span></button>`;
       });
       html += '</div></div>';
     });
@@ -1106,7 +1371,7 @@ function weekGridHTML(start) {
         const prog = dayProgress(h, iso);
         const mark = prog >= 1 ? '✓' : prog > 0 ? '◐' : iso > today ? '' : '·';
         html += `<button class="wk-plain ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
-            style="${prog > 0 ? `color:${h.color};` : ''}">${mark}</button>`;
+            style="${prog > 0 ? `color:${hc(h)};` : ''}">${mark}</button>`;
       });
       html += `<div class="wk-dots-count">${countOf(h)}/7</div>`;
     });
@@ -1116,20 +1381,20 @@ function weekGridHTML(start) {
   // circles + tiles share the label-and-row layout
   let html = `<div class="wk-grid"><div class="wk-corner"></div>${head('wk-head')}`;
   state.habits.forEach(h => {
-    html += `<div class="wk-label" style="background:${h.color}22;" title="${escapeHtml(h.title)}">
+    html += `<div class="wk-label" style="background:${hc(h)}22;" title="${escapeHtml(h.title)}">
         ${escapeHtml(h.title)}<small>${countOf(h)} / 7 this week</small></div>`;
     days.forEach(iso => {
       const prog = dayProgress(h, iso);
       if (style === 'tiles') {
         html += `<button class="wk-tile ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
-            style="${prog >= 1 ? `background:${h.color}; border-color:${h.color};` : ''}">
-            ${prog >= 1 ? `<i data-lucide="check" class="w-4 h-4" style="color:#ffffff; stroke-width:3;"></i>` : partial(h, prog, 0.5)}</button>`;
+            style="${prog >= 1 ? `background:${hc(h)}; border-color:${hc(h)};` : ''}">
+            ${prog >= 1 ? `<i data-lucide="check" class="w-4 h-4" style="color:${inkOn(hc(h))}; stroke-width:3;"></i>` : partial(h, prog, 0.5)}</button>`;
       } else {
         const inner = prog >= 1
           ? `<i data-lucide="check" class="w-3.5 h-3.5" style="color:var(--text); stroke-width:3.5;"></i>`
           : partial(h, prog, 0.6);
         html += `<button class="wk-cell ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
-            <span class="wk-box" style="${prog >= 1 ? `background:${h.color}33;` : ''}">${inner}</span></button>`;
+            <span class="wk-box" style="${prog >= 1 ? `background:${hc(h)}33;` : ''}">${inner}</span></button>`;
       }
     });
   });
@@ -1217,14 +1482,14 @@ function buildUnifiedCalendar() {
       const d = document.createElement('span');
       if (prog >= 1) {
         d.className = 'cal-dot full';
-        d.style.background = h.color;
+        d.style.background = hc(h);
       } else if (prog > 0) {
         d.className = 'cal-dot partial';
-        d.style.color = h.color;
+        d.style.color = hc(h);
         d.style.setProperty('--pct', Math.round(prog * 100) + '%');
       } else {
         d.className = 'cal-dot empty';
-        d.style.color = h.color;
+        d.style.color = hc(h);
       }
       const val = h.completions[iso];
       d.title = h.title +
@@ -1261,10 +1526,11 @@ let activeTab = 'home';
 let homeEditing = false;   // Home layout edit mode, switched on from Settings
 
 /* move a Home section up (-1) or down (+1); no-op at the ends */
-function moveHomeSection(key, delta) {
+function moveHomeSection(key, delta, pageKeys = state.settings.homeOrder) {
   const order = [...state.settings.homeOrder];
-  const i = order.indexOf(key), j = i + delta;
-  if (i < 0 || j < 0 || j >= order.length) return;
+  const k = pageKeys.indexOf(key), other = pageKeys[k + delta];
+  if (k < 0 || !other) return;
+  const i = order.indexOf(key), j = order.indexOf(other);
   [order[i], order[j]] = [order[j], order[i]];
   updateSetting('homeOrder', order);
 }
@@ -1282,7 +1548,12 @@ function render() {
     greet.textContent = `${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}, ${name}.`;
   }
 
-  if (activeTab === 'home') renderHomeTab();
+  // dashboard designs draw their own header on Home; Stats always does
+  document.getElementById('appHeader').classList.toggle('hidden',
+    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && state.habits.length > 0));
+
+  if (activeTab === 'home') renderHomeTab('home');
+  else if (activeTab === 'stats') renderHomeTab('stats');
   else if (activeTab === 'new') renderNewTab();
   else if (activeTab === 'settings') renderSettingsTab();
   else renderCalendarTab();
@@ -1293,9 +1564,12 @@ function render() {
 }
 
 /* ---- HOME TAB: today's checklist on top, stats below ---- */
-function renderHomeTab() {
-  const root = document.getElementById('tab-home');
+/* Draws Home, or in the Focus layout either half of it: page 'home'
+   (score, goals, to-dos) or page 'stats' (charts, week, milestones). */
+function renderHomeTab(page = 'home') {
+  const root = document.getElementById('tab-' + page);
   const today = todayISO();
+  const focus = state.settings.layout === 'focus';
 
   if (state.habits.length === 0) {
     root.innerHTML = emptyStateHTML(
@@ -1319,29 +1593,52 @@ function renderHomeTab() {
     const currentVal = Number.isFinite(rawVal) ? rawVal : (rawVal ? h.goal : 0);
     const prog = dayProgress(h, today);
 
-    if (h.trackingMode === 'measure') {
+    if (h.trackingMode === 'measure' && focus) {
+      // Focus layout: one compact row with a +1 button and a thin bar
+      checklist += `
+        <div class="card-enter surface rounded-2xl p-4" style="animation-delay:${idx*0.04}s;">
+          <div class="flex items-center gap-3.5">
+            <span class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-bold"
+              style="background:color-mix(in srgb, ${hc(h)} 18%, transparent); color:${hc(h)}" data-measured-pct="${h.id}">${Math.round(prog*100)}%</span>
+            <span class="min-w-0 flex-1">
+              <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
+              <span class="text-[11px] text-[var(--text-dim)]"><span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)}</span>
+            </span>
+            ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
+          </div>
+          <div class="flex items-center gap-3 mt-2">
+            <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
+              data-measured-slider="${h.id}" aria-label="${escapeHtml(h.title)} amount"
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
+            <button data-measured-inc="${h.id}"
+              class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
+              style="min-height:44px; min-width:44px;" aria-label="Add 1 ${escapeHtml(h.unit)}">+1</button>
+          </div>
+        </div>`;
+    } else if (h.trackingMode === 'measure') {
       // measured habit: progress bar + slider + quick "+1" button
       checklist += `
         <div class="card-enter surface rounded-2xl p-4"
              style="animation-delay:${idx*0.04}s;">
           <div class="flex items-center gap-3.5 mb-3">
-            <span class="shrink-0 w-3 h-3 rounded-full" style="background:${h.color}"></span>
+            <span class="shrink-0 w-3 h-3 rounded-full" style="background:${hc(h)}"></span>
             <span class="min-w-0 flex-1">
               <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
               <span class="text-[11px] text-[var(--text-dim)]">
                 <span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)} today
               </span>
             </span>
-            ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${h.color}">
+            ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
                 <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
           </div>
           <div class="progress-track h-1.5 mb-3">
-            <div class="progress-fill" style="width:${Math.round(prog*100)}%; background:${h.color};" data-measured-bar="${h.id}"></div>
+            <div class="progress-fill" style="width:${Math.round(prog*100)}%; background:${hc(h)};" data-measured-bar="${h.id}"></div>
           </div>
           <div class="flex items-center gap-3">
             <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
               data-measured-slider="${h.id}"
-              class="flex-1 measure-slider" style="color:${h.color}; accent-color:${h.color};">
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;">+1</button>
@@ -1354,14 +1651,14 @@ function renderHomeTab() {
           class="card-enter btn-press w-full surface rounded-2xl p-4 flex items-center gap-3.5 text-left"
           style="animation-delay:${idx*0.04}s; min-height:44px;">
           <span class="check-box shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center"
-            style="border-color:${done ? h.color : 'var(--border)'}; background:${done ? h.color : 'transparent'};">
-            ${done ? "<i data-lucide='check' class='w-4 h-4' style='color:#ffffff'></i>" : ''}
+            style="border-color:${done ? hc(h) : 'var(--border)'}; background:${done ? hc(h) : 'transparent'};">
+            ${done ? `<i data-lucide='check' class='w-4 h-4' style='color:${inkOn(hc(h))}'></i>` : ''}
           </span>
           <span class="min-w-0 flex-1">
             <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
-            <span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>
+            ${focus ? '' : `<span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>`}
           </span>
-          ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${h.color}">
+          ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
               <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
         </button>`;
     }
@@ -1420,10 +1717,119 @@ function renderHomeTab() {
       </div>`,
   };
 
-  const order = state.settings.homeOrder;
+  // sections shared by every design
+  const label = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
+  const checkins = totalCheckins();
+  const perfect = perfectDayStats();
+  const weekScore = (() => {
+    const pts = chartData('week').filter(p => p.value !== null);
+    return pts.length ? Math.round(pts.reduce((s, p) => s + p.value, 0) / pts.length * 100) : 0;
+  })();
+
+  sections.chart = () => {
+    const data = chartData(chartRange);
+    const pts = data.filter(p => p.value !== null);
+    const avg = pts.length ? Math.round(pts.reduce((s, p) => s + p.value, 0) / pts.length * 100) : 0;
+    const titles = { day: "Today's goals", week: 'This week', month: 'This month', year: 'This year' };
+    const ranges = [['day','Day'],['week','Week'],['month','Month'],['year','Year']];
+    const thin = data.length > 12;
+    const bars = data.map(p => `
+        <div class="chart-col">
+          <div class="chart-bar-wrap"><i class="chart-bar ${p.current ? 'is-current' : ''} ${p.value === null ? 'is-empty' : ''}"
+            style="height:${p.value === null ? 4 : Math.max(4, Math.round(p.value * 100))}%; ${p.color && state.settings.habitColors ? `background:${p.color};` : ''} ${thin ? 'border-radius:3px;' : ''}"></i></div>
+          <span class="chart-label ${p.current ? 'is-current' : ''}">${escapeHtml(p.label)}</span>
+        </div>`).join('');
+    return `
+      <div>
+        ${label('Progress')}
+        <div class="surface rounded-2xl p-4">
+          <div class="flex gap-1.5 mb-4">
+            ${ranges.map(([k, l]) => `<button data-chart-range="${k}" class="chart-tab ${chartRange === k ? 'active' : ''}">${l}</button>`).join('')}
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-[11px] uppercase tracking-[0.14em] text-[var(--text-faint)] font-bold">${titles[chartRange]}</span>
+            <span class="text-[11px] text-[var(--text-dim)]">average</span>
+          </div>
+          <div class="display text-2xl font-semibold mb-3">${avg}%</div>
+          <div class="chart ${thin ? 'is-thin' : ''}">${bars}</div>
+        </div>
+      </div>`;
+  };
+
+  sections.milestones = () => {
+    const badges = badgeList();
+    const next = badges.find(b => !b.earned);
+    const earned = badges.filter(b => b.earned).length;
+    return `
+      <div>
+        ${label('Milestones')}
+        <div class="surface rounded-2xl p-4">
+          <div class="badge-row">
+            ${badges.map(b => `
+              <div class="badge ${b.earned ? 'earned' : ''}" title="${b.label}${b.earned ? '' : ` · ${b.have} / ${b.goal}`}">
+                <span class="badge-ic"><i data-lucide="${b.earned ? b.icon : 'lock'}" class="w-5 h-5"></i></span>
+                <span class="badge-label">${b.label}</span>
+              </div>`).join('')}
+          </div>
+          <div class="text-[11px] text-[var(--text-dim)] mt-3 flex justify-between gap-3">
+            <span>${earned} of ${badges.length} earned · ${perfect.count} perfect ${perfect.count === 1 ? 'day' : 'days'}</span>
+            ${next ? `<span class="text-right">Next: <b class="text-[var(--text)]">${next.label}</b> ${next.have}/${next.goal}</span>` : '<span>All earned</span>'}
+          </div>
+        </div>
+      </div>`;
+  };
+
+  // today's summary: a ring with the share of habits done
+  sections.summary = () => `
+      <div class="summary-card surface rounded-2xl p-5 flex items-center gap-5">
+        <div class="score-ring" style="--pct:${dayPct}" role="img" aria-label="${dayPct}% of habits done today">
+          <span class="score-num">${dayPct}<small>%</small></span><span class="score-cap">done</span></div>
+        <div class="min-w-0 flex-1">
+          <div class="display text-xl font-semibold leading-tight">${progressMessage(dayPct)}</div>
+          <div class="text-[12px] text-[var(--text-dim)] mt-1">${doneCount} of ${totalCount} habits done today</div>
+          <div class="flex flex-wrap gap-1.5 mt-3">
+            <span class="mini-chip"><i data-lucide="flame" class="w-3 h-3"></i>${longestActive}-day streak</span>
+            ${perfect.current > 0 ? `<span class="mini-chip"><i data-lucide="star" class="w-3 h-3"></i>${perfect.current} perfect</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+
+  // the dashboard's own goals header and stat tiles
+  {
+    sections.habits = () => `
+      <div>
+        ${label("Today's goals")}
+        <div class="space-y-2.5">${checklist}</div>
+      </div>`;
+    sections.stats = () => {
+      const tile = (icon, value, unit, cap) => `
+        <div class="surface rounded-2xl p-4">
+          <div class="stat-ic"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+          <div class="flex items-baseline gap-1 mt-2"><span class="display text-2xl font-semibold leading-none">${value}</span><span class="text-[11px] text-[var(--text-dim)]">${unit}</span></div>
+          <div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)] mt-1.5">${cap}</div>
+        </div>`;
+      return `
+        <div>
+          ${label('At a glance')}
+          <div class="grid grid-cols-2 gap-2.5">
+            ${tile('flame', longestActive, 'days', 'Best current streak')}
+            ${tile('calendar-check', weekScore, '%', 'This week')}
+            ${tile('circle-check', checkins, '', 'Total check-ins')}
+            ${tile('star', perfect.count, '', 'Perfect days')}
+          </div>
+        </div>`;
+    };
+  }
+
+  // Focus: Home lists every section (the Stats ones hidden unless added),
+  // Stats lists only its own
+  const order = focus && page === 'stats'
+    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k))
+    : state.settings.homeOrder;
   const parts = order.map((key, i) => {
     const meta = HOME_SECTIONS[key];
-    const shown = !meta.toggle || state.settings[meta.toggle];
+    const tg = sectionToggle(key, page);
+    const shown = !tg || state.settings[tg];
     if (!homeEditing) return shown ? sections[key]() : '';
     // edit mode: every section gets a bar to move it or hide it
     return `
@@ -1431,7 +1837,7 @@ function renderHomeTab() {
         <div class="home-edit-bar">
           <i data-lucide="grip-vertical" class="w-4 h-4 text-[var(--text-faint)]"></i>
           <span class="flex-1 text-[12px] font-bold">${meta.label}</span>
-          ${meta.toggle ? `<button data-home-hide="${key}" class="home-edit-btn" aria-label="${shown ? 'Hide' : 'Show'} ${meta.label}">
+          ${tg ? `<button data-home-hide="${key}" class="home-edit-btn" aria-label="${shown ? 'Hide' : 'Show'} ${meta.label}">
               <i data-lucide="${shown ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>` : ''}
           <button data-home-move="${key}" data-dir="-1" class="home-edit-btn" ${i === 0 ? 'disabled' : ''} aria-label="Move up">
             <i data-lucide="arrow-up" class="w-4 h-4"></i></button>
@@ -1449,15 +1855,36 @@ function renderHomeTab() {
         <button id="homeEditDone" class="btn-press shrink-0 bg-[var(--text)] text-[var(--bg)] rounded-xl px-4 h-10 text-[13px] font-bold">Done</button>
       </div>` : '';
 
-  root.innerHTML = `<div class="tab-enter space-y-6">${editBanner}${parts.join('')}</div>`;
+  let dashHeader = '';
+  if (page === 'stats') {
+    dashHeader = `
+      <div class="pt-1">
+        <div class="dash-eyebrow">Your progress</div>
+        <h1 class="dash-title display">Stats</h1>
+      </div>`;
+  } else {
+    const now = new Date();
+    const hr = now.getHours();
+    const name = state.settings.name.trim();
+    dashHeader = `
+      <div class="pt-1">
+        <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
+        <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
+      </div>`;
+  }
+
+  root.innerHTML = `<div class="tab-enter space-y-6">${dashHeader}${editBanner}${parts.join('')}</div>`;
+  root.querySelectorAll('[data-chart-range]').forEach(btn => {
+    btn.addEventListener('click', () => { chartRange = btn.dataset.chartRange; render(); });
+  });
 
   root.querySelector('#homeEditDone')?.addEventListener('click', () => { homeEditing = false; render(); });
   root.querySelectorAll('[data-home-move]').forEach(btn => {
-    btn.addEventListener('click', () => { moveHomeSection(btn.dataset.homeMove, Number(btn.dataset.dir)); render(); });
+    btn.addEventListener('click', () => { moveHomeSection(btn.dataset.homeMove, Number(btn.dataset.dir), order); render(); });
   });
   root.querySelectorAll('[data-home-hide]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const t = HOME_SECTIONS[btn.dataset.homeHide].toggle;
+      const t = sectionToggle(btn.dataset.homeHide, page);
       updateSetting(t, !state.settings[t]);
       render();
     });
@@ -1480,6 +1907,8 @@ function renderHomeTab() {
       const label = root.querySelector(`[data-measured-val="${id}"]`);
       if (bar) bar.style.width = Math.round((v / h.goal) * 100) + '%';
       if (label) label.textContent = v;
+      const chip = root.querySelector(`[data-measured-pct="${id}"]`);
+      if (chip) chip.textContent = Math.round((v / h.goal) * 100) + '%';
     });
     slider.addEventListener('change', () => {
       toggleCompletion(id, today, parseInt(slider.value, 10));
@@ -1512,7 +1941,7 @@ function todoSectionHTML() {
       <button data-todo-toggle="${t.id}" class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center"
         style="border-color:${t.done ? 'var(--gold)' : 'var(--border)'}; background:${t.done ? 'var(--gold)' : 'transparent'}; min-width:24px;"
         aria-label="${t.done ? 'Mark not done' : 'Mark done'}">
-        ${t.done ? "<i data-lucide='check' class='w-3.5 h-3.5' style='color:#ffffff'></i>" : ''}
+        ${t.done ? `<i data-lucide='check' class='w-3.5 h-3.5' style='color:${inkOn(accentHex())}'></i>` : ''}
       </button>
       <span class="flex-1 min-w-0 text-[13px] break-words ${t.done ? 'line-through text-[var(--text-faint)]' : ''}">${escapeHtml(t.text)}</span>
       <button data-todo-del="${t.id}" class="todo-del shrink-0 w-8 h-8 flex items-center justify-center" aria-label="Remove">
@@ -1901,11 +2330,11 @@ function dayBreakdownHTML(isFutureSel) {
         class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl p-3.5 flex items-center gap-3 text-left ${isFutureSel ? 'opacity-40 cursor-not-allowed' : ''}"
         style="min-height:44px;">
         <span class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center relative overflow-hidden"
-          style="border-color:${prog > 0 ? h.color : 'var(--border)'};">
+          style="border-color:${prog > 0 ? hc(h) : 'var(--border)'};">
           ${prog >= 1
-            ? `<span style="position:absolute;inset:0;background:${h.color};display:flex;align-items:center;justify-content:center;"><i data-lucide='check' class='w-3.5 h-3.5' style='color:#ffffff'></i></span>`
+            ? `<span style="position:absolute;inset:0;background:${hc(h)};display:flex;align-items:center;justify-content:center;"><i data-lucide='check' class='w-3.5 h-3.5' style='color:${inkOn(hc(h))}'></i></span>`
             : prog > 0
-              ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:0.55;"></span>`
+              ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:0.55;"></span>`
               : ''}
         </span>
         <span class="min-w-0 flex-1">
@@ -1914,7 +2343,7 @@ function dayBreakdownHTML(isFutureSel) {
             ${h.goal} ${escapeHtml(h.unit)} / day${h.trackingMode === 'measure' ? ' &middot; measured' : ''}
           </span>
         </span>
-        <span class="text-[11px] font-bold" style="color:${done ? h.color : prog > 0 ? h.color : 'var(--text-faint)'}">${statusLabel}</span>
+        <span class="text-[11px] font-bold" style="color:${done ? hc(h) : prog > 0 ? hc(h) : 'var(--text-faint)'}">${statusLabel}</span>
       </button>`;
   });
 
@@ -1973,7 +2402,7 @@ function renderCalendarTab() {
     <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
       ${state.habits.map(h => `
         <span class="flex items-center gap-1.5 text-[11px] text-[var(--text-dim)]">
-          <span class="w-2.5 h-2.5 rounded-full" style="background:${h.color}"></span>${escapeHtml(h.title)}
+          <span class="w-2.5 h-2.5 rounded-full" style="background:${hc(h)}"></span>${escapeHtml(h.title)}
         </span>`).join('')}
     </div>`;
 
@@ -2163,12 +2592,17 @@ function updateSetting(key, value) {
 function applySettings() {
   const { theme, accent, style } = state.settings;
   const root = document.documentElement;
+  const mode = effectiveMode();
   root.setAttribute('data-style', style);
+  root.setAttribute('data-font', state.settings.font === 'auto' ? style : state.settings.font);
+  root.setAttribute('data-mode', mode);
+  root.setAttribute('data-layout', state.settings.layout);
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
   root.style.setProperty('--gold', accent);
-  const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#14130f' : '#fbfaf7');
+  root.style.setProperty('--second', accent);
+  const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg || (mode === 'dark' ? '#14130f' : '#fbfaf7'));
 }
 
 /* Home-screen icon badge = habits still open today. Works in the
@@ -2216,17 +2650,33 @@ function segHTML(key, options) {
     </div>`;
 }
 
-function choiceGridHTML(label, key, options, hint, cols = 4) {
+/* a 3-column picker whose buttons preview their own option */
+function pickerHTML(label, key, options, chipClass, inner, hint) {
   return `
-    <div class="py-3 border-t border-[var(--border)] first:border-t-0">
+    <div class="py-3 border-t border-[var(--border)]">
       <div class="text-[13px] font-bold">${label}</div>
       ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
-      <div class="grid ${cols === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-1.5 mt-2.5">
-        ${options.map(([val, name]) => `
-          <button data-seg="${key}" data-val="${val}"
-            class="seg-btn btn-press surface-2 border border-[var(--border)] rounded-lg h-9 text-[11px] font-bold ${state.settings[key] === val ? 'active' : 'text-[var(--text-dim)]'}">${name}</button>`).join('')}
+      <div class="grid grid-cols-3 gap-2.5 mt-3">
+        ${options.map(opt => `
+          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${state.settings[key] === opt[0]}"
+            class="${chipClass} btn-press ${state.settings[key] === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
       </div>
     </div>`;
+}
+
+/* four days of a week board drawn in the given week style */
+function weekStyleSample(style) {
+  const on = [1, 1, 0, 1];
+  const cells = cls => on.map(v => `<span class="${cls} ${v ? 'on' : ''}"><i></i></span>`).join('');
+  const body = {
+    circles: cells('wv-circle'),
+    tiles: cells('wv-tile'),
+    dots: cells('wv-dot'),
+    pills: cells('wv-pill'),
+    bars: `<span class="wv-bar">${on.map(v => `<span class="${v ? 'on' : ''}"></span>`).join('')}</span>`,
+    plain: `<span class="wv-plain">✓✓·✓</span>`,
+  }[style] || '';
+  return `<span class="wv-row" aria-hidden="true">${body}</span>`;
 }
 
 function switchHTML(key) {
@@ -2240,7 +2690,6 @@ function renderSettingsTab() {
   const lastLabel = last
     ? 'Last backup: ' + new Date(last).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })
     : 'No backup saved from this device yet.';
-  const badgeSupported = 'setAppBadge' in navigator;
   const accents = PALETTE.map(c =>
     `<button data-accent="${c}" class="swatch ${c === st.accent ? 'selected' : ''}" style="background:${c}; width:30px; height:30px; border-radius:9px;" aria-label="Accent ${c}"></button>`).join('');
   const section = (title, body) => `
@@ -2254,7 +2703,7 @@ function renderSettingsTab() {
       <h2 class="display text-3xl font-semibold px-1">Settings</h2>
 
       ${section('Personalize',
-        settingsRow('Your name', 'Shown in a greeting at the top.',
+        settingsRow('Your name', '',
           `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
         settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
         `<div class="py-3 border-t border-[var(--border)]">
@@ -2262,37 +2711,25 @@ function renderSettingsTab() {
            <div class="flex flex-wrap gap-2.5">${accents}</div>
          </div>` +
         settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']])) +
-        settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']]))
+        settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
+        settingsRow('Notifications', '', switchHTML('badge'))
       )}
 
       ${section('Appearance',
-        choiceGridHTML('App style', 'style', APP_STYLES,
-          'Paper, Newspaper and Neon bring their own colors. Every other style keeps your theme and accent and only changes fonts, textures and shapes.', 3) +
-        choiceGridHTML('Week view style', 'weekStyle', WEEK_STYLES, 'Used on Home and in the calendar Week view.', 3)
+        settingsRow('Color-code habits', '', switchHTML('habitColors')) +
+        pickerHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
+        pickerHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
+        pickerHTML('Week view style', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`)
       )}
 
       ${section('Home screen',
-        settingsRow('Edit Home layout', 'Move sections up or down, or hide them, right on the Home tab.',
-          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit Home layout"></button>`) +
-        settingsRow('Today summary', '', switchHTML('showSummary')) +
-        settingsRow('Quick to-do', '', switchHTML('showTodos')) +
-        settingsRow('This week board', '', switchHTML('showWeek')) +
-        settingsRow('At a glance stats', '', switchHTML('showStats'))
-      )}
-
-      ${section('App icon',
-        settingsRow('Badge with habits left', badgeSupported
-          ? 'Shows how many habits are still open today on the Cadence icon. On iPhone this works once Cadence is added to your Home Screen.'
-          : "This browser can't put a badge on the app icon. On iPhone, add Cadence to your Home Screen and open it from there.",
-          badgeSupported ? switchHTML('badge') : '')
+        settingsRow('Layout', '', segHTML('layout', [['focus','Focus'],['full','Everything']])) +
+        settingsRow('Edit layout', '',
+          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit layout"></button>`)
       )}
 
       ${section('Your data',
         `<div class="py-3">
-           <p class="text-[12px] text-[var(--text-dim)] leading-relaxed mb-1">
-             Habits, check-in history (where streaks come from), to-dos and these settings live only in this browser.
-             A backup file lets you keep a copy, move to another device, or recover after clearing browser data.
-           </p>
            <p class="text-[12px] font-bold mb-3" style="color:${last ? 'var(--text)' : '#b5651d'}">${lastLabel}</p>
            <button id="downloadBackupBtn"
              class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 mb-2.5" style="min-height:44px;">
@@ -2303,18 +2740,11 @@ function renderSettingsTab() {
              <i data-lucide="upload" class="w-4 h-4"></i><span>Restore from file…</span>
            </label>
            <input id="restoreFileInput" type="file" accept=".json,application/json,text/plain" class="visually-hidden">
-           <p class="text-[11px] text-[var(--text-faint)] mt-3 leading-relaxed">
-             Restoring replaces what's here now. You can undo it right after.
-           </p>
          </div>`
       )}
 
       ${section('Widget',
         `<div class="py-3">
-           <p class="text-[12px] text-[var(--text-dim)] leading-relaxed mb-3">
-             iPhone and Android only allow Home Screen widgets from installed App Store / Play Store apps, so a website can't add one.
-             The icon badge above is the built-in option. For a full widget, the free Scriptable app can show this data.
-           </p>
            <button id="exportBtn"
              class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2" style="min-height:44px;">
              <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
@@ -2489,14 +2919,14 @@ function showToast(msg) {
 function switchTab(tab) {
   // leaving the new-habit form: clear any in-progress edit so returning
   // to it starts fresh instead of resuming a stale editing session
-  if (activeTab === 'home' && tab !== 'home') homeEditing = false;
+  if (tab !== 'home' && tab !== 'stats') homeEditing = false;
   if (activeTab === 'new' && tab !== 'new') {
     editingId = null;
     editDraft = null;
     formCustomColor = null;
   }
   activeTab = tab;
-  ['home','new','calendar','settings'].forEach(t => {
+  ['home','stats','new','calendar','settings'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2563,7 +2993,7 @@ function init() {
   calMode = state.settings.calDefault;
   weekStart = startOfWeek(todayISO());
   // System theme: follow the device when it flips between light and dark
-  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applySettings);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { applySettings(); render(); });
   bindEvents();
   render();
   drawIcons();
