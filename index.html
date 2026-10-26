@@ -243,13 +243,25 @@
   /* ---- texture / font styles: these keep the theme colors and only
      change type, surfaces and backgrounds. Patterns are drawn with
      color-mix on --text so they work in light and dark. ---- */
+  /* Glass: clear panels with a light blur over soft shapes in the accent
+     and text colors, so you can see through them */
   [data-style="glass"] body { background-image:
-      radial-gradient(520px 380px at 85% 5%, color-mix(in srgb, var(--text) 13%, transparent), transparent 70%),
-      radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 11%, transparent), transparent 70%),
-      radial-gradient(520px 380px at 75% 95%, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%); }
+      radial-gradient(420px 340px at 88% 6%, color-mix(in srgb, var(--gold) 30%, transparent), transparent 70%),
+      radial-gradient(380px 380px at 4% 40%, color-mix(in srgb, var(--text) 14%, transparent), transparent 70%),
+      radial-gradient(420px 360px at 92% 62%, color-mix(in srgb, var(--gold) 20%, transparent), transparent 70%),
+      radial-gradient(400px 340px at 10% 96%, color-mix(in srgb, var(--text) 10%, transparent), transparent 70%);
+    background-attachment: fixed; }
   [data-style="glass"] body::before { display: none; }
-  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 16%, transparent); border: 1px solid color-mix(in srgb, #ffffff 50%, transparent); backdrop-filter: blur(30px) saturate(1.4); -webkit-backdrop-filter: blur(30px) saturate(1.4); box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 65%, transparent), 0 10px 30px rgba(0,0,0,0.08); }
-  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 25%, transparent); }
+  /* outlines drawn from the text color so empty checkboxes stay visible on clear panels */
+  :root[data-style="glass"]:not(#_) { --border: color-mix(in srgb, var(--text) 22%, transparent); }
+  [data-style="glass"] .surface { background: linear-gradient(150deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.45); backdrop-filter: blur(10px) saturate(1.5); -webkit-backdrop-filter: blur(10px) saturate(1.5);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.06); }
+  [data-mode="dark"][data-style="glass"] .surface { background: linear-gradient(150deg, rgba(255,255,255,0.07), rgba(255,255,255,0.01));
+    border-color: rgba(255,255,255,0.14); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 24px rgba(0,0,0,0.25); }
+  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--text) 5%, transparent); }
+  [data-style="glass"] nav.surface { backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); }
+  [data-style="glass"] .score-ring::before { background: color-mix(in srgb, var(--bg) 92%, transparent); }
   [data-style="glass"] .rounded-2xl { border-radius: 22px; }
   [data-style="typewriter"] body::before { opacity: 0.07; }
   [data-style="typewriter"] .surface { border-style: dashed; box-shadow: none; }
