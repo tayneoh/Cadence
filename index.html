@@ -232,6 +232,113 @@
   [data-style="bold"] .rounded-xl, [data-style="bold"] .rounded-lg { border-radius: 4px; }
   [data-style="bold"] .wk-cell, [data-style="bold"] .wk-pill { border-radius: 4px; }
 
+  /* Styles below bring their own palette. `:not(#_)` lifts specificity
+     above the light/dark theme rules so the palette wins either way;
+     the accent color (set inline on <html>) still applies on top. */
+  [data-style="paper"] body { font-family: Georgia, 'Iowan Old Style', serif;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(58,110,165,0.12) 27px, rgba(58,110,165,0.12) 28px); }
+  :root[data-style="paper"]:not(#_) { --bg: #fdf9ee; --surface: #fffdf6; --surface-2: #f6f0de; --border: #e5dcc3;
+    --text: #2a2520; --text-dim: #6e6455; --text-faint: #a59a86; --wk-cell: #ece4cd; color-scheme: light; }
+  [data-style="paper"] body::before { display: none; }
+  [data-style="paper"] .surface { box-shadow: 0 1px 0 #e5dcc3, 0 4px 10px rgba(80,60,20,0.07); }
+  [data-style="paper"] .rounded-2xl { border-radius: 4px; }
+  [data-style="paper"] .display { font-style: italic; }
+
+  :root[data-style="newspaper"]:not(#_) { --bg: #f7f5f0; --surface: #f7f5f0; --surface-2: #ecebe5; --border: #1a1a1a;
+    --text: #111111; --text-dim: #444444; --text-faint: #777777; --wk-cell: #e2e0da; color-scheme: light; }
+  [data-style="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; background-image: none; }
+  [data-style="newspaper"] body::before { display: none; }
+  [data-style="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
+  [data-style="newspaper"] h1.display { border-bottom: 4px double #111; padding-bottom: 6px; }
+  [data-style="newspaper"] .surface { border: 1px solid #111; box-shadow: none; }
+  [data-style="newspaper"] .rounded-2xl, [data-style="newspaper"] .rounded-xl, [data-style="newspaper"] .rounded-lg { border-radius: 0; }
+
+  [data-style="glass"] body { background-image:
+      radial-gradient(600px 420px at 90% 0%, color-mix(in srgb, var(--gold) 55%, transparent), transparent 70%),
+      radial-gradient(520px 420px at 0% 40%, rgba(122, 92, 220, 0.35), transparent 70%),
+      radial-gradient(520px 420px at 80% 100%, rgba(40, 170, 200, 0.30), transparent 70%); }
+  [data-style="glass"] body::before { display: none; }
+  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 55%, transparent);
+    border-color: color-mix(in srgb, var(--surface) 70%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+  [data-style="glass"] .rounded-2xl { border-radius: 22px; }
+  [data-style="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 700; }
+
+  :root[data-style="neon"]:not(#_) { --bg: #090914; --surface: #12122a; --surface-2: #1b1b3a; --border: #2c2c5a;
+    --text: #ecebff; --text-dim: #a3a1d6; --text-faint: #6b69a3; --wk-cell: #23234a; color-scheme: dark; }
+  [data-style="neon"] body { background-image:
+      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 25%, transparent), transparent 70%),
+      radial-gradient(600px 500px at 0% 100%, rgba(255, 0, 170, 0.18), transparent 70%); }
+  [data-style="neon"] body::before { display: none; }
+  [data-style="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
+  [data-style="neon"] .surface { box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent),
+    0 0 22px color-mix(in srgb, var(--gold) 18%, transparent); }
+  [data-style="neon"] .wk-box { border-color: var(--text-dim); }
+
+  :root[data-style="terminal"]:not(#_) { --bg: #050805; --surface: #0a120a; --surface-2: #0f1c0f; --border: #1f5f2a;
+    --text: #7dff8a; --text-dim: #45b552; --text-faint: #2d7a37; --wk-cell: #123018; color-scheme: dark; }
+  [data-style="terminal"] body, [data-style="terminal"] .display { font-family: 'Space Mono', ui-monospace, Menlo, monospace; }
+  [data-style="terminal"] body { background-image: repeating-linear-gradient(to bottom, rgba(125,255,138,0.03) 0, rgba(125,255,138,0.03) 1px, transparent 1px, transparent 3px); }
+  [data-style="terminal"] body::before { display: none; }
+  [data-style="terminal"] h1.display::before { content: '> '; color: var(--text-dim); }
+  [data-style="terminal"] .display { font-weight: 700; text-shadow: 0 0 8px rgba(125,255,138,0.45); }
+  [data-style="terminal"] .surface { border: 1px dashed var(--border); box-shadow: none; }
+  [data-style="terminal"] .rounded-2xl, [data-style="terminal"] .rounded-xl, [data-style="terminal"] .rounded-lg { border-radius: 0; }
+  [data-style="terminal"] .wk-box { border-color: var(--text); }
+
+  :root[data-style="pastel"]:not(#_) { --bg: #fff5f9; --surface: #ffffff; --surface-2: #fdeef5; --border: #f6d9e6;
+    --text: #4a3a52; --text-dim: #8a7893; --text-faint: #bba9c2; --wk-cell: #f8e3ee; color-scheme: light; }
+  [data-style="pastel"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; background-image:
+      radial-gradient(500px 400px at 100% 0%, rgba(180, 220, 255, 0.6), transparent 70%),
+      radial-gradient(500px 400px at 0% 60%, rgba(255, 210, 230, 0.7), transparent 70%),
+      radial-gradient(500px 400px at 90% 100%, rgba(210, 245, 220, 0.7), transparent 70%); }
+  [data-style="pastel"] body::before { display: none; }
+  [data-style="pastel"] .display { font-family: inherit; font-weight: 800; }
+  [data-style="pastel"] .surface { border-color: transparent; box-shadow: 0 6px 20px rgba(200, 120, 170, 0.12); }
+  [data-style="pastel"] .rounded-2xl { border-radius: 24px; }
+  [data-style="pastel"] .rounded-xl { border-radius: 16px; }
+  [data-style="pastel"] .wk-box { border-color: var(--text-dim); border-radius: 6px; }
+
+  :root[data-style="forest"]:not(#_) { --bg: #edf0e4; --surface: #f8f9f2; --surface-2: #e4e8d8; --border: #cfd6bd;
+    --text: #26301f; --text-dim: #5d6a50; --text-faint: #929d82; --wk-cell: #dbe0cc; color-scheme: light; }
+  [data-style="forest"] body { font-family: Georgia, 'Iowan Old Style', serif; background-image:
+      radial-gradient(800px 500px at 100% 0%, rgba(63, 125, 110, 0.18), transparent 70%),
+      radial-gradient(700px 500px at 0% 100%, rgba(120, 140, 60, 0.15), transparent 70%); }
+  [data-style="forest"] .surface { box-shadow: 0 2px 10px rgba(40, 60, 30, 0.06); }
+
+  :root[data-style="ocean"]:not(#_) { --bg: #e8f3fb; --surface: #ffffff; --surface-2: #e3eff8; --border: #c8dced;
+    --text: #0d2b45; --text-dim: #4f6d87; --text-faint: #8ca3b8; --wk-cell: #d6e6f3; color-scheme: light; }
+  [data-style="ocean"] body { font-family: -apple-system, system-ui, sans-serif; background-image:
+      linear-gradient(180deg, #d7ecfa 0%, #eef6fc 45%, #e1f3f1 100%); }
+  [data-style="ocean"] body::before { display: none; }
+  [data-style="ocean"] .display { font-family: inherit; font-weight: 700; color: #0d4f7a; }
+  [data-style="ocean"] .surface { border-color: transparent; box-shadow: 0 4px 18px rgba(13, 79, 122, 0.08); }
+  [data-style="ocean"] .rounded-2xl { border-radius: 20px; }
+
+  :root[data-style="sunset"]:not(#_) { --bg: #fff1e8; --surface: #fffaf6; --surface-2: #fde8dc; --border: #f5d2c0;
+    --text: #3d1f1a; --text-dim: #8a5a4c; --text-faint: #c0948a; --wk-cell: #fadccd; color-scheme: light; }
+  [data-style="sunset"] body { font-family: -apple-system, system-ui, sans-serif; background-image:
+      linear-gradient(170deg, #ffd9b8 0%, #ffc3c3 35%, #f6d6f0 70%, #fff1e8 100%); background-attachment: fixed; }
+  [data-style="sunset"] body::before { display: none; }
+  [data-style="sunset"] .display { font-family: inherit; font-weight: 800; }
+  [data-style="sunset"] .surface { background: rgba(255, 250, 246, 0.78); border-color: transparent;
+    box-shadow: 0 6px 22px rgba(160, 60, 40, 0.10); }
+  [data-style="sunset"] .rounded-2xl { border-radius: 22px; }
+
+  /* week style: bars (seven segments per habit) */
+  .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: transform 0.12s ease; }
+  .wk-bar:active, .wk-plain:active { transform: scale(0.9); }
+  .wk-bar.today { box-shadow: 0 0 0 2px var(--gold); }
+  .wk-bar:disabled, .wk-plain:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* week style: plain (just marks, no backgrounds) */
+  .wk-plain { width: 28px; height: 32px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: var(--text-faint); border-radius: 8px; }
+  .wk-plain.today { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+
   /* ---- year heatmap ---- */
   .yr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .yr-day { aspect-ratio: 1 / 1; border-radius: 2px; background: var(--surface-2); cursor: pointer; }
@@ -527,8 +634,14 @@ const DEFAULT_SETTINGS = {
   badge: false,           // habits-left count on the home-screen icon
 };
 
-const APP_STYLES = [['classic','Classic'],['minimal','Minimal'],['soft','Soft'],['bold','Bold']];
-const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills']];
+const APP_STYLES = [
+  ['classic','Classic'], ['minimal','Minimal'], ['soft','Soft'], ['bold','Bold'],
+  ['paper','Paper'], ['newspaper','Newspaper'], ['glass','Glass'], ['neon','Neon'],
+  ['terminal','Terminal'], ['pastel','Pastel'], ['forest','Forest'], ['ocean','Ocean'],
+  ['sunset','Sunset'],
+];
+const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
+  ['bars','Bars'],['plain','Plain']];
 const HOME_SECTIONS = {
   summary: { label: 'Today summary', toggle: 'showSummary' },
   habits:  { label: "Today's habits", toggle: null },          // always shown
@@ -881,11 +994,13 @@ function dayScore(iso) {
 
 /* Weekly board: one row per habit, one toggle per day, week start per
    Settings. Shared by the Home tab (current week) and the Calendar week
-   view. Four looks, picked in Settings -> Appearance:
+   view. Six looks, picked in Settings -> Appearance:
      circles  checkbox inside a grey circle (the original look)
      tiles    rounded squares that fill with the habit's color
      dots     one compact line per habit, small dots
-     pills    day-letter pills that fill with the habit's color          */
+     pills    day-letter pills that fill with the habit's color
+     bars     seven bar segments per habit
+     plain    text marks only (✓ done, ◐ partial, · missed)              */
 function weekGridHTML(start) {
   const today = todayISO();
   const style = state.settings.weekStyle;
@@ -933,6 +1048,42 @@ function weekGridHTML(start) {
             ${partial(h, prog, 0.35)}<span class="relative">${letter(iso)}</span></button>`;
       });
       html += '</div></div>';
+    });
+    return html + '</div>';
+  }
+
+  if (style === 'bars') {
+    let html = '<div class="space-y-3.5">';
+    state.habits.forEach(h => {
+      html += `<div>
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-[13px] font-bold truncate flex-1">${escapeHtml(h.title)}</span>
+            <span class="text-[11px] text-[var(--text-dim)] shrink-0">${countOf(h)} / 7</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1">`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        html += `<button class="wk-bar ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
+            <span style="position:absolute;left:0;top:0;bottom:0;width:${Math.round(prog*100)}%;background:${h.color};"></span></button>`;
+      });
+      html += '</div></div>';
+    });
+    html += `<div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-[var(--text-faint)]">
+        ${days.map(iso => `<span class="${iso === today ? 'text-[var(--gold)]' : ''}">${letter(iso)}</span>`).join('')}</div>`;
+    return html + '</div>';
+  }
+
+  if (style === 'plain') {
+    let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
+    state.habits.forEach(h => {
+      html += `<div class="wk-dots-label" title="${escapeHtml(h.title)}"><span class="truncate">${escapeHtml(h.title)}</span></div>`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        const mark = prog >= 1 ? '✓' : prog > 0 ? '◐' : iso > today ? '' : '·';
+        html += `<button class="wk-plain ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
+            style="${prog > 0 ? `color:${h.color};` : ''}">${mark}</button>`;
+      });
+      html += `<div class="wk-dots-count">${countOf(h)}/7</div>`;
     });
     return html + '</div>';
   }
@@ -2040,12 +2191,12 @@ function segHTML(key, options) {
     </div>`;
 }
 
-function choiceGridHTML(label, key, options, hint) {
+function choiceGridHTML(label, key, options, hint, cols = 4) {
   return `
     <div class="py-3 border-t border-[var(--border)] first:border-t-0">
       <div class="text-[13px] font-bold">${label}</div>
       ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
-      <div class="grid grid-cols-4 gap-1.5 mt-2.5">
+      <div class="grid ${cols === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-1.5 mt-2.5">
         ${options.map(([val, name]) => `
           <button data-seg="${key}" data-val="${val}"
             class="seg-btn btn-press surface-2 border border-[var(--border)] rounded-lg h-9 text-[11px] font-bold ${state.settings[key] === val ? 'active' : 'text-[var(--text-dim)]'}">${name}</button>`).join('')}
@@ -2090,8 +2241,9 @@ function renderSettingsTab() {
       )}
 
       ${section('Appearance',
-        choiceGridHTML('App style', 'style', APP_STYLES) +
-        choiceGridHTML('Week view style', 'weekStyle', WEEK_STYLES, 'Used on Home and in the calendar Week view.')
+        choiceGridHTML('App style', 'style', APP_STYLES,
+          'Classic, Minimal, Soft, Bold and Glass follow your Light/Dark theme. The others bring their own colors.', 3) +
+        choiceGridHTML('Week view style', 'weekStyle', WEEK_STYLES, 'Used on Home and in the calendar Week view.', 3)
       )}
 
       ${section('Home screen',
