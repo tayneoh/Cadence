@@ -198,66 +198,48 @@
   .home-edit-body { pointer-events: none; }
 
   /* ---- app styles (Settings -> Appearance) ----
-     classic is the base look above; the others override fonts, shapes
-     and surfaces. Colors still come from the theme + accent. */
-  [data-style="minimal"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background-image: none; }
+     Style changes shapes, surfaces and textures; Font (data-font) changes
+     type. They are picked separately. Colors come from theme + accent. */
+  [data-style="minimal"] body { background-image: none; }
   [data-style="minimal"] body::before { display: none; }
-  [data-style="minimal"] .display { font-family: inherit; letter-spacing: -0.02em; }
   [data-style="minimal"] .surface { box-shadow: none; }
   [data-style="minimal"] .rounded-2xl { border-radius: 12px; }
   [data-style="minimal"] .rounded-xl { border-radius: 10px; }
-  [data-style="minimal"] .tracking-\[0\.18em\], [data-style="minimal"] .tracking-\[0\.22em\] { letter-spacing: 0.06em; }
-
-  [data-style="soft"] body { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
-    background-image:
+  [data-style="soft"] body { background-image:
       radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%),
       radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
   [data-style="soft"] body::before { display: none; }
-  [data-style="soft"] .display { font-family: inherit; font-weight: 700; }
   [data-style="soft"] .surface { border-color: transparent; box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
   [data-style="soft"] nav.surface { box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
   [data-style="soft"] .rounded-2xl { border-radius: 26px; }
   [data-style="soft"] .rounded-xl { border-radius: 18px; }
   [data-style="soft"] .rounded-lg { border-radius: 14px; }
   [data-style="soft"] .wk-label { border-bottom: none; border-radius: 12px; }
-
   [data-style="bold"] body { background-image: none; }
   [data-style="bold"] body::before { display: none; }
-  [data-style="bold"] .display { font-family: 'Space Mono', monospace; font-weight: 700;
-    text-transform: uppercase; letter-spacing: -0.03em; }
   [data-style="bold"] .surface { border: 2px solid var(--text); box-shadow: 4px 4px 0 var(--text); }
   [data-style="bold"] nav.surface { box-shadow: none; border-width: 2px 0 0 0; }
   [data-style="bold"] .rounded-2xl { border-radius: 6px; }
   [data-style="bold"] .rounded-xl, [data-style="bold"] .rounded-lg { border-radius: 4px; }
   [data-style="bold"] .wk-cell, [data-style="bold"] .wk-pill { border-radius: 4px; }
-
-  /* Paper, Newspaper and Neon change only type, lines and glow; the
-     colors still come from the theme and accent. */
-  [data-style="paper"] body { font-family: Georgia, 'Iowan Old Style', serif;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, color-mix(in srgb, var(--text) 8%, transparent) 27px, color-mix(in srgb, var(--text) 8%, transparent) 28px); }
+  /* Paper, Newspaper and Neon add lines and glow but keep the theme colors */
+  [data-style="paper"] body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, color-mix(in srgb, var(--text) 8%, transparent) 27px, color-mix(in srgb, var(--text) 8%, transparent) 28px); }
   [data-style="paper"] body::before { display: none; }
   [data-style="paper"] .surface { box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,0.06); }
   [data-style="paper"] .rounded-2xl { border-radius: 4px; }
-  [data-style="paper"] .display { font-style: italic; }
-
-  [data-style="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; background-image: none; }
+  [data-style="newspaper"] body { background-image: none; }
   [data-style="newspaper"] body::before { display: none; }
-  [data-style="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
   [data-style="newspaper"] h1.display { border-bottom: 4px double var(--text); padding-bottom: 6px; }
   [data-style="newspaper"] .surface { border: 1px solid var(--text); box-shadow: none; }
   [data-style="newspaper"] .rounded-2xl, [data-style="newspaper"] .rounded-xl, [data-style="newspaper"] .rounded-lg { border-radius: 0; }
-
   [data-style="neon"] body { background-image:
       radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%),
       radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
   [data-style="neon"] body::before { display: none; }
-  [data-style="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
-    text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
+  [data-style="neon"] .display { text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
   [data-style="neon"] .surface { box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent),
     0 0 22px color-mix(in srgb, var(--gold) 18%, transparent); }
   [data-style="neon"] .wk-box { border-color: var(--text-dim); }
-
   /* ---- texture / font styles: these keep the theme colors and only
      change type, surfaces and backgrounds. Patterns are drawn with
      color-mix on --text so they work in light and dark. ---- */
@@ -266,124 +248,124 @@
       radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 11%, transparent), transparent 70%),
       radial-gradient(520px 380px at 75% 95%, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%); }
   [data-style="glass"] body::before { display: none; }
-  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 16%, transparent);
-    border: 1px solid color-mix(in srgb, #ffffff 50%, transparent);
-    backdrop-filter: blur(30px) saturate(1.4); -webkit-backdrop-filter: blur(30px) saturate(1.4);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 65%, transparent), 0 10px 30px rgba(0,0,0,0.08); }
+  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 16%, transparent); border: 1px solid color-mix(in srgb, #ffffff 50%, transparent); backdrop-filter: blur(30px) saturate(1.4); -webkit-backdrop-filter: blur(30px) saturate(1.4); box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 65%, transparent), 0 10px 30px rgba(0,0,0,0.08); }
   [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 25%, transparent); }
   [data-style="glass"] .rounded-2xl { border-radius: 22px; }
-  [data-style="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
-
-  [data-style="typewriter"] body, [data-style="typewriter"] .display {
-    font-family: 'American Typewriter', 'Courier New', Courier, monospace; }
-  [data-style="typewriter"] .display { font-weight: 700; letter-spacing: 0; }
   [data-style="typewriter"] body::before { opacity: 0.07; }
   [data-style="typewriter"] .surface { border-style: dashed; box-shadow: none; }
   [data-style="typewriter"] .rounded-2xl, [data-style="typewriter"] .rounded-xl { border-radius: 3px; }
-
-  [data-style="handwritten"] body, [data-style="handwritten"] .display {
-    font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; }
-  [data-style="handwritten"] .display { font-weight: 700; }
   [data-style="handwritten"] body { background-image: none; }
-  [data-style="handwritten"] .surface { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent);
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important; box-shadow: none; }
+  [data-style="handwritten"] .surface { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important; box-shadow: none; }
   [data-style="handwritten"] .check-box, [data-style="handwritten"] .wk-box { border-radius: 4px 7px 3px 6px; }
-
-  [data-style="editorial"] body { font-family: 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; background-image: none; }
+  [data-style="editorial"] body { background-image: none; }
   [data-style="editorial"] body::before { display: none; }
-  [data-style="editorial"] .display { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif;
-    font-weight: 400; font-style: italic; letter-spacing: -0.01em; }
-  [data-style="editorial"] h1.display { font-size: 3.2rem; font-style: normal; }
   [data-style="editorial"] .surface { background: transparent; border-width: 0 0 1px 0; border-radius: 0 !important; box-shadow: none; }
   [data-style="editorial"] nav.surface { background: var(--bg); border-width: 1px 0 0 0; }
-  [data-style="editorial"] .tracking-\[0\.18em\] { letter-spacing: 0.3em; }
-
-  [data-style="geometric"] body, [data-style="geometric"] .display {
-    font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; }
-  [data-style="geometric"] .display { font-weight: 700; letter-spacing: 0.01em; }
   [data-style="geometric"] body { background-image: none; }
   [data-style="geometric"] body::before { display: none; }
   [data-style="geometric"] .rounded-2xl, [data-style="geometric"] .rounded-xl, [data-style="geometric"] .rounded-lg { border-radius: 0; }
   [data-style="geometric"] .surface { box-shadow: none; }
   [data-style="geometric"] .wk-cell, [data-style="geometric"] .wk-pill { border-radius: 0; }
-
-  [data-style="graph"] body { font-family: 'Space Mono', ui-monospace, monospace; background-image:
+  [data-style="graph"] body { background-image:
       linear-gradient(color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px);
-    background-size: 20px 20px; }
+      linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px); background-size: 20px 20px; }
   [data-style="graph"] body::before { display: none; }
-  [data-style="graph"] .display { font-family: 'Space Mono', monospace; font-weight: 700; }
   [data-style="graph"] .rounded-2xl { border-radius: 4px; }
-
-  [data-style="dotted"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; background-image:
-      radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) 1.2px, transparent 1.4px);
-    background-size: 18px 18px; }
+  [data-style="dotted"] body { background-image:
+      radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) 1.2px, transparent 1.4px); background-size: 18px 18px; }
   [data-style="dotted"] body::before { display: none; }
-  [data-style="dotted"] .display { font-family: inherit; font-weight: 700; }
   [data-style="dotted"] .rounded-2xl { border-radius: 20px; }
-
-  [data-style="linen"] body { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; background-image:
+  [data-style="linen"] body { background-image:
       repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px); }
   [data-style="linen"] body::before { opacity: 0.06; }
-  [data-style="linen"] .display { font-family: 'Baskerville', Georgia, serif; font-weight: 600; }
   [data-style="linen"] .surface { background-image:
       repeating-linear-gradient(45deg, color-mix(in srgb, var(--text) 2.5%, transparent) 0 1px, transparent 1px 4px); }
-
   [data-style="outline"] body { background-image: none; }
   [data-style="outline"] body::before { display: none; }
   [data-style="outline"] .surface { background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 55%, transparent); box-shadow: none; }
   [data-style="outline"] nav.surface { background: var(--bg); }
   [data-style="outline"] .surface-2 { background: transparent; }
-  [data-style="outline"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; letter-spacing: -0.02em; }
-
-  [data-style="elevated"] body { font-family: -apple-system, system-ui, sans-serif; background-image: none; }
+  [data-style="elevated"] body { background-image: none; }
   [data-style="elevated"] body::before { display: none; }
-  [data-style="elevated"] .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
-  [data-style="elevated"] .surface { border-color: transparent;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
+  [data-style="elevated"] .surface { border-color: transparent; box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
   [data-style="elevated"] .rounded-2xl { border-radius: 18px; }
 
+  /* ---- fonts: each style's type, usable with any style ---- */
+  [data-font="minimal"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  [data-font="minimal"] .display { font-family: inherit; letter-spacing: -0.02em; }
+  [data-font="minimal"] .tracking-\[0\.18em\], [data-font="minimal"] .tracking-\[0\.22em\] { letter-spacing: 0.06em; }
+  [data-font="soft"] body { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; }
+  [data-font="soft"] .display { font-family: inherit; font-weight: 700; }
+  [data-font="bold"] .display { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; }
+  [data-font="paper"] body { font-family: Georgia, 'Iowan Old Style', serif; }
+  [data-font="paper"] .display { font-style: italic; }
+  [data-font="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; }
+  [data-font="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
+  [data-font="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800; }
+  [data-font="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+  [data-font="typewriter"] body, [data-font="typewriter"] .display { font-family: 'American Typewriter', 'Courier New', Courier, monospace; }
+  [data-font="typewriter"] .display { font-weight: 700; letter-spacing: 0; }
+  [data-font="handwritten"] body, [data-font="handwritten"] .display { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; }
+  [data-font="handwritten"] .display { font-weight: 700; }
+  [data-font="editorial"] body { font-family: 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; }
+  [data-font="editorial"] .display { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-weight: 400; font-style: italic; letter-spacing: -0.01em; }
+  [data-font="editorial"] h1.display { font-size: 3.2rem; font-style: normal; }
+  [data-font="editorial"] .tracking-\[0\.18em\] { letter-spacing: 0.3em; }
+  [data-font="geometric"] body, [data-font="geometric"] .display { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; }
+  [data-font="geometric"] .display { font-weight: 700; letter-spacing: 0.01em; }
+  [data-font="graph"] body { font-family: 'Space Mono', ui-monospace, monospace; }
+  [data-font="graph"] .display { font-family: 'Space Mono', monospace; font-weight: 700; }
+  [data-font="dotted"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; }
+  [data-font="dotted"] .display { font-family: inherit; font-weight: 700; }
+  [data-font="linen"] body { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; }
+  [data-font="linen"] .display { font-family: 'Baskerville', Georgia, serif; font-weight: 600; }
+  [data-font="outline"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; letter-spacing: -0.02em; }
+  [data-font="elevated"] body { font-family: -apple-system, system-ui, sans-serif; }
+  [data-font="elevated"] .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
+
   /* ---- Settings: each style button is drawn in its own style ---- */
-  .sv-chip { height: 46px; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  .sv-chip { height: 46px; font-size: 13px; font-weight: 600; color: var(--text); background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; overflow: hidden; transition: transform 0.12s ease; }
   .sv-chip.active { background: var(--surface); color: var(--text); outline: 2px solid var(--gold); outline-offset: 2px; }
-  .sv-chip[data-val="classic"] { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
-  .sv-chip[data-val="minimal"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 500; border-radius: 6px; }
-  .sv-chip[data-val="soft"] { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; font-weight: 700;
-    background: var(--surface-2); border-color: transparent; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-  .sv-chip[data-val="bold"] { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em;
-    border: 2px solid var(--text); border-radius: 4px; box-shadow: 3px 3px 0 var(--text); }
-  .sv-chip[data-val="paper"] { font-family: Georgia, 'Iowan Old Style', serif; font-style: italic; border-radius: 2px;
-    background-image: repeating-linear-gradient(to bottom, transparent 0 11px, color-mix(in srgb, var(--text) 10%, transparent) 11px 12px); }
-  .sv-chip[data-val="newspaper"] { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; border: 1px solid var(--text);
-    border-bottom: 4px double var(--text); border-radius: 0; }
-  .sv-chip[data-val="glass"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 600;
-    background: linear-gradient(145deg, color-mix(in srgb, var(--text) 10%, transparent), color-mix(in srgb, var(--text) 3%, transparent));
-    border: 1px solid color-mix(in srgb, #ffffff 55%, transparent); border-radius: 14px;
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 70%, transparent); }
-  .sv-chip[data-val="neon"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
-    text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 80%, transparent);
-    border-color: color-mix(in srgb, var(--gold) 55%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 35%, transparent); }
-  .sv-chip[data-val="typewriter"] { font-family: 'American Typewriter', 'Courier New', Courier, monospace; font-weight: 700;
-    border-style: dashed; border-color: var(--text-dim); border-radius: 3px; }
-  .sv-chip[data-val="handwritten"] { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; font-weight: 700; font-size: 14px;
-    border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
-  .sv-chip[data-val="editorial"] { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-style: italic; font-size: 15px;
-    background: transparent; border-width: 0 0 1px 0; border-color: var(--text); border-radius: 0; }
-  .sv-chip[data-val="geometric"] { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; font-weight: 700; border-radius: 0; }
-  .sv-chip[data-val="graph"] { font-family: 'Space Mono', monospace; font-weight: 700; border-radius: 3px;
-    background-image: linear-gradient(color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px),
+  .sv-chip[data-val="minimal"] { border-radius: 6px; }
+  .sv-chip[data-val="soft"] { background: var(--surface-2); border-color: transparent; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .sv-chip[data-val="bold"] { border: 2px solid var(--text); border-radius: 4px; box-shadow: 3px 3px 0 var(--text); }
+  .sv-chip[data-val="paper"] { border-radius: 2px; background-image: repeating-linear-gradient(to bottom, transparent 0 11px, color-mix(in srgb, var(--text) 10%, transparent) 11px 12px); }
+  .sv-chip[data-val="newspaper"] { border: 1px solid var(--text); border-bottom: 4px double var(--text); border-radius: 0; }
+  .sv-chip[data-val="glass"] { background: linear-gradient(145deg, color-mix(in srgb, var(--text) 10%, transparent), color-mix(in srgb, var(--text) 3%, transparent)); border: 1px solid color-mix(in srgb, #ffffff 55%, transparent); border-radius: 14px; box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 70%, transparent); }
+  .sv-chip[data-val="neon"] { text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 80%, transparent); border-color: color-mix(in srgb, var(--gold) 55%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 35%, transparent); }
+  .sv-chip[data-val="typewriter"] { border-style: dashed; border-color: var(--text-dim); border-radius: 3px; }
+  .sv-chip[data-val="handwritten"] { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
+  .sv-chip[data-val="editorial"] { background: transparent; border-width: 0 0 1px 0; border-color: var(--text); border-radius: 0; }
+  .sv-chip[data-val="geometric"] { border-radius: 0; }
+  .sv-chip[data-val="graph"] { border-radius: 3px; background-image: linear-gradient(color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px),
       linear-gradient(90deg, color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px); background-size: 8px 8px; }
-  .sv-chip[data-val="dotted"] { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; font-weight: 700; border-radius: 14px;
-    background-image: radial-gradient(color-mix(in srgb, var(--text) 22%, transparent) 1px, transparent 1.3px); background-size: 7px 7px; }
-  .sv-chip[data-val="linen"] { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; font-weight: 600; font-size: 14px;
-    background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px),
+  .sv-chip[data-val="dotted"] { border-radius: 14px; background-image: radial-gradient(color-mix(in srgb, var(--text) 22%, transparent) 1px, transparent 1.3px); background-size: 7px 7px; }
+  .sv-chip[data-val="linen"] { background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px); }
-  .sv-chip[data-val="outline"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; font-size: 14px;
-    background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 60%, transparent); }
-  .sv-chip[data-val="elevated"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 700; border-color: transparent; border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.08), 0 10px 22px rgba(0,0,0,0.10); }
+  .sv-chip[data-val="outline"] { background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 60%, transparent); }
+  .sv-chip[data-val="elevated"] { border-color: transparent; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.08), 0 10px 22px rgba(0,0,0,0.10); }
+  /* font buttons: a plain box, each label set in that font */
+  .fv-chip { height: 46px; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .fv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .fv-chip[data-val="classic"] { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
+  .fv-chip[data-val="minimal"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 500; }
+  .fv-chip[data-val="soft"] { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="bold"] { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; }
+  .fv-chip[data-val="paper"] { font-family: Georgia, 'Iowan Old Style', serif; font-style: italic; }
+  .fv-chip[data-val="newspaper"] { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; }
+  .fv-chip[data-val="glass"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; }
+  .fv-chip[data-val="neon"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 800; }
+  .fv-chip[data-val="typewriter"] { font-family: 'American Typewriter', 'Courier New', Courier, monospace; font-weight: 700; }
+  .fv-chip[data-val="handwritten"] { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; font-weight: 700; font-size: 14px; }
+  .fv-chip[data-val="editorial"] { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-style: italic; font-size: 15px; }
+  .fv-chip[data-val="geometric"] { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="graph"] { font-family: 'Space Mono', monospace; font-weight: 700; }
+  .fv-chip[data-val="dotted"] { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; font-weight: 700; }
+  .fv-chip[data-val="linen"] { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; font-weight: 600; font-size: 14px; }
+  .fv-chip[data-val="outline"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; font-size: 14px; }
+  .fv-chip[data-val="elevated"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 700; }
   /* week style buttons: a tiny sample of the board */
   .wv-chip { height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
@@ -754,7 +736,8 @@ const DEFAULT_SETTINGS = {
   accent: '#b08d2e',
   weekStart: 1,           // 1 = Monday, 0 = Sunday
   calDefault: 'month',    // view the Calendar tab opens on
-  style: 'classic',       // whole-app look: 'classic' | 'minimal' | 'soft' | 'bold'
+  style: 'classic',       // shapes, surfaces and textures: a key of APP_STYLES
+  font: 'auto',           // type: 'auto' follows the style, or a key of APP_STYLES
   weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
@@ -837,6 +820,7 @@ function cleanSettings(raw) {
   if (raw.weekStart === 0 || raw.weekStart === 1) out.weekStart = raw.weekStart;
   if (['day','week','month','year'].includes(raw.calDefault)) out.calDefault = raw.calDefault;
   if (APP_STYLES.some(([v]) => v === raw.style)) out.style = raw.style;
+  if (raw.font === 'auto' || APP_STYLES.some(([v]) => v === raw.font)) out.font = raw.font;
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
   if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
   if (Array.isArray(raw.homeOrder)) {
@@ -2583,6 +2567,7 @@ function applySettings() {
   const root = document.documentElement;
   const mode = effectiveMode();
   root.setAttribute('data-style', style);
+  root.setAttribute('data-font', state.settings.font === 'auto' ? style : state.settings.font);
   root.setAttribute('data-mode', mode);
   root.setAttribute('data-layout', state.settings.layout);
   if (theme === 'system') root.removeAttribute('data-theme');
@@ -2705,8 +2690,10 @@ function renderSettingsTab() {
 
       ${section('Appearance',
         settingsRow('Color-code habits', "Draw each habit in its own color instead of the accent.", switchHTML('habitColors')) +
-        pickerHTML('App style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name,
-          'Each button shows that style. Styles change fonts, textures and shapes; colors come from your theme and accent.') +
+        pickerHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name,
+          'Shapes, borders and textures. Each button shows its look; colors come from your theme and accent.') +
+        pickerHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name,
+          'Pick the type separately, or keep Match style to use the font that comes with your style.') +
         pickerHTML('Week view style', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`,
           'Used for the week board and the calendar Week view.')
       )}
