@@ -552,6 +552,11 @@
   @keyframes toastIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
   @keyframes toastOut { to { opacity:0; transform: translateY(20px);} }
 
+  /* Text size: zoom scales type together with the boxes around it, so
+     nothing gets cramped. M is the original size. */
+  [data-text="s"] body { zoom: 0.92; }
+  [data-text="l"] body { zoom: 1.1; }
+  [data-text="xl"] body { zoom: 1.2; }
   .tab-row { grid-template-columns: repeat(4, 1fr); }
   [data-layout="focus"] .tab-row { grid-template-columns: repeat(5, 1fr); }
   [data-layout="full"] .tab-btn[data-tab="stats"] { display: none; }
@@ -768,6 +773,7 @@ const DEFAULT_SETTINGS = {
   weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
+  textSize: 'l',          // 's' | 'm' | 'l' | 'xl': scales the whole app
   homeOrder: ['summary', 'habits', 'todos', 'chart', 'stats', 'milestones', 'week'],
   showSummary: true,
   showChart: true,
@@ -850,6 +856,7 @@ function cleanSettings(raw) {
   if (raw.font === 'auto' || APP_STYLES.some(([v]) => v === raw.font)) out.font = raw.font;
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
   if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
+  if (['s','m','l','xl'].includes(raw.textSize)) out.textSize = raw.textSize;
   if (Array.isArray(raw.homeOrder)) {
     // keep known sections in the saved order, then append any new ones
     const known = DEFAULT_SETTINGS.homeOrder;
@@ -2597,6 +2604,7 @@ function applySettings() {
   root.setAttribute('data-font', state.settings.font === 'auto' ? style : state.settings.font);
   root.setAttribute('data-mode', mode);
   root.setAttribute('data-layout', state.settings.layout);
+  root.setAttribute('data-text', state.settings.textSize);
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
   root.style.setProperty('--gold', accent);
@@ -2706,6 +2714,7 @@ function renderSettingsTab() {
         settingsRow('Your name', '',
           `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
         settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
+        settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
         `<div class="py-3 border-t border-[var(--border)]">
            <div class="text-[13px] font-bold mb-2.5">Accent color</div>
            <div class="flex flex-wrap gap-2.5">${accents}</div>
