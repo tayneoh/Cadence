@@ -163,6 +163,206 @@
     .wk-box { width: 20px; height: 20px; }
   }
 
+  /* week style: tiles */
+  .wk-tile { width: 36px; height: 36px; border-radius: 9px; position: relative; overflow: hidden;
+    border: 2px solid var(--border); background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; transition: transform 0.12s ease; }
+  .wk-tile:active, .wk-pill:active, .wk-dot-btn:active { transform: scale(0.88); }
+  .wk-tile.today, .wk-pill.today { box-shadow: 0 0 0 2px var(--gold); }
+  .wk-tile:disabled, .wk-pill:disabled, .wk-dot-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media (min-width: 480px) { .wk-tile { width: 40px; height: 40px; } }
+
+  /* week style: compact dots (always one line per habit) */
+  .wk-dots { display: grid; grid-template-columns: minmax(0, 1fr) repeat(7, 28px) 30px;
+    gap: 6px 2px; align-items: center; justify-items: center; }
+  .wk-dots-label { justify-self: stretch; display: flex; align-items: center; gap: 6px;
+    font-size: 12px; min-width: 0; }
+  .wk-dots-count { font-size: 10px; color: var(--text-dim); justify-self: end; }
+  .wk-dot-btn { width: 28px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; transition: transform 0.12s ease; }
+  .wk-dot-btn.today { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+  .wk-dot { width: 14px; height: 14px; border-radius: 99px; border: 2px solid; position: relative; overflow: hidden; }
+
+  /* week style: pills */
+  .wk-pill { height: 34px; border-radius: 99px; border: 1.5px solid var(--border); background: var(--surface-2);
+    font-size: 11px; font-weight: 700; color: var(--text-dim); position: relative; overflow: hidden;
+    transition: transform 0.12s ease; }
+
+  /* Home layout edit mode */
+  .home-edit-block { border: 1.5px dashed var(--border); border-radius: 18px; padding: 8px; }
+  .home-edit-block.is-hidden .home-edit-body { opacity: 0.3; }
+  .home-edit-bar { display: flex; align-items: center; gap: 6px; padding: 2px 4px 8px; }
+  .home-edit-btn { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+  .home-edit-btn:disabled { opacity: 0.3; }
+  .home-edit-body { pointer-events: none; }
+
+  /* ---- app styles (Settings -> Appearance) ----
+     classic is the base look above; the others override fonts, shapes
+     and surfaces. Colors still come from the theme + accent. */
+  [data-style="minimal"] body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background-image: none; }
+  [data-style="minimal"] body::before { display: none; }
+  [data-style="minimal"] .display { font-family: inherit; letter-spacing: -0.02em; }
+  [data-style="minimal"] .surface { box-shadow: none; }
+  [data-style="minimal"] .rounded-2xl { border-radius: 12px; }
+  [data-style="minimal"] .rounded-xl { border-radius: 10px; }
+  [data-style="minimal"] .tracking-\[0\.18em\], [data-style="minimal"] .tracking-\[0\.22em\] { letter-spacing: 0.06em; }
+
+  [data-style="soft"] body { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
+    background-image:
+      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%),
+      radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
+  [data-style="soft"] body::before { display: none; }
+  [data-style="soft"] .display { font-family: inherit; font-weight: 700; }
+  [data-style="soft"] .surface { border-color: transparent; box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
+  [data-style="soft"] nav.surface { box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
+  [data-style="soft"] .rounded-2xl { border-radius: 26px; }
+  [data-style="soft"] .rounded-xl { border-radius: 18px; }
+  [data-style="soft"] .rounded-lg { border-radius: 14px; }
+  [data-style="soft"] .wk-label { border-bottom: none; border-radius: 12px; }
+
+  [data-style="bold"] body { background-image: none; }
+  [data-style="bold"] body::before { display: none; }
+  [data-style="bold"] .display { font-family: 'Space Mono', monospace; font-weight: 700;
+    text-transform: uppercase; letter-spacing: -0.03em; }
+  [data-style="bold"] .surface { border: 2px solid var(--text); box-shadow: 4px 4px 0 var(--text); }
+  [data-style="bold"] nav.surface { box-shadow: none; border-width: 2px 0 0 0; }
+  [data-style="bold"] .rounded-2xl { border-radius: 6px; }
+  [data-style="bold"] .rounded-xl, [data-style="bold"] .rounded-lg { border-radius: 4px; }
+  [data-style="bold"] .wk-cell, [data-style="bold"] .wk-pill { border-radius: 4px; }
+
+  /* Styles below bring their own palette. `:not(#_)` lifts specificity
+     above the light/dark theme rules so the palette wins either way;
+     the accent color (set inline on <html>) still applies on top. */
+  [data-style="paper"] body { font-family: Georgia, 'Iowan Old Style', serif;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(58,110,165,0.12) 27px, rgba(58,110,165,0.12) 28px); }
+  :root[data-style="paper"]:not(#_) { --bg: #fdf9ee; --surface: #fffdf6; --surface-2: #f6f0de; --border: #e5dcc3;
+    --text: #2a2520; --text-dim: #6e6455; --text-faint: #a59a86; --wk-cell: #ece4cd; color-scheme: light; }
+  [data-style="paper"] body::before { display: none; }
+  [data-style="paper"] .surface { box-shadow: 0 1px 0 #e5dcc3, 0 4px 10px rgba(80,60,20,0.07); }
+  [data-style="paper"] .rounded-2xl { border-radius: 4px; }
+  [data-style="paper"] .display { font-style: italic; }
+
+  :root[data-style="newspaper"]:not(#_) { --bg: #f7f5f0; --surface: #f7f5f0; --surface-2: #ecebe5; --border: #1a1a1a;
+    --text: #111111; --text-dim: #444444; --text-faint: #777777; --wk-cell: #e2e0da; color-scheme: light; }
+  [data-style="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; background-image: none; }
+  [data-style="newspaper"] body::before { display: none; }
+  [data-style="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
+  [data-style="newspaper"] h1.display { border-bottom: 4px double #111; padding-bottom: 6px; }
+  [data-style="newspaper"] .surface { border: 1px solid #111; box-shadow: none; }
+  [data-style="newspaper"] .rounded-2xl, [data-style="newspaper"] .rounded-xl, [data-style="newspaper"] .rounded-lg { border-radius: 0; }
+
+  :root[data-style="neon"]:not(#_) { --bg: #090914; --surface: #12122a; --surface-2: #1b1b3a; --border: #2c2c5a;
+    --text: #ecebff; --text-dim: #a3a1d6; --text-faint: #6b69a3; --wk-cell: #23234a; color-scheme: dark; }
+  [data-style="neon"] body { background-image:
+      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 25%, transparent), transparent 70%),
+      radial-gradient(600px 500px at 0% 100%, rgba(255, 0, 170, 0.18), transparent 70%); }
+  [data-style="neon"] body::before { display: none; }
+  [data-style="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
+  [data-style="neon"] .surface { box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent),
+    0 0 22px color-mix(in srgb, var(--gold) 18%, transparent); }
+  [data-style="neon"] .wk-box { border-color: var(--text-dim); }
+
+  /* ---- texture / font styles: these keep the theme colors and only
+     change type, surfaces and backgrounds. Patterns are drawn with
+     color-mix on --text so they work in light and dark. ---- */
+  [data-style="glass"] body { background-image:
+      radial-gradient(520px 380px at 85% 5%, color-mix(in srgb, var(--text) 9%, transparent), transparent 70%),
+      radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 7%, transparent), transparent 70%),
+      radial-gradient(520px 380px at 75% 95%, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%); }
+  [data-style="glass"] body::before { display: none; }
+  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 38%, transparent);
+    border: 1px solid color-mix(in srgb, #ffffff 45%, transparent);
+    backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent), 0 8px 32px rgba(0,0,0,0.08); }
+  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  [data-style="glass"] .rounded-2xl { border-radius: 22px; }
+  [data-style="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+
+  [data-style="typewriter"] body, [data-style="typewriter"] .display {
+    font-family: 'American Typewriter', 'Courier New', Courier, monospace; }
+  [data-style="typewriter"] .display { font-weight: 700; letter-spacing: 0; }
+  [data-style="typewriter"] body::before { opacity: 0.07; }
+  [data-style="typewriter"] .surface { border-style: dashed; box-shadow: none; }
+  [data-style="typewriter"] .rounded-2xl, [data-style="typewriter"] .rounded-xl { border-radius: 3px; }
+
+  [data-style="handwritten"] body, [data-style="handwritten"] .display {
+    font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; }
+  [data-style="handwritten"] .display { font-weight: 700; }
+  [data-style="handwritten"] body { background-image: none; }
+  [data-style="handwritten"] .surface { border: 2px solid color-mix(in srgb, var(--text) 75%, transparent);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px !important; box-shadow: none; }
+  [data-style="handwritten"] .check-box, [data-style="handwritten"] .wk-box { border-radius: 4px 7px 3px 6px; }
+
+  [data-style="editorial"] body { font-family: 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; background-image: none; }
+  [data-style="editorial"] body::before { display: none; }
+  [data-style="editorial"] .display { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif;
+    font-weight: 400; font-style: italic; letter-spacing: -0.01em; }
+  [data-style="editorial"] h1.display { font-size: 3.2rem; font-style: normal; }
+  [data-style="editorial"] .surface { background: transparent; border-width: 0 0 1px 0; border-radius: 0 !important; box-shadow: none; }
+  [data-style="editorial"] nav.surface { background: var(--bg); border-width: 1px 0 0 0; }
+  [data-style="editorial"] .tracking-\[0\.18em\] { letter-spacing: 0.3em; }
+
+  [data-style="geometric"] body, [data-style="geometric"] .display {
+    font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; }
+  [data-style="geometric"] .display { font-weight: 700; letter-spacing: 0.01em; }
+  [data-style="geometric"] body { background-image: none; }
+  [data-style="geometric"] body::before { display: none; }
+  [data-style="geometric"] .rounded-2xl, [data-style="geometric"] .rounded-xl, [data-style="geometric"] .rounded-lg { border-radius: 0; }
+  [data-style="geometric"] .surface { box-shadow: none; }
+  [data-style="geometric"] .wk-cell, [data-style="geometric"] .wk-pill { border-radius: 0; }
+
+  [data-style="graph"] body { font-family: 'Space Mono', ui-monospace, monospace; background-image:
+      linear-gradient(color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px);
+    background-size: 20px 20px; }
+  [data-style="graph"] body::before { display: none; }
+  [data-style="graph"] .display { font-family: 'Space Mono', monospace; font-weight: 700; }
+  [data-style="graph"] .rounded-2xl { border-radius: 4px; }
+
+  [data-style="dotted"] body { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; background-image:
+      radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) 1.2px, transparent 1.4px);
+    background-size: 18px 18px; }
+  [data-style="dotted"] body::before { display: none; }
+  [data-style="dotted"] .display { font-family: inherit; font-weight: 700; }
+  [data-style="dotted"] .rounded-2xl { border-radius: 20px; }
+
+  [data-style="linen"] body { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; background-image:
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 3px); }
+  [data-style="linen"] body::before { opacity: 0.06; }
+  [data-style="linen"] .display { font-family: 'Baskerville', Georgia, serif; font-weight: 600; }
+  [data-style="linen"] .surface { background-image:
+      repeating-linear-gradient(45deg, color-mix(in srgb, var(--text) 2.5%, transparent) 0 1px, transparent 1px 4px); }
+
+  [data-style="outline"] body { background-image: none; }
+  [data-style="outline"] body::before { display: none; }
+  [data-style="outline"] .surface { background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 55%, transparent); box-shadow: none; }
+  [data-style="outline"] nav.surface { background: var(--bg); }
+  [data-style="outline"] .surface-2 { background: transparent; }
+  [data-style="outline"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; letter-spacing: -0.02em; }
+
+  [data-style="elevated"] body { font-family: -apple-system, system-ui, sans-serif; background-image: none; }
+  [data-style="elevated"] body::before { display: none; }
+  [data-style="elevated"] .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
+  [data-style="elevated"] .surface { border-color: transparent;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
+  [data-style="elevated"] .rounded-2xl { border-radius: 18px; }
+
+  /* week style: bars (seven segments per habit) */
+  .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: transform 0.12s ease; }
+  .wk-bar:active, .wk-plain:active { transform: scale(0.9); }
+  .wk-bar.today { box-shadow: 0 0 0 2px var(--gold); }
+  .wk-bar:disabled, .wk-plain:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* week style: plain (just marks, no backgrounds) */
+  .wk-plain { width: 28px; height: 32px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: var(--text-faint); border-radius: 8px; }
+  .wk-plain.today { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+
   /* ---- year heatmap ---- */
   .yr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .yr-day { aspect-ratio: 1 / 1; border-radius: 2px; background: var(--surface-2); cursor: pointer; }
@@ -448,10 +648,31 @@ const DEFAULT_SETTINGS = {
   accent: '#b08d2e',
   weekStart: 1,           // 1 = Monday, 0 = Sunday
   calDefault: 'month',    // view the Calendar tab opens on
+  style: 'classic',       // whole-app look: 'classic' | 'minimal' | 'soft' | 'bold'
+  weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
+  homeOrder: ['summary', 'habits', 'todos', 'week', 'stats'],
+  showSummary: true,
   showTodos: true,
   showWeek: true,
   showStats: true,
   badge: false,           // habits-left count on the home-screen icon
+};
+
+const APP_STYLES = [
+  ['classic','Classic'], ['minimal','Minimal'], ['soft','Soft'], ['bold','Bold'],
+  ['paper','Paper'], ['newspaper','Newspaper'], ['glass','Glass'], ['neon','Neon'],
+  ['typewriter','Typewriter'], ['handwritten','Handwritten'], ['editorial','Editorial'], ['geometric','Geometric'],
+  ['graph','Graph paper'], ['dotted','Dot grid'], ['linen','Linen'], ['outline','Outline'],
+  ['elevated','Elevated'],
+];
+const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
+  ['bars','Bars'],['plain','Plain']];
+const HOME_SECTIONS = {
+  summary: { label: 'Today summary', toggle: 'showSummary' },
+  habits:  { label: "Today's habits", toggle: null },          // always shown
+  todos:   { label: 'Quick to-do', toggle: 'showTodos' },
+  week:    { label: 'This week', toggle: 'showWeek' },
+  stats:   { label: 'At a glance', toggle: 'showStats' },
 };
 
 function emptyState() {
@@ -467,7 +688,15 @@ function cleanSettings(raw) {
   if (typeof raw.accent === 'string' && /^#[0-9a-f]{6}$/i.test(raw.accent)) out.accent = raw.accent;
   if (raw.weekStart === 0 || raw.weekStart === 1) out.weekStart = raw.weekStart;
   if (['day','week','month','year'].includes(raw.calDefault)) out.calDefault = raw.calDefault;
-  ['showTodos','showWeek','showStats','badge'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  if (APP_STYLES.some(([v]) => v === raw.style)) out.style = raw.style;
+  if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
+  if (Array.isArray(raw.homeOrder)) {
+    // keep known sections in the saved order, then append any new ones
+    const known = DEFAULT_SETTINGS.homeOrder;
+    const order = raw.homeOrder.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i);
+    out.homeOrder = [...order, ...known.filter(k => !order.includes(k))];
+  }
+  ['showSummary','showTodos','showWeek','showStats','badge'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -788,30 +1017,120 @@ function dayScore(iso) {
   return state.habits.reduce((s, h) => s + dayProgress(h, iso), 0) / state.habits.length;
 }
 
-/* Weekly board: one row per habit, one checkbox per day, Monday first.
-   Shared by the Home tab (current week) and the Calendar week view. */
+/* Weekly board: one row per habit, one toggle per day, week start per
+   Settings. Shared by the Home tab (current week) and the Calendar week
+   view. Six looks, picked in Settings -> Appearance:
+     circles  checkbox inside a grey circle (the original look)
+     tiles    rounded squares that fill with the habit's color
+     dots     one compact line per habit, small dots
+     pills    day-letter pills that fill with the habit's color
+     bars     seven bar segments per habit
+     plain    text marks only (✓ done, ◐ partial, · missed)              */
 function weekGridHTML(start) {
   const today = todayISO();
+  const style = state.settings.weekStyle;
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  let html = '<div class="wk-grid"><div class="wk-corner"></div>';
-  days.forEach(iso => {
-    html += `<div class="wk-head ${iso === today ? 'is-today' : ''}">${WEEKDAY_LETTERS[fromISO(iso).getDay()]}<br>${fromISO(iso).getDate()}</div>`;
-  });
+  const letter = iso => WEEKDAY_LETTERS[fromISO(iso).getDay()];
+  const head = (cls) => days.map(iso =>
+    `<div class="${cls} ${iso === today ? 'is-today' : ''}">${letter(iso)}<br>${fromISO(iso).getDate()}</div>`).join('');
+  const cellAttrs = (h, iso) =>
+    `data-week-toggle="${h.id}" data-date="${iso}" ${iso > today ? 'disabled' : ''} aria-label="${escapeHtml(h.title)} on ${iso}"`;
+  const partial = (h, prog, opacity) => prog > 0 && prog < 1
+    ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:${opacity};"></span>` : '';
+  const countOf = h => days.filter(iso => isDayDone(h, iso)).length;
+
+  if (style === 'dots') {
+    let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
+    state.habits.forEach(h => {
+      html += `<div class="wk-dots-label" title="${escapeHtml(h.title)}">
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${h.color}"></span>
+          <span class="truncate">${escapeHtml(h.title)}</span></div>`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        html += `<button class="wk-dot-btn ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
+            <span class="wk-dot" style="border-color:${h.color}; ${prog >= 1 ? `background:${h.color};` : ''}">${partial(h, prog, 0.7)}</span></button>`;
+      });
+      html += `<div class="wk-dots-count">${countOf(h)}/7</div>`;
+    });
+    return html + '</div>';
+  }
+
+  if (style === 'pills') {
+    let html = '<div class="space-y-4">';
+    state.habits.forEach(h => {
+      html += `<div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${h.color}"></span>
+            <span class="text-[13px] font-bold truncate flex-1">${escapeHtml(h.title)}</span>
+            <span class="text-[11px] text-[var(--text-dim)] shrink-0">${countOf(h)} / 7</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1.5">`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        const done = prog >= 1;
+        html += `<button class="wk-pill ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
+            style="${done ? `background:${h.color}; border-color:${h.color}; color:#ffffff;` : ''}">
+            ${partial(h, prog, 0.35)}<span class="relative">${letter(iso)}</span></button>`;
+      });
+      html += '</div></div>';
+    });
+    return html + '</div>';
+  }
+
+  if (style === 'bars') {
+    let html = '<div class="space-y-3.5">';
+    state.habits.forEach(h => {
+      html += `<div>
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-[13px] font-bold truncate flex-1">${escapeHtml(h.title)}</span>
+            <span class="text-[11px] text-[var(--text-dim)] shrink-0">${countOf(h)} / 7</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1">`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        html += `<button class="wk-bar ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
+            <span style="position:absolute;left:0;top:0;bottom:0;width:${Math.round(prog*100)}%;background:${h.color};"></span></button>`;
+      });
+      html += '</div></div>';
+    });
+    html += `<div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-[var(--text-faint)]">
+        ${days.map(iso => `<span class="${iso === today ? 'text-[var(--gold)]' : ''}">${letter(iso)}</span>`).join('')}</div>`;
+    return html + '</div>';
+  }
+
+  if (style === 'plain') {
+    let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
+    state.habits.forEach(h => {
+      html += `<div class="wk-dots-label" title="${escapeHtml(h.title)}"><span class="truncate">${escapeHtml(h.title)}</span></div>`;
+      days.forEach(iso => {
+        const prog = dayProgress(h, iso);
+        const mark = prog >= 1 ? '✓' : prog > 0 ? '◐' : iso > today ? '' : '·';
+        html += `<button class="wk-plain ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
+            style="${prog > 0 ? `color:${h.color};` : ''}">${mark}</button>`;
+      });
+      html += `<div class="wk-dots-count">${countOf(h)}/7</div>`;
+    });
+    return html + '</div>';
+  }
+
+  // circles + tiles share the label-and-row layout
+  let html = `<div class="wk-grid"><div class="wk-corner"></div>${head('wk-head')}`;
   state.habits.forEach(h => {
-    const doneThisWeek = days.filter(iso => isDayDone(h, iso)).length;
     html += `<div class="wk-label" style="background:${h.color}22;" title="${escapeHtml(h.title)}">
-        ${escapeHtml(h.title)}<small>${doneThisWeek} / 7 this week</small></div>`;
+        ${escapeHtml(h.title)}<small>${countOf(h)} / 7 this week</small></div>`;
     days.forEach(iso => {
       const prog = dayProgress(h, iso);
-      const future = iso > today;
-      const inner = prog >= 1
-        ? `<i data-lucide="check" class="w-3.5 h-3.5" style="color:var(--text); stroke-width:3.5;"></i>`
-        : prog > 0
-          ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${h.color};opacity:0.6;"></span>`
-          : '';
-      html += `<button class="wk-cell ${iso === today ? 'today' : ''}" data-week-toggle="${h.id}" data-date="${iso}"
-          ${future ? 'disabled' : ''} aria-label="${escapeHtml(h.title)} on ${iso}">
-          <span class="wk-box" style="${prog >= 1 ? `background:${h.color}33;` : ''}">${inner}</span></button>`;
+      if (style === 'tiles') {
+        html += `<button class="wk-tile ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}
+            style="${prog >= 1 ? `background:${h.color}; border-color:${h.color};` : ''}">
+            ${prog >= 1 ? `<i data-lucide="check" class="w-4 h-4" style="color:#ffffff; stroke-width:3;"></i>` : partial(h, prog, 0.5)}</button>`;
+      } else {
+        const inner = prog >= 1
+          ? `<i data-lucide="check" class="w-3.5 h-3.5" style="color:var(--text); stroke-width:3.5;"></i>`
+          : partial(h, prog, 0.6);
+        html += `<button class="wk-cell ${iso === today ? 'today' : ''}" ${cellAttrs(h, iso)}>
+            <span class="wk-box" style="${prog >= 1 ? `background:${h.color}33;` : ''}">${inner}</span></button>`;
+      }
     });
   });
   return html + '</div>';
@@ -939,6 +1258,16 @@ function drawIcons() {
 }
 
 let activeTab = 'home';
+let homeEditing = false;   // Home layout edit mode, switched on from Settings
+
+/* move a Home section up (-1) or down (+1); no-op at the ends */
+function moveHomeSection(key, delta) {
+  const order = [...state.settings.homeOrder];
+  const i = order.indexOf(key), j = i + delta;
+  if (i < 0 || j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  updateSetting('homeOrder', order);
+}
 
 function render() {
   const now = new Date();
@@ -1038,8 +1367,9 @@ function renderHomeTab() {
     }
   });
 
-  root.innerHTML = `
-    <div class="tab-enter space-y-6">
+  // each Home section as markup; the order and visibility come from Settings
+  const sections = {
+    summary: () => `
       <div class="surface rounded-2xl p-5">
         <div class="flex items-baseline justify-between mb-3">
           <h2 class="display text-2xl font-semibold">Today</h2>
@@ -1052,21 +1382,20 @@ function renderHomeTab() {
           dayPct === 100 ? 'Every habit complete — nice work.' :
           dayPct === 0 ? 'Nothing checked off yet today.' :
           dayPct + "% of today's habits complete."}</p>
-      </div>
-
+      </div>`,
+    habits: () => `
       <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Today's habits</h3>
         <div class="space-y-2.5">${checklist}</div>
-      </div>
-
-      ${state.settings.showTodos ? todoSectionHTML() : ''}
-
-      ${state.settings.showWeek ? `<div>
+      </div>`,
+    todos: () => todoSectionHTML(),
+    week: () => `
+      <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">This week</h3>
         <div class="surface rounded-2xl p-4">${weekGridHTML(startOfWeek(today))}</div>
-      </div>` : ''}
-
-      ${state.settings.showStats ? `<div>
+      </div>`,
+    stats: () => `
+      <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">At a glance</h3>
         <div class="grid grid-cols-3 gap-2.5">
           <div class="surface rounded-2xl p-4">
@@ -1088,8 +1417,51 @@ function renderHomeTab() {
             </div>
           </div>
         </div>
-      </div>` : ''}
-    </div>`;
+      </div>`,
+  };
+
+  const order = state.settings.homeOrder;
+  const parts = order.map((key, i) => {
+    const meta = HOME_SECTIONS[key];
+    const shown = !meta.toggle || state.settings[meta.toggle];
+    if (!homeEditing) return shown ? sections[key]() : '';
+    // edit mode: every section gets a bar to move it or hide it
+    return `
+      <div class="home-edit-block ${shown ? '' : 'is-hidden'}">
+        <div class="home-edit-bar">
+          <i data-lucide="grip-vertical" class="w-4 h-4 text-[var(--text-faint)]"></i>
+          <span class="flex-1 text-[12px] font-bold">${meta.label}</span>
+          ${meta.toggle ? `<button data-home-hide="${key}" class="home-edit-btn" aria-label="${shown ? 'Hide' : 'Show'} ${meta.label}">
+              <i data-lucide="${shown ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>` : ''}
+          <button data-home-move="${key}" data-dir="-1" class="home-edit-btn" ${i === 0 ? 'disabled' : ''} aria-label="Move up">
+            <i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+          <button data-home-move="${key}" data-dir="1" class="home-edit-btn" ${i === order.length - 1 ? 'disabled' : ''} aria-label="Move down">
+            <i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+        </div>
+        <div class="home-edit-body">${sections[key]()}</div>
+      </div>`;
+  });
+
+  const editBanner = homeEditing ? `
+      <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold);">
+        <i data-lucide="layout-grid" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
+        <p class="flex-1 text-[12px] text-[var(--text-dim)] leading-snug">Editing layout. Use the arrows to move sections and the eye to hide them.</p>
+        <button id="homeEditDone" class="btn-press shrink-0 bg-[var(--text)] text-[var(--bg)] rounded-xl px-4 h-10 text-[13px] font-bold">Done</button>
+      </div>` : '';
+
+  root.innerHTML = `<div class="tab-enter space-y-6">${editBanner}${parts.join('')}</div>`;
+
+  root.querySelector('#homeEditDone')?.addEventListener('click', () => { homeEditing = false; render(); });
+  root.querySelectorAll('[data-home-move]').forEach(btn => {
+    btn.addEventListener('click', () => { moveHomeSection(btn.dataset.homeMove, Number(btn.dataset.dir)); render(); });
+  });
+  root.querySelectorAll('[data-home-hide]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = HOME_SECTIONS[btn.dataset.homeHide].toggle;
+      updateSetting(t, !state.settings[t]);
+      render();
+    });
+  });
 
   root.querySelectorAll('[data-toggle-today]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1789,8 +2161,9 @@ function updateSetting(key, value) {
 
 /* push theme + accent onto the page */
 function applySettings() {
-  const { theme, accent } = state.settings;
+  const { theme, accent, style } = state.settings;
   const root = document.documentElement;
+  root.setAttribute('data-style', style);
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
   root.style.setProperty('--gold', accent);
@@ -1843,6 +2216,19 @@ function segHTML(key, options) {
     </div>`;
 }
 
+function choiceGridHTML(label, key, options, hint, cols = 4) {
+  return `
+    <div class="py-3 border-t border-[var(--border)] first:border-t-0">
+      <div class="text-[13px] font-bold">${label}</div>
+      ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
+      <div class="grid ${cols === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-1.5 mt-2.5">
+        ${options.map(([val, name]) => `
+          <button data-seg="${key}" data-val="${val}"
+            class="seg-btn btn-press surface-2 border border-[var(--border)] rounded-lg h-9 text-[11px] font-bold ${state.settings[key] === val ? 'active' : 'text-[var(--text-dim)]'}">${name}</button>`).join('')}
+      </div>
+    </div>`;
+}
+
 function switchHTML(key) {
   return `<button data-switch="${key}" role="switch" aria-checked="${!!state.settings[key]}" class="switch" aria-label="${key}"></button>`;
 }
@@ -1879,7 +2265,16 @@ function renderSettingsTab() {
         settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']]))
       )}
 
+      ${section('Appearance',
+        choiceGridHTML('App style', 'style', APP_STYLES,
+          'Paper, Newspaper and Neon bring their own colors. Every other style keeps your theme and accent and only changes fonts, textures and shapes.', 3) +
+        choiceGridHTML('Week view style', 'weekStyle', WEEK_STYLES, 'Used on Home and in the calendar Week view.', 3)
+      )}
+
       ${section('Home screen',
+        settingsRow('Edit Home layout', 'Move sections up or down, or hide them, right on the Home tab.',
+          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit Home layout"></button>`) +
+        settingsRow('Today summary', '', switchHTML('showSummary')) +
         settingsRow('Quick to-do', '', switchHTML('showTodos')) +
         settingsRow('This week board', '', switchHTML('showWeek')) +
         settingsRow('At a glance stats', '', switchHTML('showStats'))
@@ -1940,6 +2335,10 @@ function renderSettingsTab() {
       if (key === 'calDefault') calMode = val;
       render();
     });
+  });
+  root.querySelector('#homeEditSwitch').addEventListener('click', () => {
+    homeEditing = !homeEditing;
+    if (homeEditing) switchTab('home'); else render();
   });
   root.querySelectorAll('[data-accent]').forEach(btn => {
     btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); render(); });
@@ -2090,6 +2489,7 @@ function showToast(msg) {
 function switchTab(tab) {
   // leaving the new-habit form: clear any in-progress edit so returning
   // to it starts fresh instead of resuming a stale editing session
+  if (activeTab === 'home' && tab !== 'home') homeEditing = false;
   if (activeTab === 'new' && tab !== 'new') {
     editingId = null;
     editDraft = null;
