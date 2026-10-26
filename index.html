@@ -476,6 +476,43 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.05); }
   [data-design="cloud"][data-mode="dark"][data-layout="focus"] .tab-new .tab-icon-wrap { background: var(--surface-2) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
+  /* Moss: plain white, outlined cards, muted forest greens in a few
+     shades, gray section titles, and a wave of green on the summary card */
+  :root[data-design="moss"][data-mode="light"]:not(#_) { --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --border: #e4e4e4;
+    --text: #111111; --text-dim: #7a7a7a; --text-faint: #9a9a9a; --wk-cell: #efefef; color-scheme: light; }
+  :root[data-design="moss"][data-mode="dark"]:not(#_) { --bg: #0e1210; --surface: #151b18; --surface-2: #1f2723; --border: #2b3530;
+    --text: #eef3f0; --text-dim: #93a39a; --text-faint: #66756d; --wk-cell: #222b26; color-scheme: dark; }
+  [data-design="moss"] body { background-image: none; }
+  [data-design="moss"] .surface { border-width: 1.5px; box-shadow: none; }
+  [data-design="moss"] .rounded-2xl { border-radius: 28px; }
+  [data-design="moss"] .dash-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--text-dim); }
+  [data-design="moss"] .dash-title { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
+  [data-design="moss"] h3.uppercase { text-transform: none; letter-spacing: -0.01em; font-size: 20px; font-weight: 500; color: var(--text-dim); }
+  [data-design="moss"] .chart-tab { border-color: transparent; background: var(--surface); color: var(--text-dim); text-transform: none; font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+  [data-design="moss"] .chart-tab.active { background: var(--gold); color: #ffffff; }
+  [data-design="moss"] .wk-cell { border-radius: 10px; }
+  [data-design="moss"] .chart-bar { border-radius: 8px; }
+  [data-design="moss"] .chart-bar.is-empty { background: var(--wk-cell); }
+  [data-design="moss"] .mini-chip { background: rgba(255,255,255,0.7); color: #1d3a2d; }
+  [data-design="moss"] .mini-chip svg { color: #2f6b51; }
+  /* summary card: pale mint with a deep green wave across two corners */
+  [data-design="moss"] .summary-card { border: none; color: #10261c;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e2eee8'/%3E%3Cstop offset='1' stop-color='%23c6dbd0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='200' fill='url%28%23g%29'/%3E%3Cpath d='M0 150 C70 120 120 175 175 200 L0 200 Z' fill='%232f6b51'/%3E%3Cpath d='M280 0 C300 40 345 70 400 62 L400 0 Z' fill='%232f6b51'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+    box-shadow: 0 10px 30px rgba(47,107,81,0.18); }
+  [data-design="moss"] .summary-card .text-\[var\(--text-dim\)\] { color: #3d5a4c; }
+  [data-design="moss"] .summary-card .score-ring { background: conic-gradient(#2f6b51 calc(var(--pct) * 1%), #f3f8f5 0); }
+  [data-design="moss"] .summary-card .score-ring::before { background: #eef5f1; }
+  [data-design="moss"] .summary-card .score-cap { color: #5b7a6b; }
+  [data-design="moss"][data-mode="dark"] .summary-card { color: #eef3f0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231f2c26'/%3E%3Cstop offset='1' stop-color='%23151f1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='200' fill='url%28%23g%29'/%3E%3Cpath d='M0 150 C70 120 120 175 175 200 L0 200 Z' fill='%234f9a78'/%3E%3Cpath d='M280 0 C300 40 345 70 400 62 L400 0 Z' fill='%234f9a78'/%3E%3C/svg%3E") center / 100% 100% no-repeat; box-shadow: none; }
+  [data-design="moss"][data-mode="dark"] .summary-card .text-\[var\(--text-dim\)\] { color: #a9bdb2; }
+  [data-design="moss"][data-mode="dark"] .summary-card .score-ring { background: conic-gradient(#8fd1b1 calc(var(--pct) * 1%), #2b3832 0); }
+  [data-design="moss"][data-mode="dark"] .summary-card .score-ring::before { background: #16211c; }
+  [data-design="moss"][data-mode="dark"] .mini-chip { background: rgba(255,255,255,0.08); color: #d6e6dd; }
+  [data-design="moss"][data-mode="dark"] .mini-chip svg { color: #8fd1b1; }
+  [data-design="moss"][data-layout="focus"] .tab-new .tab-icon-wrap { color: #ffffff; }
+
   /* Mono: black and white, one gray, crisp hairlines */
   :root[data-design="mono"][data-mode="dark"]:not(#_) { --bg: #000000; --surface: #0e0e0e; --surface-2: #1a1a1a; --border: #2a2a2a;
     --text: #f5f5f5; --text-dim: #a3a3a3; --text-faint: #666666; --wk-cell: #1f1f1f; color-scheme: dark; }
@@ -839,6 +876,7 @@ const DESIGNS = {
   glass: { label: 'Glass', light: { primary: '#3d6fd9', second: '#8a93a6' }, dark: { primary: '#8fb4ff', second: '#9aa3b5' } },
   mono:  { label: 'Mono',  light: { primary: '#111111', second: '#8c8c8c' }, dark: { primary: '#f5f5f5', second: '#8c8c8c' } },
   ember: { label: 'Ember', light: { primary: '#de5f24', second: '#f2a679' }, dark: { primary: '#ff8a4c', second: '#ffc8a6' } },
+  moss:  { label: 'Moss',  light: { primary: '#3d7a5f', second: '#8fb5a3' }, dark: { primary: '#6fb593', second: '#3f6f5a' } },
   cloud: { label: 'Cloud', light: { primary: '#111111', second: '#9b9b9b' }, dark: { primary: '#f2f2f2', second: '#8a8a8a' } },
   sage:  { label: 'Sage',  light: { primary: '#2f8a5f', second: '#8db8a2' }, dark: { primary: '#7fd1a7', second: '#c8e6d5' } },
 };
@@ -1840,7 +1878,7 @@ function renderHomeTab(page = 'home') {
 
   // today's summary: a ring with the share of habits done
   sections.summary = () => `
-      <div class="surface rounded-2xl p-5 flex items-center gap-5">
+      <div class="summary-card surface rounded-2xl p-5 flex items-center gap-5">
         <div class="score-ring" style="--pct:${dayPct}" role="img" aria-label="${dayPct}% of habits done today">
           <span class="score-num">${dayPct}<small>%</small></span><span class="score-cap">done</span></div>
         <div class="min-w-0 flex-1">
