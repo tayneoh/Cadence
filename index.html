@@ -232,32 +232,25 @@
   [data-style="bold"] .rounded-xl, [data-style="bold"] .rounded-lg { border-radius: 4px; }
   [data-style="bold"] .wk-cell, [data-style="bold"] .wk-pill { border-radius: 4px; }
 
-  /* Styles below bring their own palette. `:not(#_)` lifts specificity
-     above the light/dark theme rules so the palette wins either way;
-     the accent color (set inline on <html>) still applies on top. */
+  /* Paper, Newspaper and Neon change only type, lines and glow; the
+     colors still come from the theme and accent. */
   [data-style="paper"] body { font-family: Georgia, 'Iowan Old Style', serif;
-    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(58,110,165,0.12) 27px, rgba(58,110,165,0.12) 28px); }
-  :root[data-style="paper"]:not(#_) { --bg: #fdf9ee; --surface: #fffdf6; --surface-2: #f6f0de; --border: #e5dcc3;
-    --text: #2a2520; --text-dim: #6e6455; --text-faint: #a59a86; --wk-cell: #ece4cd; color-scheme: light; }
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, color-mix(in srgb, var(--text) 8%, transparent) 27px, color-mix(in srgb, var(--text) 8%, transparent) 28px); }
   [data-style="paper"] body::before { display: none; }
-  [data-style="paper"] .surface { box-shadow: 0 1px 0 #e5dcc3, 0 4px 10px rgba(80,60,20,0.07); }
+  [data-style="paper"] .surface { box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,0.06); }
   [data-style="paper"] .rounded-2xl { border-radius: 4px; }
   [data-style="paper"] .display { font-style: italic; }
 
-  :root[data-style="newspaper"]:not(#_) { --bg: #f7f5f0; --surface: #f7f5f0; --surface-2: #ecebe5; --border: #1a1a1a;
-    --text: #111111; --text-dim: #444444; --text-faint: #777777; --wk-cell: #e2e0da; color-scheme: light; }
   [data-style="newspaper"] body { font-family: Georgia, 'Times New Roman', serif; background-image: none; }
   [data-style="newspaper"] body::before { display: none; }
   [data-style="newspaper"] .display { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; letter-spacing: -0.01em; }
-  [data-style="newspaper"] h1.display { border-bottom: 4px double #111; padding-bottom: 6px; }
-  [data-style="newspaper"] .surface { border: 1px solid #111; box-shadow: none; }
+  [data-style="newspaper"] h1.display { border-bottom: 4px double var(--text); padding-bottom: 6px; }
+  [data-style="newspaper"] .surface { border: 1px solid var(--text); box-shadow: none; }
   [data-style="newspaper"] .rounded-2xl, [data-style="newspaper"] .rounded-xl, [data-style="newspaper"] .rounded-lg { border-radius: 0; }
 
-  :root[data-style="neon"]:not(#_) { --bg: #090914; --surface: #12122a; --surface-2: #1b1b3a; --border: #2c2c5a;
-    --text: #ecebff; --text-dim: #a3a1d6; --text-faint: #6b69a3; --wk-cell: #23234a; color-scheme: dark; }
   [data-style="neon"] body { background-image:
-      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 25%, transparent), transparent 70%),
-      radial-gradient(600px 500px at 0% 100%, rgba(255, 0, 170, 0.18), transparent 70%); }
+      radial-gradient(700px 500px at 100% 0%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%),
+      radial-gradient(600px 500px at 0% 100%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%); }
   [data-style="neon"] body::before { display: none; }
   [data-style="neon"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
     text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent); }
@@ -351,6 +344,66 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.10); }
   [data-style="elevated"] .rounded-2xl { border-radius: 18px; }
 
+  /* ---- Settings: each style button is drawn in its own style ---- */
+  .sv-chip { height: 46px; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; transition: transform 0.12s ease; }
+  .sv-chip.active { background: var(--surface); color: var(--text); outline: 2px solid var(--gold); outline-offset: 2px; }
+  .sv-chip[data-val="classic"] { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; }
+  .sv-chip[data-val="minimal"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 500; border-radius: 6px; }
+  .sv-chip[data-val="soft"] { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif; font-weight: 700;
+    background: var(--surface-2); border-color: transparent; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .sv-chip[data-val="bold"] { font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em;
+    border: 2px solid var(--text); border-radius: 4px; box-shadow: 3px 3px 0 var(--text); }
+  .sv-chip[data-val="paper"] { font-family: Georgia, 'Iowan Old Style', serif; font-style: italic; border-radius: 2px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 11px, color-mix(in srgb, var(--text) 10%, transparent) 11px 12px); }
+  .sv-chip[data-val="newspaper"] { font-family: 'Times New Roman', Georgia, serif; font-weight: 700; border: 1px solid var(--text);
+    border-bottom: 4px double var(--text); border-radius: 0; }
+  .sv-chip[data-val="glass"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 600;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--text) 10%, transparent), color-mix(in srgb, var(--text) 3%, transparent));
+    border: 1px solid color-mix(in srgb, #ffffff 55%, transparent); border-radius: 14px;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 70%, transparent); }
+  .sv-chip[data-val="neon"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 800;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 80%, transparent);
+    border-color: color-mix(in srgb, var(--gold) 55%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 35%, transparent); }
+  .sv-chip[data-val="typewriter"] { font-family: 'American Typewriter', 'Courier New', Courier, monospace; font-weight: 700;
+    border-style: dashed; border-color: var(--text-dim); border-radius: 3px; }
+  .sv-chip[data-val="handwritten"] { font-family: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive; font-weight: 700; font-size: 14px;
+    border: 2px solid color-mix(in srgb, var(--text) 75%, transparent); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
+  .sv-chip[data-val="editorial"] { font-family: 'Didot', 'Bodoni 72', 'Playfair Display', Georgia, serif; font-style: italic; font-size: 15px;
+    background: transparent; border-width: 0 0 1px 0; border-color: var(--text); border-radius: 0; }
+  .sv-chip[data-val="geometric"] { font-family: 'Futura', 'Century Gothic', 'Avenir Next', system-ui, sans-serif; font-weight: 700; border-radius: 0; }
+  .sv-chip[data-val="graph"] { font-family: 'Space Mono', monospace; font-weight: 700; border-radius: 3px;
+    background-image: linear-gradient(color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px); background-size: 8px 8px; }
+  .sv-chip[data-val="dotted"] { font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; font-weight: 700; border-radius: 14px;
+    background-image: radial-gradient(color-mix(in srgb, var(--text) 22%, transparent) 1px, transparent 1.3px); background-size: 7px 7px; }
+  .sv-chip[data-val="linen"] { font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif; font-weight: 600; font-size: 14px;
+    background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1px 3px); }
+  .sv-chip[data-val="outline"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 300; font-size: 14px;
+    background: transparent; border: 1.5px solid color-mix(in srgb, var(--text) 60%, transparent); }
+  .sv-chip[data-val="elevated"] { font-family: -apple-system, system-ui, sans-serif; font-weight: 700; border-color: transparent; border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.08), 0 10px 22px rgba(0,0,0,0.10); }
+  /* week style buttons: a tiny sample of the board */
+  .wv-chip { height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
+  .wv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .wv-row { display: flex; align-items: center; gap: 4px; height: 16px; }
+  .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
+  .wv-circle i { width: 7px; height: 7px; border: 1.5px solid var(--text); border-radius: 2px; }
+  .wv-circle.on i { background: color-mix(in srgb, var(--gold) 45%, transparent); }
+  .wv-tile { width: 16px; height: 16px; border-radius: 4px; background: var(--wk-cell); }
+  .wv-tile.on { background: var(--gold); }
+  .wv-dot { width: 10px; height: 10px; border-radius: 99px; border: 1.5px solid var(--gold); }
+  .wv-dot.on { background: var(--gold); }
+  .wv-pill { width: 18px; height: 11px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wv-pill.on { background: var(--gold); border-color: var(--gold); }
+  .wv-bar { width: 76px; height: 11px; border-radius: 4px; display: flex; gap: 2px; }
+  .wv-bar span { flex: 1; border-radius: 2px; background: var(--surface-2); border: 1px solid var(--border); }
+  .wv-bar span.on { background: var(--gold); border-color: var(--gold); }
+  .wv-plain { font-size: 13px; font-weight: 700; letter-spacing: 4px; color: var(--gold); }
+  .wv-chip > span:last-child { font-size: 11px; font-weight: 700; }
+
   /* week style: bars (seven segments per habit) */
   .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
     position: relative; overflow: hidden; transition: transform 0.12s ease; }
@@ -401,145 +454,6 @@
     background: color-mix(in srgb, var(--gold) 15%, var(--surface)); color: var(--gold); }
   .dash-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); }
   .dash-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-top: 2px; }
-
-  /* ---- dashboard designs ----
-     Palettes are set per design and per resolved mode (data-mode is
-     always light or dark). `:not(#_)` outranks the theme rules above. */
-  :root:not([data-design="original"]) body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif; }
-  :root:not([data-design="original"]) body::before { display: none; }
-  :root:not([data-design="original"]) .display { font-family: inherit; font-weight: 700; letter-spacing: -0.02em; }
-  :root:not([data-design="original"]) .tab-btn.active .tab-icon-wrap { background: color-mix(in srgb, var(--gold) 16%, transparent); }
-
-  /* Night: charcoal + soft pink, lavender as the quiet second color */
-  :root[data-design="night"][data-mode="dark"]:not(#_) { --bg: #111113; --surface: #1b1b20; --surface-2: #26262d; --border: #2f2f37;
-    --text: #f2f0f5; --text-dim: #a19eab; --text-faint: #6d6a77; --wk-cell: #2a2a31; color-scheme: dark; }
-  :root[data-design="night"][data-mode="light"]:not(#_) { --bg: #f5f4f7; --surface: #ffffff; --surface-2: #eeedf2; --border: #e3e1e9;
-    --text: #1c1a22; --text-dim: #6e6a7a; --text-faint: #a9a5b4; --wk-cell: #e7e5ee; color-scheme: light; }
-  [data-design="night"] body { background-image: none; }
-  [data-design="night"] .dash-title { text-transform: uppercase; font-weight: 900; letter-spacing: 0; }
-  [data-design="night"] .rounded-2xl { border-radius: 22px; }
-  [data-design="night"] .progress-fill { background: var(--second) !important; }
-
-  /* Glass: frosted panels over a smooth, soft background (no texture) */
-  :root[data-design="glass"][data-mode="dark"]:not(#_) { --bg: #101318; --surface: #1b2029; --surface-2: #252b36; --border: #323a48;
-    --text: #eef1f6; --text-dim: #a2abbb; --text-faint: #6c7585; --wk-cell: #2a313d; color-scheme: dark; }
-  :root[data-design="glass"][data-mode="light"]:not(#_) { --bg: #e9edf3; --surface: #ffffff; --surface-2: #eef1f6; --border: #c3cad6;
-    --text: #151a22; --text-dim: #5c6575; --text-faint: #97a0b0; --wk-cell: #e1e6ee; color-scheme: light; }
-  /* panels are mostly see-through: a thin white film, a bright top edge
-     and a heavy blur of the soft color wash behind them */
-  [data-design="glass"] body { background-image:
-      radial-gradient(560px 460px at 92% 2%, color-mix(in srgb, var(--gold) 38%, transparent), transparent 68%),
-      radial-gradient(600px 560px at -5% 48%, color-mix(in srgb, var(--second) 34%, transparent), transparent 68%),
-      radial-gradient(520px 480px at 80% 98%, color-mix(in srgb, var(--gold) 24%, transparent), transparent 70%),
-      linear-gradient(180deg, var(--bg), var(--bg)); background-attachment: fixed; }
-  [data-design="glass"] .surface { background: linear-gradient(145deg, rgba(255,255,255,0.34), rgba(255,255,255,0.10));
-    border: 1px solid rgba(255,255,255,0.55);
-    backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(255,255,255,0.12), 0 10px 30px rgba(20,30,50,0.08); }
-  [data-design="glass"][data-mode="dark"] .surface { background: linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
-    border-color: rgba(255,255,255,0.14);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 30px rgba(0,0,0,0.35); }
-  [data-design="glass"] .surface-2 { background: rgba(255,255,255,0.22); }
-  [data-design="glass"][data-mode="dark"] .surface-2 { background: rgba(255,255,255,0.06); }
-  [data-design="glass"] .score-ring::before { background: rgba(244,247,252,0.92); }
-  [data-design="glass"][data-mode="dark"] .score-ring::before { background: rgba(24,29,38,0.94); }
-  [data-design="glass"] .rounded-2xl { border-radius: 24px; }
-
-  /* Cloud: airy off-white, borderless white pills lifted by wide soft
-     shadows, black text with gray secondary text, a floating tab bar */
-  :root[data-design="cloud"][data-mode="light"]:not(#_) { --bg: #fbfafa; --surface: #ffffff; --surface-2: #f1f0f0; --border: #e6e5e5;
-    --text: #111111; --text-dim: #7d7d7d; --text-faint: #a9a9a9; --wk-cell: #efeeee; color-scheme: light; }
-  :root[data-design="cloud"][data-mode="dark"]:not(#_) { --bg: #0f0f10; --surface: #1c1c1e; --surface-2: #2a2a2c; --border: #333336;
-    --text: #f2f2f2; --text-dim: #9a9a9e; --text-faint: #66666a; --wk-cell: #2a2a2c; color-scheme: dark; }
-  [data-design="cloud"] body { background-image: none; }
-  [data-design="cloud"] .surface { border-color: transparent; box-shadow: 0 12px 40px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03); }
-  [data-design="cloud"][data-mode="dark"] .surface { box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
-  [data-design="cloud"] .rounded-2xl { border-radius: 30px; }
-  [data-design="cloud"] .rounded-xl, [data-design="cloud"] .rounded-lg { border-radius: 999px; }
-  [data-design="cloud"] input[type="text"] { border-radius: 999px !important; }
-  [data-design="cloud"] .check-box { border-radius: 999px !important; }
-  [data-design="cloud"] .dash-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--text-dim); }
-  [data-design="cloud"] .dash-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-  [data-design="cloud"] h3.uppercase { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 600; color: var(--text); }
-  [data-design="cloud"] .chart-tab { border-color: transparent; background: transparent; color: var(--text-faint); font-size: 13px; font-weight: 600; text-transform: none; }
-  [data-design="cloud"] .chart-tab.active { background: var(--surface-2); color: var(--text); }
-  [data-design="cloud"] .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-  [data-design="cloud"] .mini-chip { background: var(--surface-2); }
-  [data-design="cloud"] .score-ring { background: conic-gradient(var(--gold) calc(var(--pct) * 1%), var(--surface-2) 0); }
-  /* floating tab bar, lifted off the screen edges */
-  [data-design="cloud"] nav.fixed { left: 16px; right: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-bottom: 0 !important;
-    border-radius: 30px; border: none; }
-  [data-design="cloud"] .tab-btn.active { color: var(--text); }
-  [data-design="cloud"] .tab-btn > span:last-child { text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 600; }
-  [data-design="cloud"] .tab-btn.active .tab-icon-wrap { background: var(--surface-2); }
-  [data-design="cloud"][data-layout="focus"] .tab-new .tab-icon-wrap { background: var(--surface) !important; color: var(--text);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.05); }
-  [data-design="cloud"][data-mode="dark"][data-layout="focus"] .tab-new .tab-icon-wrap { background: var(--surface-2) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-
-  /* Moss: plain white, outlined cards, muted forest greens in a few
-     shades, gray section titles, and a wave of green on the summary card */
-  :root[data-design="moss"][data-mode="light"]:not(#_) { --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --border: #e4e4e4;
-    --text: #111111; --text-dim: #7a7a7a; --text-faint: #9a9a9a; --wk-cell: #efefef; color-scheme: light; }
-  :root[data-design="moss"][data-mode="dark"]:not(#_) { --bg: #0e1210; --surface: #151b18; --surface-2: #1f2723; --border: #2b3530;
-    --text: #eef3f0; --text-dim: #93a39a; --text-faint: #66756d; --wk-cell: #222b26; color-scheme: dark; }
-  [data-design="moss"] body { background-image: none; }
-  [data-design="moss"] .surface { border-width: 1.5px; box-shadow: none; }
-  [data-design="moss"] .rounded-2xl { border-radius: 28px; }
-  [data-design="moss"] .dash-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--text-dim); }
-  [data-design="moss"] .dash-title { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
-  [data-design="moss"] h3.uppercase { text-transform: none; letter-spacing: -0.01em; font-size: 20px; font-weight: 500; color: var(--text-dim); }
-  [data-design="moss"] .chart-tab { border-color: transparent; background: var(--surface); color: var(--text-dim); text-transform: none; font-size: 13px; font-weight: 600;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
-  [data-design="moss"] .chart-tab.active { background: var(--gold); color: #ffffff; }
-  [data-design="moss"] .wk-cell { border-radius: 10px; }
-  [data-design="moss"] .chart-bar { border-radius: 8px; }
-  [data-design="moss"] .chart-bar.is-empty { background: var(--wk-cell); }
-  [data-design="moss"] .mini-chip { background: rgba(255,255,255,0.7); color: #1d3a2d; }
-  [data-design="moss"] .mini-chip svg { color: #2f6b51; }
-  /* summary card: pale mint with a deep green wave across two corners */
-  [data-design="moss"] .summary-card { border: none; color: #10261c;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e2eee8'/%3E%3Cstop offset='1' stop-color='%23c6dbd0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='200' fill='url%28%23g%29'/%3E%3Cpath d='M0 150 C70 120 120 175 175 200 L0 200 Z' fill='%232f6b51'/%3E%3Cpath d='M280 0 C300 40 345 70 400 62 L400 0 Z' fill='%232f6b51'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-    box-shadow: 0 10px 30px rgba(47,107,81,0.18); }
-  [data-design="moss"] .summary-card .text-\[var\(--text-dim\)\] { color: #3d5a4c; }
-  [data-design="moss"] .summary-card .score-ring { background: conic-gradient(#2f6b51 calc(var(--pct) * 1%), #f3f8f5 0); }
-  [data-design="moss"] .summary-card .score-ring::before { background: #eef5f1; }
-  [data-design="moss"] .summary-card .score-cap { color: #5b7a6b; }
-  [data-design="moss"][data-mode="dark"] .summary-card { color: #eef3f0;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231f2c26'/%3E%3Cstop offset='1' stop-color='%23151f1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='200' fill='url%28%23g%29'/%3E%3Cpath d='M0 150 C70 120 120 175 175 200 L0 200 Z' fill='%234f9a78'/%3E%3Cpath d='M280 0 C300 40 345 70 400 62 L400 0 Z' fill='%234f9a78'/%3E%3C/svg%3E") center / 100% 100% no-repeat; box-shadow: none; }
-  [data-design="moss"][data-mode="dark"] .summary-card .text-\[var\(--text-dim\)\] { color: #a9bdb2; }
-  [data-design="moss"][data-mode="dark"] .summary-card .score-ring { background: conic-gradient(#8fd1b1 calc(var(--pct) * 1%), #2b3832 0); }
-  [data-design="moss"][data-mode="dark"] .summary-card .score-ring::before { background: #16211c; }
-  [data-design="moss"][data-mode="dark"] .mini-chip { background: rgba(255,255,255,0.08); color: #d6e6dd; }
-  [data-design="moss"][data-mode="dark"] .mini-chip svg { color: #8fd1b1; }
-  [data-design="moss"][data-layout="focus"] .tab-new .tab-icon-wrap { color: #ffffff; }
-
-  /* Mono: black and white, one gray, crisp hairlines */
-  :root[data-design="mono"][data-mode="dark"]:not(#_) { --bg: #000000; --surface: #0e0e0e; --surface-2: #1a1a1a; --border: #2a2a2a;
-    --text: #f5f5f5; --text-dim: #a3a3a3; --text-faint: #666666; --wk-cell: #1f1f1f; color-scheme: dark; }
-  :root[data-design="mono"][data-mode="light"]:not(#_) { --bg: #fafafa; --surface: #ffffff; --surface-2: #f0f0f0; --border: #e2e2e2;
-    --text: #0a0a0a; --text-dim: #5e5e5e; --text-faint: #a0a0a0; --wk-cell: #ececec; color-scheme: light; }
-  [data-design="mono"] body { background-image: none; }
-  [data-design="mono"] .rounded-2xl { border-radius: 14px; }
-  [data-design="mono"] .dash-title { font-size: 30px; letter-spacing: -0.04em; }
-
-  /* Ember: warm dark brown + orange */
-  :root[data-design="ember"][data-mode="dark"]:not(#_) { --bg: #13100e; --surface: #1e1915; --surface-2: #2a231d; --border: #362c24;
-    --text: #f7efe8; --text-dim: #b5a597; --text-faint: #7a6c60; --wk-cell: #2c241e; color-scheme: dark; }
-  :root[data-design="ember"][data-mode="light"]:not(#_) { --bg: #faf6f2; --surface: #ffffff; --surface-2: #f4ece5; --border: #ebdfd4;
-    --text: #2a1d14; --text-dim: #7d6758; --text-faint: #b3a194; --wk-cell: #efe4da; color-scheme: light; }
-  [data-design="ember"] body { background-image: radial-gradient(700px 420px at 50% -10%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%); }
-  [data-design="ember"] .rounded-2xl { border-radius: 20px; }
-  [data-design="ember"][data-mode="dark"] .score-ring { box-shadow: 0 0 28px color-mix(in srgb, var(--gold) 30%, transparent); }
-
-  /* Sage: calm green, soft shapes */
-  :root[data-design="sage"][data-mode="dark"]:not(#_) { --bg: #0f1412; --surface: #17201c; --surface-2: #212c27; --border: #2b3832;
-    --text: #edf4f0; --text-dim: #9db1a7; --text-faint: #64776d; --wk-cell: #23302a; color-scheme: dark; }
-  :root[data-design="sage"][data-mode="light"]:not(#_) { --bg: #f2f6f3; --surface: #ffffff; --surface-2: #e9f0eb; --border: #dbe6de;
-    --text: #17241d; --text-dim: #5a6e63; --text-faint: #98aa9f; --wk-cell: #e2ebe5; color-scheme: light; }
-  [data-design="sage"] body { background-image: none; }
-  [data-design="sage"] .surface { border-color: transparent; box-shadow: 0 4px 18px rgba(20, 60, 40, 0.07); }
-  [data-design="sage"] .rounded-2xl { border-radius: 26px; }
-  [data-design="sage"] .rounded-xl { border-radius: 18px; }
 
   /* ---- year heatmap ---- */
   .yr-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -842,8 +756,7 @@ const DEFAULT_SETTINGS = {
   calDefault: 'month',    // view the Calendar tab opens on
   style: 'classic',       // whole-app look: 'classic' | 'minimal' | 'soft' | 'bold'
   weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
-  design: 'original',     // Home dashboard design: 'original' or a key of DESIGNS
-  habitColors: false,     // designs: color-code habits instead of one accent
+  habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
   homeOrder: ['summary', 'habits', 'todos', 'chart', 'stats', 'milestones', 'week'],
   showSummary: true,
@@ -868,33 +781,16 @@ const APP_STYLES = [
 ];
 const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
   ['bars','Bars'],['plain','Plain']];
-/* Dashboard designs: each keeps to one main color plus one supporting
-   color, with a light and a dark palette picked by the Auto/Light/Dark
-   theme. `primary` is also used for habits when color-coding is off. */
-const DESIGNS = {
-  night: { label: 'Night', light: { primary: '#d9566b', second: '#6f6ad6' }, dark: { primary: '#f4a6b0', second: '#a8a4f0' } },
-  glass: { label: 'Glass', light: { primary: '#3d6fd9', second: '#8a93a6' }, dark: { primary: '#8fb4ff', second: '#9aa3b5' } },
-  mono:  { label: 'Mono',  light: { primary: '#111111', second: '#8c8c8c' }, dark: { primary: '#f5f5f5', second: '#8c8c8c' } },
-  ember: { label: 'Ember', light: { primary: '#de5f24', second: '#f2a679' }, dark: { primary: '#ff8a4c', second: '#ffc8a6' } },
-  moss:  { label: 'Moss',  light: { primary: '#3d7a5f', second: '#8fb5a3' }, dark: { primary: '#6fb593', second: '#3f6f5a' } },
-  cloud: { label: 'Cloud', light: { primary: '#111111', second: '#9b9b9b' }, dark: { primary: '#f2f2f2', second: '#8a8a8a' } },
-  sage:  { label: 'Sage',  light: { primary: '#2f8a5f', second: '#8db8a2' }, dark: { primary: '#7fd1a7', second: '#c8e6d5' } },
-};
-const DESIGN_CHOICES = [['original','Original'], ...Object.entries(DESIGNS).map(([k, d]) => [k, d.label])];
-
 /* light or dark, after resolving Auto against the device */
 function effectiveMode() {
   const t = state.settings.theme;
   return t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
 }
-function activeDesign() { return DESIGNS[state.settings.design] || null; }
 
-/* the color to draw a habit with: its own color, or the design's main
-   color when a design is active and color-coding is off */
+/* the color to draw a habit with: its own color when color-coding is
+   on, otherwise the accent */
 function hc(h) {
-  const d = activeDesign();
-  if (!d || state.settings.habitColors) return h.color;
-  return d[effectiveMode()].primary;
+  return state.settings.habitColors ? h.color : state.settings.accent;
 }
 
 /* dark or light ink for text/icons drawn on top of a filled color */
@@ -905,10 +801,7 @@ function inkOn(hex) {
   const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
   return lum > 0.7 ? '#111111' : '#ffffff';
 }
-function accentHex() {
-  const d = activeDesign();
-  return d ? d[effectiveMode()].primary : state.settings.accent;
-}
+function accentHex() { return state.settings.accent; }
 
 /* in the Focus layout these belong to Home; the rest live in Stats and
    can be added to Home too through their `homeToggle` (off by default) */
@@ -944,7 +837,6 @@ function cleanSettings(raw) {
   if (raw.weekStart === 0 || raw.weekStart === 1) out.weekStart = raw.weekStart;
   if (['day','week','month','year'].includes(raw.calDefault)) out.calDefault = raw.calDefault;
   if (APP_STYLES.some(([v]) => v === raw.style)) out.style = raw.style;
-  if (raw.design === 'original' || DESIGNS[raw.design]) out.design = raw.design;
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
   if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
   if (Array.isArray(raw.homeOrder)) {
@@ -1647,7 +1539,7 @@ function render() {
 
   // dashboard designs draw their own header on Home; Stats always does
   document.getElementById('appHeader').classList.toggle('hidden',
-    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && !!activeDesign() && state.habits.length > 0));
+    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && state.habits.length > 0));
 
   if (activeTab === 'home') renderHomeTab('home');
   else if (activeTab === 'stats') renderHomeTab('stats');
@@ -1891,8 +1783,8 @@ function renderHomeTab(page = 'home') {
         </div>
       </div>`;
 
-  // dashboard designs replace the habits header and stats with their own versions
-  if (activeDesign()) {
+  // the dashboard's own goals header and stat tiles
+  {
     sections.habits = () => `
       <div>
         ${label("Today's goals")}
@@ -1957,16 +1849,16 @@ function renderHomeTab(page = 'home') {
     dashHeader = `
       <div class="pt-1">
         <div class="dash-eyebrow">Your progress</div>
-        <h1 class="dash-title">Stats</h1>
+        <h1 class="dash-title display">Stats</h1>
       </div>`;
-  } else if (activeDesign()) {
+  } else {
     const now = new Date();
     const hr = now.getHours();
     const name = state.settings.name.trim();
     dashHeader = `
       <div class="pt-1">
         <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
-        <h1 class="dash-title">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
+        <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
       </div>`;
   }
 
@@ -2689,17 +2581,14 @@ function updateSetting(key, value) {
 function applySettings() {
   const { theme, accent, style } = state.settings;
   const root = document.documentElement;
-  const design = activeDesign();
   const mode = effectiveMode();
-  // a dashboard design replaces the app style and brings its own colors
-  root.setAttribute('data-style', design ? 'none' : style);
-  root.setAttribute('data-design', design ? state.settings.design : 'original');
+  root.setAttribute('data-style', style);
   root.setAttribute('data-mode', mode);
   root.setAttribute('data-layout', state.settings.layout);
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
-  root.style.setProperty('--gold', design ? design[mode].primary : accent);
-  root.style.setProperty('--second', design ? design[mode].second : accent);
+  root.style.setProperty('--gold', accent);
+  root.style.setProperty('--second', accent);
   const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg || (mode === 'dark' ? '#14130f' : '#fbfaf7'));
 }
@@ -2749,17 +2638,33 @@ function segHTML(key, options) {
     </div>`;
 }
 
-function choiceGridHTML(label, key, options, hint, cols = 4) {
+/* a 3-column picker whose buttons preview their own option */
+function pickerHTML(label, key, options, chipClass, inner, hint) {
   return `
-    <div class="py-3 border-t border-[var(--border)] first:border-t-0">
+    <div class="py-3 border-t border-[var(--border)]">
       <div class="text-[13px] font-bold">${label}</div>
       ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
-      <div class="grid ${cols === 3 ? 'grid-cols-3' : 'grid-cols-4'} gap-1.5 mt-2.5">
-        ${options.map(([val, name]) => `
-          <button data-seg="${key}" data-val="${val}"
-            class="seg-btn btn-press surface-2 border border-[var(--border)] rounded-lg h-9 text-[11px] font-bold ${state.settings[key] === val ? 'active' : 'text-[var(--text-dim)]'}">${name}</button>`).join('')}
+      <div class="grid grid-cols-3 gap-2.5 mt-3">
+        ${options.map(opt => `
+          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${state.settings[key] === opt[0]}"
+            class="${chipClass} btn-press ${state.settings[key] === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
       </div>
     </div>`;
+}
+
+/* four days of a week board drawn in the given week style */
+function weekStyleSample(style) {
+  const on = [1, 1, 0, 1];
+  const cells = cls => on.map(v => `<span class="${cls} ${v ? 'on' : ''}"><i></i></span>`).join('');
+  const body = {
+    circles: cells('wv-circle'),
+    tiles: cells('wv-tile'),
+    dots: cells('wv-dot'),
+    pills: cells('wv-pill'),
+    bars: `<span class="wv-bar">${on.map(v => `<span class="${v ? 'on' : ''}"></span>`).join('')}</span>`,
+    plain: `<span class="wv-plain">✓✓·✓</span>`,
+  }[style] || '';
+  return `<span class="wv-row" aria-hidden="true">${body}</span>`;
 }
 
 function switchHTML(key) {
@@ -2798,45 +2703,21 @@ function renderSettingsTab() {
         settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']]))
       )}
 
-      ${section('Dashboard design',
-        choiceGridHTML('Design', 'design', DESIGN_CHOICES,
-          "Designs rework the Home tab around today's progress ring, goals and to-dos, with charts and milestones. Each uses one or two main colors and follows the Theme setting above.", 3) +
-        (activeDesign() ? settingsRow('Color-code habits', "Use each habit's own color instead of the design's main color.", switchHTML('habitColors')) : '')
-      )}
-
       ${section('Appearance',
-        (activeDesign() ? `<p class="text-[11px] text-[var(--text-dim)] pt-3">App style and accent color apply to the Original design.</p>` : '') +
-        choiceGridHTML('App style', 'style', APP_STYLES,
-          'Paper, Newspaper and Neon bring their own colors. Every other style keeps your theme and accent and only changes fonts, textures and shapes.', 3) +
-        choiceGridHTML('Week view style', 'weekStyle', WEEK_STYLES, 'Used on Home and in the calendar Week view.', 3)
+        settingsRow('Color-code habits', "Draw each habit in its own color instead of the accent.", switchHTML('habitColors')) +
+        pickerHTML('App style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name,
+          'Each button shows that style. Styles change fonts, textures and shapes; colors come from your theme and accent.') +
+        pickerHTML('Week view style', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`,
+          'Used for the week board and the calendar Week view.')
       )}
 
       ${section('Home screen',
         settingsRow('Layout', st.layout === 'focus'
-            ? 'Focus: Home shows your progress ring, goals and to-dos. Charts, the week board and milestones live in Stats, and you can add any of them to Home below.'
-            : 'Everything: all sections on Home, with four tabs like before.',
+            ? 'Focus: Home shows your progress ring, goals and to-dos, and Stats holds the charts, week board and milestones.'
+            : 'Everything: all sections on Home, with four tabs.',
           segHTML('layout', [['focus','Focus'],['full','Everything']])) +
-        settingsRow('Edit layout', 'Move sections up or down, or hide them, right on the Home and Stats tabs.',
-          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit Home layout"></button>`) +
-        (st.layout === 'focus' ? `
-          <div class="pt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--text-faint)] font-bold">On Home</div>` +
-          settingsRow('Today ring', '', switchHTML('showSummary')) +
-          settingsRow('Quick to-do', '', switchHTML('showTodos')) +
-          settingsRow('Progress chart', 'Off by default. Turn on to add it to Home too.', switchHTML('homeChart')) +
-          settingsRow('At a glance stats', '', switchHTML('homeGlance')) +
-          settingsRow('This week board', '', switchHTML('homeWeek')) +
-          settingsRow('Milestones', '', switchHTML('homeMilestones')) + `
-          <div class="pt-4 text-[11px] uppercase tracking-[0.14em] text-[var(--text-faint)] font-bold">On Stats</div>` +
-          settingsRow('Progress chart', '', switchHTML('showChart')) +
-          settingsRow('At a glance stats', '', switchHTML('showStats')) +
-          settingsRow('This week board', '', switchHTML('showWeek')) +
-          settingsRow('Milestones', '', switchHTML('showMilestones'))
-        : settingsRow('Today ring', '', switchHTML('showSummary')) +
-          settingsRow('Quick to-do', '', switchHTML('showTodos')) +
-          settingsRow('This week board', '', switchHTML('showWeek')) +
-          settingsRow('At a glance stats', '', switchHTML('showStats')) +
-          settingsRow('Progress chart', '', switchHTML('showChart')) +
-          settingsRow('Milestones', '', switchHTML('showMilestones')))
+        settingsRow('Edit layout', 'Opens Home with arrows to move sections and an eye to show or hide each one. Works on the Stats tab too.',
+          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit layout"></button>`)
       )}
 
       ${section('App icon',
