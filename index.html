@@ -269,15 +269,15 @@
      change type, surfaces and backgrounds. Patterns are drawn with
      color-mix on --text so they work in light and dark. ---- */
   [data-style="glass"] body { background-image:
-      radial-gradient(520px 380px at 85% 5%, color-mix(in srgb, var(--text) 9%, transparent), transparent 70%),
-      radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 7%, transparent), transparent 70%),
+      radial-gradient(520px 380px at 85% 5%, color-mix(in srgb, var(--text) 13%, transparent), transparent 70%),
+      radial-gradient(460px 380px at 5% 45%, color-mix(in srgb, var(--text) 11%, transparent), transparent 70%),
       radial-gradient(520px 380px at 75% 95%, color-mix(in srgb, var(--text) 6%, transparent), transparent 70%); }
   [data-style="glass"] body::before { display: none; }
-  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 38%, transparent);
-    border: 1px solid color-mix(in srgb, #ffffff 45%, transparent);
-    backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent), 0 8px 32px rgba(0,0,0,0.08); }
-  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  [data-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 16%, transparent);
+    border: 1px solid color-mix(in srgb, #ffffff 50%, transparent);
+    backdrop-filter: blur(30px) saturate(1.4); -webkit-backdrop-filter: blur(30px) saturate(1.4);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 65%, transparent), 0 10px 30px rgba(0,0,0,0.08); }
+  [data-style="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 25%, transparent); }
   [data-style="glass"] .rounded-2xl { border-radius: 22px; }
   [data-style="glass"] .display { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; }
 
@@ -378,8 +378,6 @@
   .chart-label { font-size: 10px; font-weight: 700; color: var(--text-faint); height: 12px; white-space: nowrap; overflow: hidden; max-width: 100%; }
   .chart-label.is-current { color: var(--text); }
 
-  .level-chip { padding: 8px 12px; border-radius: 99px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
-    background: color-mix(in srgb, var(--gold) 16%, var(--surface)); color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); }
   .badge-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
   .badge-row::-webkit-scrollbar { display: none; }
   .badge { flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
@@ -393,6 +391,7 @@
     background: conic-gradient(var(--gold) calc(var(--pct) * 1%), var(--surface-2) 0);
     display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .score-ring::before { content: ""; position: absolute; inset: 10px; border-radius: 99px; background: var(--surface); }
+  .score-num small { font-size: 16px; font-weight: 700; margin-left: 1px; }
   .score-num { position: relative; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
   .score-cap { position: relative; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-top: 2px; }
   .mini-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 99px; font-size: 11px; font-weight: 700;
@@ -419,26 +418,31 @@
   [data-design="night"] body { background-image: none; }
   [data-design="night"] .dash-title { text-transform: uppercase; font-weight: 900; letter-spacing: 0; }
   [data-design="night"] .rounded-2xl { border-radius: 22px; }
-  [data-design="night"] .level-chip { background: var(--second); color: #17152b; border-color: var(--second); }
   [data-design="night"] .progress-fill { background: var(--second) !important; }
 
   /* Glass: frosted panels over a smooth, soft background (no texture) */
   :root[data-design="glass"][data-mode="dark"]:not(#_) { --bg: #101318; --surface: #1b2029; --surface-2: #252b36; --border: #323a48;
     --text: #eef1f6; --text-dim: #a2abbb; --text-faint: #6c7585; --wk-cell: #2a313d; color-scheme: dark; }
-  :root[data-design="glass"][data-mode="light"]:not(#_) { --bg: #e9edf3; --surface: #ffffff; --surface-2: #eef1f6; --border: #d9dee7;
+  :root[data-design="glass"][data-mode="light"]:not(#_) { --bg: #e9edf3; --surface: #ffffff; --surface-2: #eef1f6; --border: #c3cad6;
     --text: #151a22; --text-dim: #5c6575; --text-faint: #97a0b0; --wk-cell: #e1e6ee; color-scheme: light; }
+  /* panels are mostly see-through: a thin white film, a bright top edge
+     and a heavy blur of the soft color wash behind them */
   [data-design="glass"] body { background-image:
-      radial-gradient(520px 420px at 90% 0%, color-mix(in srgb, var(--gold) 22%, transparent), transparent 70%),
-      radial-gradient(520px 520px at 0% 55%, color-mix(in srgb, var(--second) 22%, transparent), transparent 70%),
-      linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 80%, var(--text) 6%)); background-attachment: fixed; }
-  [data-design="glass"] .surface { background: color-mix(in srgb, var(--surface) 45%, transparent);
-    border: 1px solid color-mix(in srgb, #ffffff 40%, transparent);
-    backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent), 0 8px 28px rgba(0,0,0,0.08); }
-  [data-design="glass"][data-mode="dark"] .surface { border-color: color-mix(in srgb, #ffffff 12%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 10%, transparent), 0 8px 28px rgba(0,0,0,0.3); }
-  [data-design="glass"] .surface-2 { background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
-  [data-design="glass"] .score-ring::before { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+      radial-gradient(560px 460px at 92% 2%, color-mix(in srgb, var(--gold) 38%, transparent), transparent 68%),
+      radial-gradient(600px 560px at -5% 48%, color-mix(in srgb, var(--second) 34%, transparent), transparent 68%),
+      radial-gradient(520px 480px at 80% 98%, color-mix(in srgb, var(--gold) 24%, transparent), transparent 70%),
+      linear-gradient(180deg, var(--bg), var(--bg)); background-attachment: fixed; }
+  [data-design="glass"] .surface { background: linear-gradient(145deg, rgba(255,255,255,0.34), rgba(255,255,255,0.10));
+    border: 1px solid rgba(255,255,255,0.55);
+    backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(255,255,255,0.12), 0 10px 30px rgba(20,30,50,0.08); }
+  [data-design="glass"][data-mode="dark"] .surface { background: linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 30px rgba(0,0,0,0.35); }
+  [data-design="glass"] .surface-2 { background: rgba(255,255,255,0.22); }
+  [data-design="glass"][data-mode="dark"] .surface-2 { background: rgba(255,255,255,0.06); }
+  [data-design="glass"] .score-ring::before { background: rgba(244,247,252,0.92); }
+  [data-design="glass"][data-mode="dark"] .score-ring::before { background: rgba(24,29,38,0.94); }
   [data-design="glass"] .rounded-2xl { border-radius: 24px; }
 
   /* Mono: black and white, one gray, crisp hairlines */
@@ -780,6 +784,10 @@ const DEFAULT_SETTINGS = {
   showTodos: true,
   showWeek: true,
   showStats: true,
+  homeChart: false,       // Focus layout: Stats sections can also be added to Home
+  homeGlance: false,
+  homeWeek: false,
+  homeMilestones: false,
   badge: false,           // habits-left count on the home-screen icon
 };
 
@@ -832,18 +840,25 @@ function accentHex() {
   return d ? d[effectiveMode()].primary : state.settings.accent;
 }
 
-/* in the Focus layout Home keeps only these; the rest move to Stats */
+/* in the Focus layout these belong to Home; the rest live in Stats and
+   can be added to Home too through their `homeToggle` (off by default) */
 const FOCUS_HOME = ['summary', 'habits', 'todos'];
 
 const HOME_SECTIONS = {
   summary: { label: 'Today summary', toggle: 'showSummary' },
   habits:  { label: "Today's habits", toggle: null },          // always shown
   todos:   { label: 'Quick to-do', toggle: 'showTodos' },
-  week:    { label: 'This week', toggle: 'showWeek' },
-  stats:   { label: 'At a glance', toggle: 'showStats' },
-  chart:   { label: 'Progress chart', toggle: 'showChart' },
-  milestones: { label: 'Level & milestones', toggle: 'showMilestones' },
+  week:    { label: 'This week', toggle: 'showWeek', homeToggle: 'homeWeek' },
+  stats:   { label: 'At a glance', toggle: 'showStats', homeToggle: 'homeGlance' },
+  chart:   { label: 'Progress chart', toggle: 'showChart', homeToggle: 'homeChart' },
+  milestones: { label: 'Milestones', toggle: 'showMilestones', homeToggle: 'homeMilestones' },
 };
+
+/* the setting that shows or hides a section on the given page */
+function sectionToggle(key, page) {
+  const meta = HOME_SECTIONS[key];
+  return state.settings.layout === 'focus' && page === 'home' && meta.homeToggle ? meta.homeToggle : meta.toggle;
+}
 
 function emptyState() {
   return { version: SCHEMA_VERSION, habits: [], todos: [], settings: { ...DEFAULT_SETTINGS } };
@@ -868,7 +883,7 @@ function cleanSettings(raw) {
     const order = raw.homeOrder.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i);
     out.homeOrder = [...order, ...known.filter(k => !order.includes(k))];
   }
-  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','homeChart','homeGlance','homeWeek','homeMilestones','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -1137,17 +1152,12 @@ function completionRate(habit) {
    Everything here is derived from the saved completions, so nothing new
    is stored and old data earns its badges right away. */
 
-/* 0..100: average progress across all habits today */
-function dailyScore(iso = todayISO()) {
-  if (!state.habits.length) return 0;
-  return Math.round(state.habits.reduce((s, h) => s + dayProgress(h, iso), 0) / state.habits.length * 100);
-}
-
-function scoreMessage(score) {
-  if (score >= 100) return 'Perfect day';
-  if (score >= 70) return 'Great progress';
-  if (score >= 40) return 'Keep it going';
-  if (score > 0) return 'Good start';
+/* headline for the share of today's habits that are done */
+function progressMessage(pct) {
+  if (pct >= 100) return 'All done today';
+  if (pct >= 70) return 'Almost there';
+  if (pct >= 40) return 'Keep it going';
+  if (pct > 0) return 'Good start';
   return 'Fresh start';
 }
 
@@ -1183,16 +1193,6 @@ function perfectDayStats() {
     cursor = addDays(cursor, 1);
   }
   return { count, current: run, best };
-}
-
-/* XP: 10 per finished habit-day, 25 bonus per perfect day.
-   Level n needs 50·n·(n+1) XP in total (100, 300, 600, 1000, ...). */
-function levelInfo(checkins, perfectDays) {
-  const xp = checkins * 10 + perfectDays * 25;
-  let level = 1;
-  while (xp >= 50 * level * (level + 1)) level++;
-  const floor = 50 * (level - 1) * level, next = 50 * level * (level + 1);
-  return { xp, level, into: xp - floor, span: next - floor };
 }
 
 function badgeList() {
@@ -1626,17 +1626,21 @@ function renderHomeTab(page = 'home') {
         <div class="card-enter surface rounded-2xl p-4" style="animation-delay:${idx*0.04}s;">
           <div class="flex items-center gap-3.5">
             <span class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-bold"
-              style="background:color-mix(in srgb, ${hc(h)} 18%, transparent); color:${hc(h)}">${Math.round(prog*100)}%</span>
+              style="background:color-mix(in srgb, ${hc(h)} 18%, transparent); color:${hc(h)}" data-measured-pct="${h.id}">${Math.round(prog*100)}%</span>
             <span class="min-w-0 flex-1">
               <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
-              <span class="text-[11px] text-[var(--text-dim)]">${currentVal} / ${h.goal} ${escapeHtml(h.unit)}</span>
+              <span class="text-[11px] text-[var(--text-dim)]"><span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)}</span>
             </span>
+            ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
+          </div>
+          <div class="flex items-center gap-3 mt-2">
+            <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
+              data-measured-slider="${h.id}" aria-label="${escapeHtml(h.title)} amount"
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;" aria-label="Add 1 ${escapeHtml(h.unit)}">+1</button>
-          </div>
-          <div class="progress-track h-1 mt-3">
-            <div class="progress-fill" style="width:${Math.round(prog*100)}%; background:${hc(h)};"></div>
           </div>
         </div>`;
     } else if (h.trackingMode === 'measure') {
@@ -1780,21 +1784,13 @@ function renderHomeTab(page = 'home') {
   };
 
   sections.milestones = () => {
-    const lv = levelInfo(checkins, perfect.count);
     const badges = badgeList();
     const next = badges.find(b => !b.earned);
     const earned = badges.filter(b => b.earned).length;
     return `
       <div>
-        ${label('Level & milestones')}
+        ${label('Milestones')}
         <div class="surface rounded-2xl p-4">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="level-chip">LV ${lv.level}</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between text-[11px] text-[var(--text-dim)] mb-1.5"><span>${lv.into} / ${lv.span} XP</span><span>${lv.xp} total</span></div>
-              <div class="progress-track h-2"><div class="progress-fill" style="width:${Math.round(lv.into / lv.span * 100)}%; background:var(--gold);"></div></div>
-            </div>
-          </div>
           <div class="badge-row">
             ${badges.map(b => `
               <div class="badge ${b.earned ? 'earned' : ''}" title="${b.label}${b.earned ? '' : ` · ${b.have} / ${b.goal}`}">
@@ -1810,22 +1806,23 @@ function renderHomeTab(page = 'home') {
       </div>`;
   };
 
-  // dashboard designs replace the summary and stats with their own versions
-  if (activeDesign()) {
-    const score = dailyScore();
-    const pct = Math.max(0, Math.min(100, score));
-    sections.summary = () => `
+  // today's summary: a ring with the share of habits done
+  sections.summary = () => `
       <div class="surface rounded-2xl p-5 flex items-center gap-5">
-        <div class="score-ring" style="--pct:${pct}"><span class="score-num">${score}</span><span class="score-cap">score</span></div>
+        <div class="score-ring" style="--pct:${dayPct}" role="img" aria-label="${dayPct}% of habits done today">
+          <span class="score-num">${dayPct}<small>%</small></span><span class="score-cap">done</span></div>
         <div class="min-w-0 flex-1">
-          <div class="display text-xl font-semibold leading-tight">${scoreMessage(score)}</div>
-          <div class="text-[12px] text-[var(--text-dim)] mt-1">${doneCount} of ${totalCount} goals done today</div>
+          <div class="display text-xl font-semibold leading-tight">${progressMessage(dayPct)}</div>
+          <div class="text-[12px] text-[var(--text-dim)] mt-1">${doneCount} of ${totalCount} habits done today</div>
           <div class="flex flex-wrap gap-1.5 mt-3">
             <span class="mini-chip"><i data-lucide="flame" class="w-3 h-3"></i>${longestActive}-day streak</span>
             ${perfect.current > 0 ? `<span class="mini-chip"><i data-lucide="star" class="w-3 h-3"></i>${perfect.current} perfect</span>` : ''}
           </div>
         </div>
       </div>`;
+
+  // dashboard designs replace the habits header and stats with their own versions
+  if (activeDesign()) {
     sections.habits = () => `
       <div>
         ${label("Today's goals")}
@@ -1851,11 +1848,15 @@ function renderHomeTab(page = 'home') {
     };
   }
 
-  const order = !focus ? state.settings.homeOrder
-    : state.settings.homeOrder.filter(k => FOCUS_HOME.includes(k) === (page === 'home'));
+  // Focus: Home lists every section (the Stats ones hidden unless added),
+  // Stats lists only its own
+  const order = focus && page === 'stats'
+    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k))
+    : state.settings.homeOrder;
   const parts = order.map((key, i) => {
     const meta = HOME_SECTIONS[key];
-    const shown = !meta.toggle || state.settings[meta.toggle];
+    const tg = sectionToggle(key, page);
+    const shown = !tg || state.settings[tg];
     if (!homeEditing) return shown ? sections[key]() : '';
     // edit mode: every section gets a bar to move it or hide it
     return `
@@ -1863,7 +1864,7 @@ function renderHomeTab(page = 'home') {
         <div class="home-edit-bar">
           <i data-lucide="grip-vertical" class="w-4 h-4 text-[var(--text-faint)]"></i>
           <span class="flex-1 text-[12px] font-bold">${meta.label}</span>
-          ${meta.toggle ? `<button data-home-hide="${key}" class="home-edit-btn" aria-label="${shown ? 'Hide' : 'Show'} ${meta.label}">
+          ${tg ? `<button data-home-hide="${key}" class="home-edit-btn" aria-label="${shown ? 'Hide' : 'Show'} ${meta.label}">
               <i data-lucide="${shown ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>` : ''}
           <button data-home-move="${key}" data-dir="-1" class="home-edit-btn" ${i === 0 ? 'disabled' : ''} aria-label="Move up">
             <i data-lucide="arrow-up" class="w-4 h-4"></i></button>
@@ -1883,27 +1884,19 @@ function renderHomeTab(page = 'home') {
 
   let dashHeader = '';
   if (page === 'stats') {
-    const lv = levelInfo(checkins, perfect.count);
     dashHeader = `
-      <div class="flex items-end justify-between gap-3 pt-1">
-        <div class="min-w-0">
-          <div class="dash-eyebrow">Your progress</div>
-          <h1 class="dash-title">Stats</h1>
-        </div>
-        <div class="level-chip shrink-0">LV ${lv.level}</div>
+      <div class="pt-1">
+        <div class="dash-eyebrow">Your progress</div>
+        <h1 class="dash-title">Stats</h1>
       </div>`;
   } else if (activeDesign()) {
     const now = new Date();
     const hr = now.getHours();
     const name = state.settings.name.trim();
-    const lv = levelInfo(checkins, perfect.count);
     dashHeader = `
-      <div class="flex items-end justify-between gap-3 pt-1">
-        <div class="min-w-0">
-          <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
-          <h1 class="dash-title">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
-        </div>
-        <button class="level-chip shrink-0" onclick="switchTab('${focus ? 'stats' : 'settings'}')" aria-label="Level ${lv.level}">LV ${lv.level}</button>
+      <div class="pt-1">
+        <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
+        <h1 class="dash-title">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
       </div>`;
   }
 
@@ -1918,7 +1911,7 @@ function renderHomeTab(page = 'home') {
   });
   root.querySelectorAll('[data-home-hide]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const t = HOME_SECTIONS[btn.dataset.homeHide].toggle;
+      const t = sectionToggle(btn.dataset.homeHide, page);
       updateSetting(t, !state.settings[t]);
       render();
     });
@@ -1941,6 +1934,8 @@ function renderHomeTab(page = 'home') {
       const label = root.querySelector(`[data-measured-val="${id}"]`);
       if (bar) bar.style.width = Math.round((v / h.goal) * 100) + '%';
       if (label) label.textContent = v;
+      const chip = root.querySelector(`[data-measured-pct="${id}"]`);
+      if (chip) chip.textContent = Math.round((v / h.goal) * 100) + '%';
     });
     slider.addEventListener('change', () => {
       toggleCompletion(id, today, parseInt(slider.value, 10));
@@ -2735,7 +2730,7 @@ function renderSettingsTab() {
 
       ${section('Dashboard design',
         choiceGridHTML('Design', 'design', DESIGN_CHOICES,
-          'Designs rework the Home tab around your daily score, goals and to-dos, with charts, levels and milestones. Each uses one or two main colors and follows the Theme setting above.', 3) +
+          "Designs rework the Home tab around today's progress ring, goals and to-dos, with charts and milestones. Each uses one or two main colors and follows the Theme setting above.", 3) +
         (activeDesign() ? settingsRow('Color-code habits', "Use each habit's own color instead of the design's main color.", switchHTML('habitColors')) : '')
       )}
 
@@ -2748,17 +2743,30 @@ function renderSettingsTab() {
 
       ${section('Home screen',
         settingsRow('Layout', st.layout === 'focus'
-            ? 'Focus: Home keeps only your score, goals and to-dos. Charts, the week board and milestones live in the Stats tab.'
+            ? 'Focus: Home shows your progress ring, goals and to-dos. Charts, the week board and milestones live in Stats, and you can add any of them to Home below.'
             : 'Everything: all sections on Home, with four tabs like before.',
           segHTML('layout', [['focus','Focus'],['full','Everything']])) +
         settingsRow('Edit layout', 'Move sections up or down, or hide them, right on the Home and Stats tabs.',
           `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit Home layout"></button>`) +
-        settingsRow('Today summary', '', switchHTML('showSummary')) +
-        settingsRow('Quick to-do', '', switchHTML('showTodos')) +
-        settingsRow('This week board', '', switchHTML('showWeek')) +
-        settingsRow('At a glance stats', '', switchHTML('showStats')) +
-        settingsRow('Progress chart', '', switchHTML('showChart')) +
-        settingsRow('Level & milestones', '', switchHTML('showMilestones'))
+        (st.layout === 'focus' ? `
+          <div class="pt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--text-faint)] font-bold">On Home</div>` +
+          settingsRow('Today ring', '', switchHTML('showSummary')) +
+          settingsRow('Quick to-do', '', switchHTML('showTodos')) +
+          settingsRow('Progress chart', 'Off by default. Turn on to add it to Home too.', switchHTML('homeChart')) +
+          settingsRow('At a glance stats', '', switchHTML('homeGlance')) +
+          settingsRow('This week board', '', switchHTML('homeWeek')) +
+          settingsRow('Milestones', '', switchHTML('homeMilestones')) + `
+          <div class="pt-4 text-[11px] uppercase tracking-[0.14em] text-[var(--text-faint)] font-bold">On Stats</div>` +
+          settingsRow('Progress chart', '', switchHTML('showChart')) +
+          settingsRow('At a glance stats', '', switchHTML('showStats')) +
+          settingsRow('This week board', '', switchHTML('showWeek')) +
+          settingsRow('Milestones', '', switchHTML('showMilestones'))
+        : settingsRow('Today ring', '', switchHTML('showSummary')) +
+          settingsRow('Quick to-do', '', switchHTML('showTodos')) +
+          settingsRow('This week board', '', switchHTML('showWeek')) +
+          settingsRow('At a glance stats', '', switchHTML('showStats')) +
+          settingsRow('Progress chart', '', switchHTML('showChart')) +
+          settingsRow('Milestones', '', switchHTML('showMilestones')))
       )}
 
       ${section('App icon',
