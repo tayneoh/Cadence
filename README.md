@@ -84,8 +84,7 @@ That tells every installed copy to fetch the fresh files.
 Each person's habits are saved with their browser's LocalStorage, on
 their own device. Nothing is uploaded anywhere. That keeps the app free
 and private, but it also means data does not sync between devices and is
-lost if a user clears their browser data. Use **Backup & Restore** on the
-Home tab to save a backup file of everything (habits, full check-in
+lost if a user clears their browser data. Use **Settings → Your data** to save a backup file of everything (habits, full check-in
 history, to-dos) and load it back later or on another device. The "Export
 Widget Data" button is only a summary for the iOS widget, not a backup.
 
