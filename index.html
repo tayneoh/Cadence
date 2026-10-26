@@ -557,6 +557,15 @@
   @keyframes toastIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
   @keyframes toastOut { to { opacity:0; transform: translateY(20px);} }
 
+  .tab-row { grid-template-columns: repeat(4, 1fr); }
+  [data-layout="focus"] .tab-row { grid-template-columns: repeat(5, 1fr); }
+  [data-layout="full"] .tab-btn[data-tab="stats"] { display: none; }
+  /* Focus layout: New becomes a raised round button in the middle */
+  [data-layout="focus"] .tab-new { position: relative; }
+  [data-layout="focus"] .tab-new .tab-icon-wrap { width: 54px; height: 54px; padding: 0; border-radius: 999px; margin-top: -26px;
+    background: var(--gold) !important; color: var(--bg); box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 35%, transparent); }
+  [data-layout="focus"] .tab-new .tab-icon-wrap svg { width: 24px; height: 24px; }
+  [data-layout="focus"] .tab-new > span:last-child { display: none; }
   .tab-btn { transition: color 0.16s ease; }
   .tab-btn.active { color: var(--gold); }
   .tab-btn.active .tab-icon-wrap { background: var(--gold-soft); }
@@ -623,6 +632,7 @@
 
   <!-- ============ TABS ============ -->
   <section id="tab-home" class="tab-panel"></section>
+  <section id="tab-stats" class="tab-panel hidden"></section>
   <section id="tab-new" class="tab-panel hidden"></section>
   <section id="tab-calendar" class="tab-panel hidden"></section>
   <section id="tab-settings" class="tab-panel hidden"></section>
@@ -632,13 +642,17 @@
 <!-- ============ BOTTOM TAB BAR ============ -->
 <nav class="fixed bottom-0 left-0 right-0 z-30 surface border-t border-[var(--border)]"
      style="padding-bottom: env(safe-area-inset-bottom);">
-  <div class="max-w-xl mx-auto grid grid-cols-4">
+  <div class="tab-row max-w-xl mx-auto grid">
     <button data-tab="home" class="tab-btn active flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
       <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Home</span>
     </button>
-    <button data-tab="new" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
-      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="plus-circle" class="w-5 h-5"></i></span>
+    <button data-tab="stats" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="chart-column" class="w-5 h-5"></i></span>
+      <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Stats</span>
+    </button>
+    <button data-tab="new" class="tab-btn tab-new flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
+      <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">New</span>
     </button>
     <button data-tab="calendar" class="tab-btn flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
@@ -758,6 +772,7 @@ const DEFAULT_SETTINGS = {
   weekStyle: 'circles',   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
   design: 'original',     // Home dashboard design: 'original' or a key of DESIGNS
   habitColors: false,     // designs: color-code habits instead of one accent
+  layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
   homeOrder: ['summary', 'habits', 'todos', 'chart', 'stats', 'milestones', 'week'],
   showSummary: true,
   showChart: true,
@@ -817,6 +832,9 @@ function accentHex() {
   return d ? d[effectiveMode()].primary : state.settings.accent;
 }
 
+/* in the Focus layout Home keeps only these; the rest move to Stats */
+const FOCUS_HOME = ['summary', 'habits', 'todos'];
+
 const HOME_SECTIONS = {
   summary: { label: 'Today summary', toggle: 'showSummary' },
   habits:  { label: "Today's habits", toggle: null },          // always shown
@@ -843,6 +861,7 @@ function cleanSettings(raw) {
   if (APP_STYLES.some(([v]) => v === raw.style)) out.style = raw.style;
   if (raw.design === 'original' || DESIGNS[raw.design]) out.design = raw.design;
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
+  if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
   if (Array.isArray(raw.homeOrder)) {
     // keep known sections in the saved order, then append any new ones
     const known = DEFAULT_SETTINGS.homeOrder;
@@ -1534,10 +1553,11 @@ let activeTab = 'home';
 let homeEditing = false;   // Home layout edit mode, switched on from Settings
 
 /* move a Home section up (-1) or down (+1); no-op at the ends */
-function moveHomeSection(key, delta) {
+function moveHomeSection(key, delta, pageKeys = state.settings.homeOrder) {
   const order = [...state.settings.homeOrder];
-  const i = order.indexOf(key), j = i + delta;
-  if (i < 0 || j < 0 || j >= order.length) return;
+  const k = pageKeys.indexOf(key), other = pageKeys[k + delta];
+  if (k < 0 || !other) return;
+  const i = order.indexOf(key), j = order.indexOf(other);
   [order[i], order[j]] = [order[j], order[i]];
   updateSetting('homeOrder', order);
 }
@@ -1555,10 +1575,12 @@ function render() {
     greet.textContent = `${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}, ${name}.`;
   }
 
-  // dashboard designs draw their own header on Home
-  document.getElementById('appHeader').classList.toggle('hidden', activeTab === 'home' && !!activeDesign() && state.habits.length > 0);
+  // dashboard designs draw their own header on Home; Stats always does
+  document.getElementById('appHeader').classList.toggle('hidden',
+    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && !!activeDesign() && state.habits.length > 0));
 
-  if (activeTab === 'home') renderHomeTab();
+  if (activeTab === 'home') renderHomeTab('home');
+  else if (activeTab === 'stats') renderHomeTab('stats');
   else if (activeTab === 'new') renderNewTab();
   else if (activeTab === 'settings') renderSettingsTab();
   else renderCalendarTab();
@@ -1569,9 +1591,12 @@ function render() {
 }
 
 /* ---- HOME TAB: today's checklist on top, stats below ---- */
-function renderHomeTab() {
-  const root = document.getElementById('tab-home');
+/* Draws Home, or in the Focus layout either half of it: page 'home'
+   (score, goals, to-dos) or page 'stats' (charts, week, milestones). */
+function renderHomeTab(page = 'home') {
+  const root = document.getElementById('tab-' + page);
   const today = todayISO();
+  const focus = state.settings.layout === 'focus';
 
   if (state.habits.length === 0) {
     root.innerHTML = emptyStateHTML(
@@ -1595,7 +1620,26 @@ function renderHomeTab() {
     const currentVal = Number.isFinite(rawVal) ? rawVal : (rawVal ? h.goal : 0);
     const prog = dayProgress(h, today);
 
-    if (h.trackingMode === 'measure') {
+    if (h.trackingMode === 'measure' && focus) {
+      // Focus layout: one compact row with a +1 button and a thin bar
+      checklist += `
+        <div class="card-enter surface rounded-2xl p-4" style="animation-delay:${idx*0.04}s;">
+          <div class="flex items-center gap-3.5">
+            <span class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-bold"
+              style="background:color-mix(in srgb, ${hc(h)} 18%, transparent); color:${hc(h)}">${Math.round(prog*100)}%</span>
+            <span class="min-w-0 flex-1">
+              <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
+              <span class="text-[11px] text-[var(--text-dim)]">${currentVal} / ${h.goal} ${escapeHtml(h.unit)}</span>
+            </span>
+            <button data-measured-inc="${h.id}"
+              class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
+              style="min-height:44px; min-width:44px;" aria-label="Add 1 ${escapeHtml(h.unit)}">+1</button>
+          </div>
+          <div class="progress-track h-1 mt-3">
+            <div class="progress-fill" style="width:${Math.round(prog*100)}%; background:${hc(h)};"></div>
+          </div>
+        </div>`;
+    } else if (h.trackingMode === 'measure') {
       // measured habit: progress bar + slider + quick "+1" button
       checklist += `
         <div class="card-enter surface rounded-2xl p-4"
@@ -1635,7 +1679,7 @@ function renderHomeTab() {
           </span>
           <span class="min-w-0 flex-1">
             <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
-            <span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>
+            ${focus ? '' : `<span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>`}
           </span>
           ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
               <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
@@ -1807,7 +1851,8 @@ function renderHomeTab() {
     };
   }
 
-  const order = state.settings.homeOrder;
+  const order = !focus ? state.settings.homeOrder
+    : state.settings.homeOrder.filter(k => FOCUS_HOME.includes(k) === (page === 'home'));
   const parts = order.map((key, i) => {
     const meta = HOME_SECTIONS[key];
     const shown = !meta.toggle || state.settings[meta.toggle];
@@ -1837,7 +1882,17 @@ function renderHomeTab() {
       </div>` : '';
 
   let dashHeader = '';
-  if (activeDesign()) {
+  if (page === 'stats') {
+    const lv = levelInfo(checkins, perfect.count);
+    dashHeader = `
+      <div class="flex items-end justify-between gap-3 pt-1">
+        <div class="min-w-0">
+          <div class="dash-eyebrow">Your progress</div>
+          <h1 class="dash-title">Stats</h1>
+        </div>
+        <div class="level-chip shrink-0">LV ${lv.level}</div>
+      </div>`;
+  } else if (activeDesign()) {
     const now = new Date();
     const hr = now.getHours();
     const name = state.settings.name.trim();
@@ -1848,7 +1903,7 @@ function renderHomeTab() {
           <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
           <h1 class="dash-title">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
         </div>
-        <button class="level-chip shrink-0" onclick="switchTab('settings')" aria-label="Level ${lv.level}">LV ${lv.level}</button>
+        <button class="level-chip shrink-0" onclick="switchTab('${focus ? 'stats' : 'settings'}')" aria-label="Level ${lv.level}">LV ${lv.level}</button>
       </div>`;
   }
 
@@ -1859,7 +1914,7 @@ function renderHomeTab() {
 
   root.querySelector('#homeEditDone')?.addEventListener('click', () => { homeEditing = false; render(); });
   root.querySelectorAll('[data-home-move]').forEach(btn => {
-    btn.addEventListener('click', () => { moveHomeSection(btn.dataset.homeMove, Number(btn.dataset.dir)); render(); });
+    btn.addEventListener('click', () => { moveHomeSection(btn.dataset.homeMove, Number(btn.dataset.dir), order); render(); });
   });
   root.querySelectorAll('[data-home-hide]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2575,6 +2630,7 @@ function applySettings() {
   root.setAttribute('data-style', design ? 'none' : style);
   root.setAttribute('data-design', design ? state.settings.design : 'original');
   root.setAttribute('data-mode', mode);
+  root.setAttribute('data-layout', state.settings.layout);
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
   root.style.setProperty('--gold', design ? design[mode].primary : accent);
@@ -2691,7 +2747,11 @@ function renderSettingsTab() {
       )}
 
       ${section('Home screen',
-        settingsRow('Edit Home layout', 'Move sections up or down, or hide them, right on the Home tab.',
+        settingsRow('Layout', st.layout === 'focus'
+            ? 'Focus: Home keeps only your score, goals and to-dos. Charts, the week board and milestones live in the Stats tab.'
+            : 'Everything: all sections on Home, with four tabs like before.',
+          segHTML('layout', [['focus','Focus'],['full','Everything']])) +
+        settingsRow('Edit layout', 'Move sections up or down, or hide them, right on the Home and Stats tabs.',
           `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit Home layout"></button>`) +
         settingsRow('Today summary', '', switchHTML('showSummary')) +
         settingsRow('Quick to-do', '', switchHTML('showTodos')) +
@@ -2910,14 +2970,14 @@ function showToast(msg) {
 function switchTab(tab) {
   // leaving the new-habit form: clear any in-progress edit so returning
   // to it starts fresh instead of resuming a stale editing session
-  if (activeTab === 'home' && tab !== 'home') homeEditing = false;
+  if (tab !== 'home' && tab !== 'stats') homeEditing = false;
   if (activeTab === 'new' && tab !== 'new') {
     editingId = null;
     editDraft = null;
     formCustomColor = null;
   }
   activeTab = tab;
-  ['home','new','calendar','settings'].forEach(t => {
+  ['home','stats','new','calendar','settings'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('.tab-btn').forEach(btn => {
