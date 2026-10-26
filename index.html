@@ -445,6 +445,37 @@
   [data-design="glass"][data-mode="dark"] .score-ring::before { background: rgba(24,29,38,0.94); }
   [data-design="glass"] .rounded-2xl { border-radius: 24px; }
 
+  /* Cloud: airy off-white, borderless white pills lifted by wide soft
+     shadows, black text with gray secondary text, a floating tab bar */
+  :root[data-design="cloud"][data-mode="light"]:not(#_) { --bg: #fbfafa; --surface: #ffffff; --surface-2: #f1f0f0; --border: #e6e5e5;
+    --text: #111111; --text-dim: #7d7d7d; --text-faint: #a9a9a9; --wk-cell: #efeeee; color-scheme: light; }
+  :root[data-design="cloud"][data-mode="dark"]:not(#_) { --bg: #0f0f10; --surface: #1c1c1e; --surface-2: #2a2a2c; --border: #333336;
+    --text: #f2f2f2; --text-dim: #9a9a9e; --text-faint: #66666a; --wk-cell: #2a2a2c; color-scheme: dark; }
+  [data-design="cloud"] body { background-image: none; }
+  [data-design="cloud"] .surface { border-color: transparent; box-shadow: 0 12px 40px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03); }
+  [data-design="cloud"][data-mode="dark"] .surface { box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
+  [data-design="cloud"] .rounded-2xl { border-radius: 30px; }
+  [data-design="cloud"] .rounded-xl, [data-design="cloud"] .rounded-lg { border-radius: 999px; }
+  [data-design="cloud"] input[type="text"] { border-radius: 999px !important; }
+  [data-design="cloud"] .check-box { border-radius: 999px !important; }
+  [data-design="cloud"] .dash-eyebrow { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--text-dim); }
+  [data-design="cloud"] .dash-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  [data-design="cloud"] h3.uppercase { text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  [data-design="cloud"] .chart-tab { border-color: transparent; background: transparent; color: var(--text-faint); font-size: 13px; font-weight: 600; text-transform: none; }
+  [data-design="cloud"] .chart-tab.active { background: var(--surface-2); color: var(--text); }
+  [data-design="cloud"] .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+  [data-design="cloud"] .mini-chip { background: var(--surface-2); }
+  [data-design="cloud"] .score-ring { background: conic-gradient(var(--gold) calc(var(--pct) * 1%), var(--surface-2) 0); }
+  /* floating tab bar, lifted off the screen edges */
+  [data-design="cloud"] nav.fixed { left: 16px; right: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-bottom: 0 !important;
+    border-radius: 30px; border: none; }
+  [data-design="cloud"] .tab-btn.active { color: var(--text); }
+  [data-design="cloud"] .tab-btn > span:last-child { text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 600; }
+  [data-design="cloud"] .tab-btn.active .tab-icon-wrap { background: var(--surface-2); }
+  [data-design="cloud"][data-layout="focus"] .tab-new .tab-icon-wrap { background: var(--surface) !important; color: var(--text);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.05); }
+  [data-design="cloud"][data-mode="dark"][data-layout="focus"] .tab-new .tab-icon-wrap { background: var(--surface-2) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
   /* Mono: black and white, one gray, crisp hairlines */
   :root[data-design="mono"][data-mode="dark"]:not(#_) { --bg: #000000; --surface: #0e0e0e; --surface-2: #1a1a1a; --border: #2a2a2a;
     --text: #f5f5f5; --text-dim: #a3a3a3; --text-faint: #666666; --wk-cell: #1f1f1f; color-scheme: dark; }
@@ -808,6 +839,7 @@ const DESIGNS = {
   glass: { label: 'Glass', light: { primary: '#3d6fd9', second: '#8a93a6' }, dark: { primary: '#8fb4ff', second: '#9aa3b5' } },
   mono:  { label: 'Mono',  light: { primary: '#111111', second: '#8c8c8c' }, dark: { primary: '#f5f5f5', second: '#8c8c8c' } },
   ember: { label: 'Ember', light: { primary: '#de5f24', second: '#f2a679' }, dark: { primary: '#ff8a4c', second: '#ffc8a6' } },
+  cloud: { label: 'Cloud', light: { primary: '#111111', second: '#9b9b9b' }, dark: { primary: '#f2f2f2', second: '#8a8a8a' } },
   sage:  { label: 'Sage',  light: { primary: '#2f8a5f', second: '#8db8a2' }, dark: { primary: '#7fd1a7', second: '#c8e6d5' } },
 };
 const DESIGN_CHOICES = [['original','Original'], ...Object.entries(DESIGNS).map(([k, d]) => [k, d.label])];
