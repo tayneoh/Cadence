@@ -656,6 +656,14 @@
   .s-vis button:disabled { opacity: 0.4; }
   .ob-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--border); transition: width 0.2s ease; }
   .ob-dot.on { width: 20px; background: var(--gold); }
+  #tourHole { position: fixed; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62), 0 0 0 2px var(--gold);
+    transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease; pointer-events: none; }
+  #tourHole.tour-none { box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62); }
+  #tourCaret { position: absolute; width: 14px; height: 14px; background: var(--surface); transform: rotate(45deg); }
+  #tourCaret.tc-up { top: -7px; border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
+  #tourCaret.tc-down { bottom: -7px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  #tourTip { position: fixed; box-shadow: 0 12px 40px rgba(0,0,0,0.25); transition: top 0.25s ease; }
+  @media (prefers-reduced-motion: reduce) { #tourHole, #tourTip { transition: none; } }
   .feed-badge { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); }
   .feed-badge svg { color: var(--gold); flex-shrink: 0; }
   .react-btn { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 99px; font-size: 14px;
@@ -747,6 +755,10 @@
 
 <!-- ============ FIRST RUN: ACCOUNT + WALKTHROUGH ============ -->
 <div id="onboard" class="hidden fixed inset-0 z-[60] overflow-y-auto" style="background:var(--bg)"></div>
+<div id="tour" class="hidden fixed inset-0 z-[60]" aria-live="polite">
+  <div id="tourHole"></div>
+  <div id="tourTip" class="surface rounded-2xl p-4" role="dialog" aria-label="App tour"></div>
+</div>
 
 <!-- ============ ACHIEVEMENT POP-UP ============ -->
 <div id="achievementModal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
@@ -2002,7 +2014,7 @@ function renderHomeTab(page = 'home') {
     habits: () => `
       <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Today's habits</h3>
-        <div class="space-y-2.5">${checklist}</div>
+        <div class="space-y-2.5" data-tour="habits">${checklist}</div>
       </div>`,
     todos: () => todoSectionHTML(),
     week: () => `
@@ -2168,7 +2180,7 @@ function renderHomeTab(page = 'home') {
     sections.habits = () => `
       <div>
         ${label("Today's habits")}
-        <div class="space-y-2.5">${checklist}</div>
+        <div class="space-y-2.5" data-tour="habits">${checklist}</div>
       </div>`;
     sections.stats = () => {
       const tile = (icon, value, unit, cap) => `
@@ -4300,6 +4312,8 @@ function socialBoot() {
 
 /* cheers and nudges you haven't seen yet pop up, once each */
 function announceSocial() {
+  // wait until the first-run screens are closed; finishOnboarding calls this again
+  if (tourOn || !document.getElementById('onboard').classList.contains('hidden')) return;
   let seen;
   try { seen = JSON.parse(localStorage.getItem('cadence.seenSocial') || '[]'); } catch (e) { seen = []; }
   const today = todayISO(), items = [];
@@ -4334,13 +4348,14 @@ document.addEventListener('visibilitychange', () => {
    Habits already on this phone are never touched by any of it.
    ===================================================================== */
 const ONBOARD_KEY = 'cadence.onboarded';
+// each stop points at the real screen: which tab to show and what to light up
 const TOUR = [
-  { icon: 'circle-check', title: 'Check off your habits', body: "Home shows today's habits and a ring with how much you've done. Tap a habit to mark it done, or slide to log an amount." },
-  { icon: 'plus', title: 'Add a habit', body: 'Tap the + button. Build a good habit or quit a bad one, pick the days it repeats, and add a note if you like.' },
-  { icon: 'chart-column', title: 'See your progress', body: 'Stats has your recap for yesterday, last week, month and year, plus milestones you unlock as you go.' },
-  { icon: 'calendar-days', title: 'Look back', body: 'Calendar shows any day, week, month or year. Tap a day to fix a missed check-in.' },
-  { icon: 'users', title: 'Do it with friends', body: 'The people button on Home opens your feed, friends and groups. You choose which habits anyone can see under Privacy.' },
-  { icon: 'settings', title: 'Make it yours', body: 'Settings has themes, styles, text size and your home layout. You can replay this tour there too.' },
+  { tab: 'home', target: '[data-tour="habits"] > *', title: 'Check off your habits', body: "These are today's habits. Tap one to mark it done, or slide to log an amount." },
+  { tab: 'home', target: '.tab-btn[data-tab="new"]', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
+  { tab: 'stats', target: '.tab-btn[data-tab="stats"]', title: 'See your progress', body: 'Stats has your recaps for yesterday, last week, month and year, plus the milestones you unlock.' },
+  { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year. Tap a day to fix a missed check-in.' },
+  { tab: 'home', target: '.s-friends-btn', title: 'Do it with friends', body: 'This opens your feed, friends and groups. You choose which habits anyone can see.' },
+  { tab: 'settings', target: '.tab-btn[data-tab="settings"]', title: 'Make it yours', body: 'Themes, styles, text size, calendar looks and your home layout live here. You can replay this tour here too.' },
 ];
 let onboardStep = 0, onboardMode = 'signup', onboardMsg = '', onboardBusy = false;
 
@@ -4348,7 +4363,10 @@ function needsOnboarding() { try { return !localStorage.getItem(ONBOARD_KEY); } 
 function finishOnboarding() {
   try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
   document.getElementById('onboard').classList.add('hidden');
-  render();
+  document.getElementById('tour').classList.add('hidden');
+  tourOn = false;
+  switchTab('home');
+  if (net.loaded) announceSocial();
 }
 function startOnboarding(step = 0) {
   onboardStep = step; onboardMsg = '';
@@ -4383,27 +4401,91 @@ function renderOnboarding() {
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
     el.querySelector('#obSkip').onclick = () => { onboardStep = 1; renderOnboarding(); };
   } else {
-    const i = onboardStep - 1, t = TOUR[i], last = i === TOUR.length - 1;
-    el.innerHTML = wrap(`
-      <div class="flex justify-end"><button id="obDone" class="text-[13px] font-bold text-[var(--text-faint)]">Skip</button></div>
-      <div class="text-center flex-1 flex flex-col justify-center">
-        <div class="ach-badge mb-6"><i data-lucide="${t.icon}" class="w-10 h-10"></i></div>
-        <div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">${i + 1} of ${TOUR.length}</div>
-        <h2 class="display text-2xl font-semibold">${t.title}</h2>
-        <p class="text-[14px] text-[var(--text-dim)] leading-relaxed mt-3 max-w-[320px] mx-auto">${t.body}</p>
-      </div>
-      <div class="flex justify-center gap-1.5">${TOUR.map((_, k) => `<span class="ob-dot ${k === i ? 'on' : ''}"></span>`).join('')}</div>
-      <div class="flex gap-2.5">
-        ${i > 0 ? `<button id="obBack" class="btn-press surface rounded-xl h-12 px-5 text-sm font-bold">Back</button>` : ''}
-        <button id="obNext" class="btn-press flex-1 bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">${last ? 'Start' : 'Next'}</button>
-      </div>`);
-    el.querySelector('#obDone').onclick = finishOnboarding;
-    el.querySelector('#obNext').onclick = () => { if (last) finishOnboarding(); else { onboardStep++; renderOnboarding(); } };
-    el.querySelector('#obBack')?.addEventListener('click', () => { onboardStep--; renderOnboarding(); });
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    showTourStep(onboardStep - 1);
+    return;
   }
   el.scrollTop = 0;
   drawIcons();
 }
+
+
+/* the tour runs on the live app: a dimmed screen with a cut-out around the
+   real button or section, and a small card explaining it */
+let tourOn = false;
+function showTourStep(i) {
+  const t = TOUR[i];
+  if (!t) return finishOnboarding();
+  tourOn = true;
+  switchTab(t.tab);
+  const ov = document.getElementById('tour');
+  // sit outside <body> so the text-size zoom doesn't throw off the positions
+  if (ov.parentNode !== document.documentElement) document.documentElement.appendChild(ov);
+  ov.style.fontFamily = getComputedStyle(document.body).fontFamily;
+  ov.classList.remove('hidden');
+  const last = i === TOUR.length - 1;
+  document.getElementById('tourTip').innerHTML = `
+    <span id="tourCaret" aria-hidden="true"></span>
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-[10px] uppercase tracking-[0.18em] text-[var(--text-faint)]">${i + 1} of ${TOUR.length}</span>
+      <button id="tourSkip" class="text-[12px] font-bold text-[var(--text-faint)]">Skip</button>
+    </div>
+    <h2 class="display text-xl font-semibold leading-tight">${t.title}</h2>
+    <p class="text-[13px] text-[var(--text-dim)] leading-relaxed mt-1.5">${t.body}</p>
+    <div class="flex items-center gap-2 mt-4">
+      <div class="flex gap-1.5 flex-1">${TOUR.map((_, k) => `<span class="ob-dot ${k === i ? 'on' : ''}"></span>`).join('')}</div>
+      ${i > 0 ? `<button id="tourBack" class="btn-press surface rounded-xl h-10 px-4 text-[13px] font-bold">Back</button>` : ''}
+      <button id="tourNext" class="btn-press bg-[var(--text)] text-[var(--bg)] rounded-xl h-10 px-5 text-[13px] font-bold">${last ? 'Start' : 'Next'}</button>
+    </div>`;
+  document.getElementById('tourSkip').onclick = finishOnboarding;
+  document.getElementById('tourNext').onclick = () => { onboardStep++; last ? finishOnboarding() : showTourStep(i + 1); };
+  document.getElementById('tourBack')?.addEventListener('click', () => { onboardStep--; showTourStep(i - 1); });
+  requestAnimationFrame(() => placeTour(i));
+}
+function tourTarget(i) {
+  const el = document.querySelector(TOUR[i].target);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return r.width && r.height ? el : null;
+}
+function placeTour(i) {
+  if (!tourOn) return;
+  const hole = document.getElementById('tourHole'), tip = document.getElementById('tourTip');
+  const el = tourTarget(i);
+  const vw = window.innerWidth, vh = window.innerHeight, pad = 8;
+  if (el && !el.closest('nav')) {
+    const r0 = el.getBoundingClientRect();
+    // tall sections: keep the top in view so the card still fits below or above
+    if (r0.top < 70 || r0.bottom > vh - 200) window.scrollBy({ top: r0.top - 90, behavior: 'instant' });
+  }
+  const r = el ? el.getBoundingClientRect() : null;
+  if (r) {
+    const top = Math.max(6, r.top - pad), bottom = Math.min(vh - 6, r.bottom + pad);
+    hole.style.cssText = `top:${top}px;left:${Math.max(6, r.left - pad)}px;width:${Math.min(vw - 12, r.width + pad * 2)}px;height:${bottom - top}px;`;
+    hole.classList.remove('tour-none');
+  } else {
+    hole.style.cssText = `top:${vh / 2}px;left:${vw / 2}px;width:0;height:0;`;
+    hole.classList.add('tour-none');
+  }
+  const tw = Math.min(360, vw - 32);
+  tip.style.width = tw + 'px';
+  tip.style.left = Math.round((vw - tw) / 2) + 'px';
+  const th = tip.offsetHeight;
+  let y, side = '';
+  if (!r) y = (vh - th) / 2;
+  else if (vh - r.bottom - pad > th + 24) { y = r.bottom + pad + 14; side = 'up'; }
+  else if (r.top - pad > th + 24) { y = r.top - pad - 14 - th; side = 'down'; }
+  else y = vh - th - 16;
+  tip.style.top = Math.round(Math.max(12, y)) + 'px';
+  // the little arrow on the card points at the middle of what's lit up
+  const caret = document.getElementById('tourCaret');
+  if (caret) {
+    caret.className = side ? 'tc-' + side : 'hidden';
+    if (side) caret.style.left = Math.round(Math.min(tw - 28, Math.max(14, r.left + r.width / 2 - (vw - tw) / 2 - 7))) + 'px';
+  }
+}
+window.addEventListener('resize', () => { if (tourOn) placeTour(onboardStep - 1); });
 
 async function onboardAuth() {
   const email = (document.getElementById('obEmail')?.value || '').trim().toLowerCase();
