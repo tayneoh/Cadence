@@ -1,7 +1,7 @@
 /* Cadence service worker — enables offline use.
    Bump CACHE_VERSION whenever index.html or assets change so clients
    pick up the new files instead of a stale cache. */
-const CACHE_VERSION = 'cadence-v20';
+const CACHE_VERSION = 'cadence-v21';
 
 /* The app shell: local files that make up the installable app. */
 const APP_SHELL = [
@@ -49,6 +49,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  // Friends and groups talk to the server directly; never cache that data
+  if (url.hostname.endsWith('.supabase.co')) return;
   const isLocal = url.origin === self.location.origin;
   const isHtml = request.mode === 'navigate' ||
                  url.pathname === '/' ||
