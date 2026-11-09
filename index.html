@@ -524,13 +524,13 @@
     transform: translate(-50%, -50%); pointer-events: none;
     color: var(--text-dim); }
 
-  input[type="text"], input[type="number"], select {
+  input[type="text"], input[type="number"], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 11px; color: var(--text); outline: none;
     transition: border-color 0.15s ease;
   }
-  input:focus, select:focus { border-color: var(--text-dim); }
-  input::placeholder { color: var(--text-faint); }
+  input:focus, select:focus, textarea:focus { border-color: var(--text-dim); }
+  input::placeholder, textarea::placeholder { color: var(--text-faint); }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   select {
@@ -557,6 +557,27 @@
   [data-text="s"] body { zoom: 0.92; }
   [data-text="l"] body { zoom: 1.1; }
   [data-text="xl"] body { zoom: 1.2; }
+  .habit-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 12px; line-height: 1.35; color: var(--text-dim); margin-top: 2px; white-space: normal; }
+  .off-today > summary { list-style: none; }
+  .off-today > summary::-webkit-details-marker { display: none; }
+  .off-today > summary::before { content: "+ "; }
+  .off-today[open] > summary::before { content: "\2212  "; }
+  /* week board: days a habit isn't scheduled are faded but still tappable */
+  [data-week-toggle][data-off] { opacity: 0.35; }
+  .day-chip { height: 36px; border-radius: 10px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border);
+    background: var(--surface-2); color: var(--text-dim); }
+  .day-chip.on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+  /* achievement pop-up */
+  .ach-badge { width: 92px; height: 92px; border-radius: 999px; margin: 0 auto; display: flex; align-items: center; justify-content: center;
+    color: var(--gold); border: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--surface));
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--gold) 10%, transparent); animation: ach-pop 0.55s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes ach-pop { from { transform: scale(0.3) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ach-badge svg { width: 40px; height: 40px; }
+  @media (prefers-reduced-motion: reduce) { .ach-badge { animation: none; } }
+  /* recap */
+  .recap-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .recap-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--gold); }
   .tab-row { grid-template-columns: repeat(4, 1fr); }
   [data-layout="focus"] .tab-row { grid-template-columns: repeat(5, 1fr); }
   [data-layout="full"] .tab-btn[data-tab="stats"] { display: none; }
@@ -683,6 +704,17 @@
   </div>
 </div>
 
+<!-- ============ ACHIEVEMENT POP-UP ============ -->
+<div id="achievementModal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+  <div class="modal-enter surface rounded-2xl w-full max-w-xs p-6 text-center">
+    <div id="achIcon" class="ach-badge mb-5"></div>
+    <div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1">Milestone unlocked</div>
+    <h2 id="achLabel" class="display text-2xl font-semibold mb-1.5"></h2>
+    <p id="achSub" class="text-[13px] text-[var(--text-dim)] mb-6"></p>
+    <button id="achOkBtn" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold" style="min-height:44px;">Nice</button>
+  </div>
+</div>
+
 <!-- ============ EXPORT MODAL ============ -->
 <div id="exportModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
   <div class="modal-enter surface rounded-2xl w-full max-w-md p-6 max-h-[88vh] overflow-y-auto">
@@ -756,7 +788,7 @@
    --------------------------------------------------------------------- */
 const STORAGE_KEY = 'cadence.habits.v3';
 const LEGACY_KEYS = ['cadence.habits.v2', 'cadence.habits.v1'];
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 const LAST_BACKUP_KEY = 'cadence.lastBackup';
 const PRE_RESTORE_KEY = 'cadence.preRestore';
 
@@ -774,10 +806,11 @@ const DEFAULT_SETTINGS = {
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
   textSize: 'l',          // 's' | 'm' | 'l' | 'xl': scales the whole app
-  homeOrder: ['summary', 'habits', 'todos', 'chart', 'stats', 'milestones', 'week'],
+  homeOrder: ['summary', 'habits', 'todos', 'recap', 'chart', 'stats', 'milestones', 'week'],
   showSummary: true,
   showChart: true,
   showMilestones: true,
+  showRecap: true,
   showTodos: true,
   showWeek: true,
   showStats: true,
@@ -785,6 +818,7 @@ const DEFAULT_SETTINGS = {
   homeGlance: false,
   homeWeek: false,
   homeMilestones: false,
+  homeRecap: false,
   badge: false,           // habits-left count on the home-screen icon
 };
 
@@ -831,6 +865,7 @@ const HOME_SECTIONS = {
   stats:   { label: 'At a glance', toggle: 'showStats', homeToggle: 'homeGlance' },
   chart:   { label: 'Progress chart', toggle: 'showChart', homeToggle: 'homeChart' },
   milestones: { label: 'Milestones', toggle: 'showMilestones', homeToggle: 'homeMilestones' },
+  recap:   { label: 'Recap', toggle: 'showRecap', homeToggle: 'homeRecap' },
 };
 
 /* the setting that shows or hides a section on the given page */
@@ -840,7 +875,16 @@ function sectionToggle(key, page) {
 }
 
 function emptyState() {
-  return { version: SCHEMA_VERSION, habits: [], todos: [], settings: { ...DEFAULT_SETTINGS } };
+  return { version: SCHEMA_VERSION, habits: [], todos: [], settings: { ...DEFAULT_SETTINGS }, seenBadges: null };
+}
+
+/* weekdays a habit is due (0 = Sunday ... 6 = Saturday); every day unless
+   a valid, non-empty list was saved */
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+function cleanDays(days) {
+  if (!Array.isArray(days)) return [...ALL_DAYS];
+  const out = ALL_DAYS.filter(d => days.includes(d));
+  return out.length ? out : [...ALL_DAYS];
 }
 
 /* keep only known settings with valid values; anything else falls back */
@@ -861,9 +905,15 @@ function cleanSettings(raw) {
     // keep known sections in the saved order, then append any new ones
     const known = DEFAULT_SETTINGS.homeOrder;
     const order = raw.homeOrder.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i);
-    out.homeOrder = [...order, ...known.filter(k => !order.includes(k))];
+    // a section added in an update goes in at its default spot
+    known.forEach((k, i) => {
+      if (order.includes(k)) return;
+      const prev = known.slice(0, i).reverse().find(x => order.includes(x));
+      order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, k);
+    });
+    out.homeOrder = order;
   }
-  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','homeChart','homeGlance','homeWeek','homeMilestones','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -886,7 +936,12 @@ function checkStorage() {
               measure-mode completions store a number instead.
    v3 -> v4 : add top-level `todos` (quick to-do list). Habits untouched;
               the storage key stays the same so nothing has to move.
-   v4 -> v5 : add top-level `settings` (personalization), defaults filled in. */
+   v4 -> v5 : add top-level `settings` (personalization), defaults filled in.
+   v5 -> v6 : habits gain `note` (''), `kind` ('build' | 'quit') and `days`
+              (weekdays it's due, 0 = Sunday; all seven by default), and the
+              state gains `seenBadges` (milestones already announced). Every
+              existing habit becomes an every-day 'build' habit, so streaks
+              and history read exactly as before. */
 function migrateData(raw) {
   const safe = emptyState();
   if (!raw || typeof raw !== 'object') return safe;
@@ -903,7 +958,12 @@ function migrateData(raw) {
         createdAt: h.createdAt || todayISO(),
         order: Number.isFinite(h.order) ? h.order : i,
         completions: (h.completions && typeof h.completions === 'object') ? h.completions : {},
+        note: typeof h.note === 'string' ? h.note.slice(0, 200) : '',
+        kind: h.kind === 'quit' ? 'quit' : 'build',
+        days: cleanDays(h.days),
       }));
+    // a habit to quit is always a simple yes/no
+    safe.habits.forEach(h => { if (h.kind === 'quit') h.trackingMode = 'check'; });
     // stable sort by order so the list respects user-chosen ordering
     safe.habits.sort((a, b) => a.order - b.order);
     // normalize orders to consecutive integers
@@ -920,6 +980,8 @@ function migrateData(raw) {
       }));
   }
   safe.settings = cleanSettings(raw.settings);
+  // null = never set; the current milestones are then recorded silently
+  safe.seenBadges = Array.isArray(raw.seenBadges) ? raw.seenBadges.filter(x => typeof x === 'string') : null;
   return safe;
 }
 
@@ -982,17 +1044,21 @@ const UNIT_PRESETS = ['times', 'minutes', 'count', 'distance', 'custom'];
 /* ---------------------------------------------------------------------
    HABIT MANAGEMENT
    --------------------------------------------------------------------- */
-function addHabit(title, goal, unit, color, trackingMode) {
+function addHabit(title, goal, unit, color, trackingMode, extra = {}) {
+  const kind = extra.kind === 'quit' ? 'quit' : 'build';
   state.habits.push({
     id: genId(),
     title: title.trim(),
-    goal: Math.max(1, Math.min(9999, Math.round(goal) || 1)),
+    goal: kind === 'quit' ? 1 : Math.max(1, Math.min(9999, Math.round(goal) || 1)),
     unit: unit.trim() || 'times',
-    trackingMode: trackingMode === 'measure' ? 'measure' : 'check',
+    trackingMode: kind === 'quit' ? 'check' : (trackingMode === 'measure' ? 'measure' : 'check'),
     color,
     createdAt: todayISO(),
     order: state.habits.length,
     completions: {},
+    note: String(extra.note || '').trim().slice(0, 200),
+    kind,
+    days: cleanDays(extra.days),
   });
   saveData();
 }
@@ -1011,6 +1077,9 @@ function updateHabit(id, patch) {
   if (patch.trackingMode === 'check' || patch.trackingMode === 'measure') {
     h.trackingMode = patch.trackingMode;
   }
+  if (typeof patch.note === 'string') h.note = patch.note.trim().slice(0, 200);
+  if (Array.isArray(patch.days)) h.days = cleanDays(patch.days);
+  if (h.kind === 'quit') h.trackingMode = 'check';
   saveData();
 }
 
@@ -1038,15 +1107,35 @@ function reorderHabit(id, delta) {
    For measure-mode: value is a number (how much was logged that day).
    A day counts as "done" when value >= goal (or === true for check).  */
 
+/* Habits to quit store slips instead: completions[date] = true means
+   "slipped that day", and every other day from the start until today
+   counts as a clean (done) day. */
+function isQuit(habit) { return habit.kind === 'quit'; }
+
 function isDayDone(habit, dateISO) {
   const v = habit.completions[dateISO];
+  if (isQuit(habit)) return dateISO >= habit.createdAt && dateISO <= todayISO() && !v;
   if (habit.trackingMode === 'measure') return Number.isFinite(v) && v >= habit.goal;
   return !!v;
+}
+
+/* is the habit scheduled on this date's weekday? */
+function isDue(habit, dateISO) {
+  return habit.days.includes(fromISO(dateISO).getDay());
+}
+
+/* first day the habit has any history: its start, or an earlier
+   back-filled check-in */
+function habitStart(habit) {
+  let start = habit.createdAt;
+  if (!isQuit(habit)) Object.keys(habit.completions).forEach(d => { if (d < start) start = d; });
+  return start;
 }
 
 /* 0..1 fraction of the day's goal that has been logged.
    Used for the calendar dots' partial-fill state and progress rings. */
 function dayProgress(habit, dateISO) {
+  if (isQuit(habit)) return isDayDone(habit, dateISO) ? 1 : 0;
   const v = habit.completions[dateISO];
   if (habit.trackingMode === 'measure') {
     if (!Number.isFinite(v) || v <= 0) return 0;
@@ -1104,25 +1193,32 @@ function clearDoneTodos() {
 
 /* Current streak: consecutive completed days ending today. An incomplete
    today does NOT break it (day still in progress); a missed yesterday does. */
+/* Current streak: done days in a row ending today. An unfinished today
+   doesn't break it (the day is still in progress). Days the habit isn't
+   scheduled are skipped: they never break a streak, and count only if
+   it was done anyway. */
 function currentStreak(habit) {
   const today = todayISO();
+  const start = habitStart(habit);
   let streak = 0;
   let cursor = isDayDone(habit, today) ? today : addDays(today, -1);
-  while (isDayDone(habit, cursor)) {
-    streak++;
+  while (cursor >= start) {
+    if (isDayDone(habit, cursor)) streak++;
+    else if (isDue(habit, cursor)) break;
     cursor = addDays(cursor, -1);
   }
   return streak;
 }
 
-/* Completion rate: completed days / all days from createdAt..today inclusive. */
+/* Completion rate: done days / scheduled days from the start to today. */
 function completionRate(habit) {
   const today = todayISO();
-  const start = habit.createdAt > today ? today : habit.createdAt;
-  let total = 0, done = 0, cursor = start;
+  let total = 0, done = 0, cursor = habitStart(habit);
   while (cursor <= today) {
-    total++;
-    if (isDayDone(habit, cursor)) done++;
+    if (isDue(habit, cursor)) {
+      total++;
+      if (isDayDone(habit, cursor)) done++;
+    }
     cursor = addDays(cursor, 1);
   }
   return total === 0 ? 0 : Math.round((done / total) * 100);
@@ -1143,18 +1239,27 @@ function progressMessage(pct) {
 
 /* longest run of consecutive done days this habit has ever had */
 function longestStreak(h) {
-  const days = Object.keys(h.completions).filter(d => isDayDone(h, d)).sort();
-  let best = 0, run = 0, prev = null;
-  days.forEach(d => {
-    run = prev && addDays(prev, 1) === d ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = d;
-  });
+  const today = todayISO();
+  let best = 0, run = 0, cursor = habitStart(h);
+  while (cursor <= today) {
+    if (isDayDone(h, cursor)) { run++; best = Math.max(best, run); }
+    else if (isDue(h, cursor) && cursor !== today) run = 0;
+    cursor = addDays(cursor, 1);
+  }
   return best;
 }
 
+/* done days for one habit (clean days for a habit to quit) */
+function doneDayCount(h) {
+  if (!isQuit(h)) return Object.keys(h.completions).filter(d => isDayDone(h, d)).length;
+  let n = 0, cursor = h.createdAt;
+  const today = todayISO();
+  while (cursor <= today) { if (isDayDone(h, cursor)) n++; cursor = addDays(cursor, 1); }
+  return n;
+}
+
 function totalCheckins() {
-  return state.habits.reduce((n, h) => n + Object.keys(h.completions).filter(d => isDayDone(h, d)).length, 0);
+  return state.habits.reduce((n, h) => n + doneDayCount(h), 0);
 }
 
 /* days where every habit that existed that day was finished */
@@ -1166,10 +1271,10 @@ function perfectDayStats() {
   state.habits.forEach(h => Object.keys(h.completions).forEach(d => { if (d < cursor) cursor = d; }));
   let count = 0, run = 0, best = 0;
   while (cursor <= today) {
-    const active = state.habits.filter(h => h.createdAt <= cursor || h.completions[cursor] !== undefined);
+    const active = state.habits.filter(h => (h.createdAt <= cursor || h.completions[cursor] !== undefined) && isDue(h, cursor));
     const perfect = active.length > 0 && active.every(h => isDayDone(h, cursor));
     if (perfect) { count++; run++; best = Math.max(best, run); }
-    else if (cursor !== today) run = 0;   // an unfinished today doesn't break the run
+    else if (active.length && cursor !== today) run = 0;   // unfinished today and rest days don't break the run
     cursor = addDays(cursor, 1);
   }
   return { count, current: run, best };
@@ -1196,6 +1301,58 @@ function badgeList() {
   ];
 }
 
+/* ---- recaps: the last complete day, week, month or year ---- */
+let recapPeriod = 'week';   // 'day' | 'week' | 'month' | 'year'
+
+/* first and last ISO day of the period `back` steps before the current one */
+function recapRange(period, back) {
+  const today = fromISO(todayISO());
+  if (period === 'day') { const d = addDays(todayISO(), -back); return [d, d]; }
+  if (period === 'week') {
+    const start = addDays(startOfWeek(todayISO()), -7 * back);
+    return [start, addDays(start, 6)];
+  }
+  if (period === 'month') {
+    const first = new Date(today.getFullYear(), today.getMonth() - back, 1);
+    const last = new Date(today.getFullYear(), today.getMonth() - back + 1, 0);
+    return [toISO(first), toISO(last)];
+  }
+  const y = today.getFullYear() - back;
+  return [`${y}-01-01`, `${y}-12-31`];
+}
+
+function recapLabel(period, [from, to]) {
+  const f = fromISO(from);
+  if (period === 'day') return f.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  if (period === 'week') {
+    const fmt = iso => fromISO(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `${fmt(from)} – ${fmt(to)}`;
+  }
+  if (period === 'month') return f.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return String(f.getFullYear());
+}
+
+/* totals over a date range, counting only days each habit was due and existed */
+function recapStats(from, to) {
+  const today = todayISO();
+  const rows = state.habits.map(h => ({ h, due: 0, done: 0 }));
+  let perfect = 0, activeDays = 0;
+  for (let iso = from; iso <= to && iso <= today; iso = addDays(iso, 1)) {
+    let dueN = 0, doneN = 0;
+    rows.forEach(r => {
+      if (iso < habitStart(r.h) || !isDue(r.h, iso)) return;
+      const d = isDayDone(r.h, iso);
+      r.due++; dueN++;
+      if (d) { r.done++; doneN++; }
+    });
+    if (dueN) { activeDays++; if (doneN === dueN) perfect++; }
+  }
+  const due = rows.reduce((a, r) => a + r.due, 0);
+  const done = rows.reduce((a, r) => a + r.done, 0);
+  const habits = rows.filter(r => r.due).map(r => ({ ...r, rate: r.done / r.due }));
+  return { due, done, pct: due ? Math.round(done / due * 100) : null, perfect, activeDays, habits };
+}
+
 /* ---- progress chart: one bar per habit / day / day of month / month ---- */
 let chartRange = 'week';   // 'day' | 'week' | 'month' | 'year'
 
@@ -1203,7 +1360,7 @@ function chartData(range) {
   const today = todayISO();
   const now = fromISO(today);
   if (range === 'day') {
-    return state.habits.map(h => ({ label: h.title.slice(0, 4), value: dayProgress(h, today), current: true, color: hc(h) }));
+    return state.habits.filter(h => isDue(h, today)).map(h => ({ label: h.title.slice(0, 4), value: dayProgress(h, today), current: true, color: hc(h) }));
   }
   if (range === 'month') {
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -1237,6 +1394,16 @@ function chartData(range) {
    CALENDAR RENDERING
    --------------------------------------------------------------------- */
 const WEEKDAY_LETTERS = ['S','M','T','W','T','F','S'];   // indexed by Date.getDay()
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+/* "Every day", "Weekdays", "Weekends" or a short list like "Mon, Wed" */
+function daysLabel(days) {
+  if (days.length === 7) return 'Every day';
+  if (days.join() === '1,2,3,4,5') return 'Weekdays';
+  if (days.join() === '0,6') return 'Weekends';
+  const order = Array.from({ length: 7 }, (_, i) => (i + state.settings.weekStart) % 7);
+  return order.filter(d => days.includes(d)).map(d => DAY_SHORT[d]).join(', ');
+}
 
 /* column (0..6) of a date in a week that starts on the chosen day */
 function weekCol(date) { return (date.getDay() - state.settings.weekStart + 7) % 7; }
@@ -1285,8 +1452,9 @@ function shiftCalView(delta) {
 /* 0..1 share of all habits finished on a date (measured habits count
    partially). Drives the year heatmap's shading. */
 function dayScore(iso) {
-  if (!state.habits.length) return 0;
-  return state.habits.reduce((s, h) => s + dayProgress(h, iso), 0) / state.habits.length;
+  const due = state.habits.filter(h => isDue(h, iso));
+  if (!due.length) return 0;
+  return due.reduce((s, h) => s + dayProgress(h, iso), 0) / due.length;
 }
 
 /* Weekly board: one row per habit, one toggle per day, week start per
@@ -1306,7 +1474,7 @@ function weekGridHTML(start) {
   const head = (cls) => days.map(iso =>
     `<div class="${cls} ${iso === today ? 'is-today' : ''}">${letter(iso)}<br>${fromISO(iso).getDate()}</div>`).join('');
   const cellAttrs = (h, iso) =>
-    `data-week-toggle="${h.id}" data-date="${iso}" ${iso > today ? 'disabled' : ''} aria-label="${escapeHtml(h.title)} on ${iso}"`;
+    `data-week-toggle="${h.id}" data-date="${iso}" ${iso > today ? 'disabled' : ''} ${isDue(h, iso) ? '' : 'data-off'} aria-label="${escapeHtml(h.title)} on ${iso}"`;
   const partial = (h, prog, opacity) => prog > 0 && prog < 1
     ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:${opacity};"></span>` : '';
   const countOf = h => days.filter(iso => isDayDone(h, iso)).length;
@@ -1568,6 +1736,7 @@ function render() {
   updateAppBadge();
 
   drawIcons();
+  checkAchievements();
 }
 
 /* ---- HOME TAB: today's checklist on top, stats below ---- */
@@ -1586,21 +1755,44 @@ function renderHomeTab(page = 'home') {
     return;
   }
 
-  const doneCount = state.habits.filter(h => isDayDone(h, today)).length;
-  const totalCount = state.habits.length;
-  const dayPct = Math.round((doneCount / totalCount) * 100);
+  // today's ring and list cover only the habits scheduled for today
+  const dueToday = state.habits.filter(h => isDue(h, today));
+  const offToday = state.habits.filter(h => !isDue(h, today));
+  const doneCount = dueToday.filter(h => isDayDone(h, today)).length;
+  const totalCount = dueToday.length;
+  const dayPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const longestActive = Math.max(0, ...state.habits.map(currentStreak));
-  const avgRate = Math.round(state.habits.reduce((s,h) => s + completionRate(h), 0) / totalCount);
+  const avgRate = Math.round(state.habits.reduce((s,h) => s + completionRate(h), 0) / state.habits.length);
 
-  let checklist = '';
-  state.habits.forEach((h, idx) => {
+  let checklist = '', offList = '';
+  [...dueToday, ...offToday].forEach((h, idx) => {
     const done = isDayDone(h, today);
     const streak = currentStreak(h);
     const rawVal = h.completions[today];
     const currentVal = Number.isFinite(rawVal) ? rawVal : (rawVal ? h.goal : 0);
     const prog = dayProgress(h, today);
+    const note = h.note ? `<span class="habit-note">${escapeHtml(h.note)}</span>` : '';
+    const before = checklist;
 
-    if (h.trackingMode === 'measure' && focus) {
+    if (isQuit(h)) {
+      // habit to quit: clean unless a slip is logged; tapping logs or undoes one
+      checklist += `
+        <button data-toggle-today="${h.id}"
+          class="card-enter btn-press w-full surface rounded-2xl p-4 flex items-center gap-3.5 text-left"
+          style="animation-delay:${idx*0.04}s; min-height:44px;" aria-label="${escapeHtml(h.title)}: ${done ? 'clean today, tap if you slipped' : 'slipped today, tap to undo'}">
+          <span class="check-box shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center"
+            style="border-color:${done ? hc(h) : 'var(--text-faint)'}; background:${done ? hc(h) : 'transparent'};">
+            <i data-lucide="${done ? 'shield-check' : 'x'}" class="w-4 h-4" style="color:${done ? inkOn(hc(h)) : 'var(--text-dim)'}"></i>
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="display text-lg font-semibold leading-tight block truncate">${escapeHtml(h.title)}</span>
+            <span class="text-[11px] text-[var(--text-dim)]">${done ? 'Clean today' : 'Slipped today'}</span>
+            ${note}
+          </span>
+          <span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
+            <i data-lucide="shield" class="w-3.5 h-3.5"></i>${streak}d</span>
+        </button>`;
+    } else if (h.trackingMode === 'measure' && focus) {
       // Focus layout: one compact row with a +1 button and a thin bar
       checklist += `
         <div class="card-enter surface rounded-2xl p-4" style="animation-delay:${idx*0.04}s;">
@@ -1610,6 +1802,7 @@ function renderHomeTab(page = 'home') {
             <span class="min-w-0 flex-1">
               <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
               <span class="text-[11px] text-[var(--text-dim)]"><span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)}</span>
+              ${note}
             </span>
             ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
                 <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
@@ -1635,6 +1828,7 @@ function renderHomeTab(page = 'home') {
               <span class="text-[11px] text-[var(--text-dim)]">
                 <span data-measured-val="${h.id}">${currentVal}</span> / ${h.goal} ${escapeHtml(h.unit)} today
               </span>
+              ${note}
             </span>
             ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
                 <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
@@ -1664,12 +1858,21 @@ function renderHomeTab(page = 'home') {
           <span class="min-w-0 flex-1">
             <span class="display text-lg font-semibold leading-tight block truncate ${done ? 'opacity-60' : ''}">${escapeHtml(h.title)}</span>
             ${focus ? '' : `<span class="text-[11px] text-[var(--text-dim)]">Goal &middot; ${h.goal} ${escapeHtml(h.unit)} / day</span>`}
+            ${note}
           </span>
           ${streak > 0 ? `<span class="shrink-0 flex items-center gap-1 text-[12px] font-bold" style="color:${hc(h)}">
               <i data-lucide="flame" class="w-3.5 h-3.5"></i>${streak}</span>` : ''}
         </button>`;
     }
+    // habits not scheduled today go in a folded list below
+    if (!isDue(h, today)) { offList += checklist.slice(before.length); checklist = before; }
   });
+  if (!dueToday.length) checklist = `<div class="surface rounded-2xl p-4 text-[13px] text-[var(--text-dim)]">Nothing scheduled today.</div>`;
+  if (offList) checklist += `
+      <details class="off-today"${dueToday.length ? '' : ' open'}>
+        <summary class="text-[12px] font-bold text-[var(--text-dim)] px-1 py-2 cursor-pointer">Not scheduled today (${offToday.length})</summary>
+        <div class="space-y-2.5 mt-1 opacity-80">${offList}</div>
+      </details>`;
 
   // each Home section as markup; the order and visibility come from Settings
   const sections = {
@@ -1786,14 +1989,64 @@ function renderHomeTab(page = 'home') {
       </div>`;
   };
 
+  sections.recap = () => {
+    const periods = [['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['year', 'Year']];
+    const lead = { day: 'Yesterday', week: 'Last week', month: 'Last month', year: 'Last year' }[recapPeriod];
+    const range = recapRange(recapPeriod, 1);
+    const r = recapStats(...range);
+    const prev = recapStats(...recapRange(recapPeriod, 2));
+    const tabs = `<div class="flex gap-1.5 mb-4">${periods.map(([k, l]) =>
+      `<button data-recap="${k}" class="chart-tab ${recapPeriod === k ? 'active' : ''}">${l}</button>`).join('')}</div>`;
+    let body;
+    if (r.pct === null) {
+      body = `<p class="text-[13px] text-[var(--text-dim)] py-2">Nothing was tracked in this period yet.</p>`;
+    } else {
+      const delta = prev.pct === null ? null : r.pct - prev.pct;
+      const deltaChip = delta === null ? '' : `<span class="mini-chip"><i data-lucide="${delta >= 0 ? 'trending-up' : 'trending-down'}" class="w-3 h-3"></i>${delta > 0 ? '+' : ''}${delta} pts vs ${{ day: "the day before", week: "the week before", month: "the month before", year: "the year before" }[recapPeriod]}</span>`;
+      const sorted = [...r.habits].sort((a, b) => b.rate - a.rate);
+      const best = sorted[0], worst = sorted[sorted.length - 1];
+      const multi = recapPeriod !== 'day';
+      body = `
+        <div class="flex items-end justify-between gap-3 flex-wrap">
+          <div>
+            <div class="flex items-baseline gap-1"><span class="display text-4xl font-semibold leading-none">${r.pct}</span><span class="text-[13px] text-[var(--text-dim)]">%</span></div>
+            <div class="text-[11px] text-[var(--text-dim)] mt-1">${r.done} of ${r.due} done${multi ? ` · ${r.perfect} perfect ${r.perfect === 1 ? 'day' : 'days'}` : r.perfect ? ' · perfect day' : ''}</div>
+          </div>
+          ${deltaChip}
+        </div>
+        ${multi && sorted.length > 1 && best.rate > worst.rate ? `
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <div class="surface-2 rounded-xl p-3 min-w-0"><div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)]">Strongest</div><div class="text-[13px] font-bold truncate mt-0.5">${escapeHtml(best.h.title)}</div></div>
+          <div class="surface-2 rounded-xl p-3 min-w-0"><div class="text-[10px] uppercase tracking-[0.12em] text-[var(--text-faint)]">Needs work</div><div class="text-[13px] font-bold truncate mt-0.5">${escapeHtml(worst.h.title)}</div></div>
+        </div>` : ''}
+        <div class="space-y-2.5 mt-4">
+          ${sorted.map(x => `
+            <div>
+              <div class="flex justify-between gap-3 text-[12px] mb-1"><span class="font-bold truncate min-w-0">${escapeHtml(x.h.title)}</span>
+                <span class="text-[var(--text-dim)] shrink-0">${multi ? `${x.done}/${x.due}` : (x.done ? (isQuit(x.h) ? 'Clean' : 'Done') : (isQuit(x.h) ? 'Slipped' : 'Missed'))}</span></div>
+              <div class="recap-bar"><i style="width:${Math.round(x.rate * 100)}%;background:${hc(x.h)}"></i></div>
+            </div>`).join('')}
+        </div>`;
+    }
+    return `
+      <div>
+        ${label('Recap')}
+        <div class="surface rounded-2xl p-4">
+          ${tabs}
+          <div class="text-[12px] text-[var(--text-dim)] mb-3"><b class="text-[var(--text)]">${lead}</b> · ${recapLabel(recapPeriod, range)}</div>
+          ${body}
+        </div>
+      </div>`;
+  };
+
   // today's summary: a ring with the share of habits done
   sections.summary = () => `
       <div class="summary-card surface rounded-2xl p-5 flex items-center gap-5">
         <div class="score-ring" style="--pct:${dayPct}" role="img" aria-label="${dayPct}% of habits done today">
           <span class="score-num">${dayPct}<small>%</small></span><span class="score-cap">done</span></div>
         <div class="min-w-0 flex-1">
-          <div class="display text-xl font-semibold leading-tight">${progressMessage(dayPct)}</div>
-          <div class="text-[12px] text-[var(--text-dim)] mt-1">${doneCount} of ${totalCount} habits done today</div>
+          <div class="display text-xl font-semibold leading-tight">${totalCount ? progressMessage(dayPct) : 'Rest day'}</div>
+          <div class="text-[12px] text-[var(--text-dim)] mt-1">${totalCount ? `${doneCount} of ${totalCount} habits done today` : 'No habits scheduled today'}</div>
           <div class="flex flex-wrap gap-1.5 mt-3">
             <span class="mini-chip"><i data-lucide="flame" class="w-3 h-3"></i>${longestActive}-day streak</span>
             ${perfect.current > 0 ? `<span class="mini-chip"><i data-lucide="star" class="w-3 h-3"></i>${perfect.current} perfect</span>` : ''}
@@ -1881,6 +2134,9 @@ function renderHomeTab(page = 'home') {
   }
 
   root.innerHTML = `<div class="tab-enter space-y-6">${dashHeader}${editBanner}${parts.join('')}</div>`;
+  root.querySelectorAll('[data-recap]').forEach(btn => {
+    btn.addEventListener('click', () => { recapPeriod = btn.dataset.recap; render(); });
+  });
   root.querySelectorAll('[data-chart-range]').forEach(btn => {
     btn.addEventListener('click', () => { chartRange = btn.dataset.chartRange; render(); });
   });
@@ -1997,6 +2253,8 @@ function bindTodos(root) {
 /* ---- NEW HABIT TAB: creation form + existing-habit list ---- */
 let formColor = PALETTE[0];
 let formTrackingMode = 'check';  // 'check' | 'measure'
+let formKind = 'build';          // 'build' | 'quit' (new habits only)
+let formDays = [...ALL_DAYS];    // weekdays the new habit is due
 let formCustomColor = null;      // hex string when user picks via the color input
 let editingId = null;            // when set, form is editing an existing habit
 let editDraft = null;            // working copy of the habit being edited;
@@ -2022,6 +2280,12 @@ function renderNewTab() {
   const initUnit  = editing ? editing.unit : 'times';
   const initColor = editing ? editing.color : formColor;
   const initMode  = editing ? editing.trackingMode : formTrackingMode;
+  const initKind  = editing ? editing.kind : formKind;
+  const initNote  = editing ? editing.note : '';
+  const curDays   = () => (editing ? editing.days : formDays);
+  const dayOrder  = Array.from({ length: 7 }, (_, i) => (i + state.settings.weekStart) % 7);
+  const dayChips  = dayOrder.map(d =>
+    `<button type="button" data-day="${d}" class="day-chip btn-press ${curDays().includes(d) ? 'on' : ''}" aria-pressed="${curDays().includes(d)}">${DAY_SHORT[d]}</button>`).join('');
 
   // does the initial unit match a preset, or is it custom?
   const unitIsPreset = UNIT_PRESETS.filter(u => u !== 'custom').includes(initUnit);
@@ -2072,7 +2336,8 @@ function renderNewTab() {
           <div class="min-w-0 flex-1 pl-1">
             <div class="display text-base font-semibold truncate">${escapeHtml(h.title)}</div>
             <div class="text-[11px] text-[var(--text-dim)]">
-              ${h.goal} ${escapeHtml(h.unit)} / day
+              ${isQuit(h) ? "<span style='color:var(--gold)'>quit</span>" : `${h.goal} ${escapeHtml(h.unit)}`}
+              &middot; ${daysLabel(h.days)}
               ${h.trackingMode === 'measure' ? "&middot; <span style='color:var(--gold)'>measured</span>" : ''}
             </div>
           </div>
@@ -2102,6 +2367,22 @@ function renderNewTab() {
         <input id="habitTitle" type="text" placeholder="e.g. Drink water" maxlength="40" value="${escapeHtml(initTitle)}"
           class="w-full px-4 py-3 text-sm mb-5">
 
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2" for="habitNote">Note</label>
+        <textarea id="habitNote" rows="2" maxlength="200" placeholder="Optional: why, when, or how"
+          class="w-full px-4 py-3 text-sm mb-5 resize-none">${escapeHtml(initNote)}</textarea>
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Type</label>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
+            <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
+              class="btn-press surface-2 border rounded-xl p-3 flex items-center gap-2 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
+              style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+              <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+              <span class="text-[13px] font-bold">${label}</span>
+            </button>`).join('')}
+        </div>
+
+        <div id="buildFields" class="${initKind === 'quit' ? 'hidden' : ''}">
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Tracking</label>
         <div class="grid grid-cols-2 gap-2 mb-5">
           <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
@@ -2132,6 +2413,14 @@ function renderNewTab() {
           value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
           class="w-full px-4 py-3 text-sm ${unitIsPreset ? 'hidden' : ''}">
         <div class="mb-5"></div>
+        </div>
+
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Days</label>
+        <div class="flex gap-1.5 mb-2">
+          ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
+            `<button type="button" data-day-preset="${k}" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">${l}</button>`).join('')}
+        </div>
+        <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-5">${dayChips}</div>
 
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2.5">Color</label>
         <div id="colorPalette" class="flex flex-wrap gap-2.5 mb-6">${swatches}${customSwatch}</div>
@@ -2236,6 +2525,44 @@ function renderNewTab() {
     });
   });
 
+  // build or quit (fixed once a habit exists)
+  root.querySelectorAll('[data-kind]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      formKind = btn.dataset.kind;
+      root.querySelectorAll('[data-kind]').forEach(el => {
+        const on = el.dataset.kind === formKind;
+        el.style.borderColor = on ? 'var(--gold)' : 'var(--border)';
+        const icon = el.querySelector('svg, i');
+        if (icon) icon.style.color = on ? 'var(--gold)' : 'var(--text-dim)';
+      });
+      root.querySelector('#buildFields').classList.toggle('hidden', formKind === 'quit');
+    });
+  });
+
+  // scheduled days: toggles, plus quick presets
+  const setDays = days => {
+    const next = ALL_DAYS.filter(d => days.includes(d));
+    if (editing) editing.days = next; else formDays = next;
+    root.querySelectorAll('[data-day]').forEach(el => {
+      const on = next.includes(Number(el.dataset.day));
+      el.classList.toggle('on', on);
+      el.setAttribute('aria-pressed', on);
+    });
+  };
+  root.querySelectorAll('[data-day]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = Number(btn.dataset.day);
+      const cur = curDays();
+      setDays(cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d]);
+    });
+  });
+  root.querySelectorAll('[data-day-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setDays({ all: ALL_DAYS, weekdays: [1, 2, 3, 4, 5], weekends: [0, 6] }[btn.dataset.dayPreset]);
+    });
+  });
+
   // unit dropdown reveals custom text field
   const unitSel = root.querySelector('#habitUnit');
   const customUnit = root.querySelector('#habitCustomUnit');
@@ -2254,6 +2581,8 @@ function renderNewTab() {
     editDraft = null;
     formColor = PALETTE[0];
     formTrackingMode = 'check';
+    formKind = 'build';
+    formDays = [...ALL_DAYS];
     formCustomColor = null;
     renderNewTab();
     drawIcons();
@@ -2290,26 +2619,32 @@ function submitHabit() {
   const customUnit = root.querySelector('#habitCustomUnit');
   const unit = unitSel.value === 'custom' ? customUnit.value.trim() : unitSel.value;
   const err = root.querySelector('#habitFormError');
+  const note = root.querySelector('#habitNote').value;
+  const days = editingId && editDraft ? editDraft.days : formDays;
+  const quit = (editingId && editDraft ? editDraft.kind : formKind) === 'quit';
 
   if (!title) { return showFormError(err, 'Please enter a habit title.'); }
-  if (!Number.isFinite(goal) || goal < 1) { return showFormError(err, 'Daily goal must be at least 1.'); }
-  if (unitSel.value === 'custom' && !unit) { return showFormError(err, 'Please enter a custom unit.'); }
+  if (!quit && (!Number.isFinite(goal) || goal < 1)) { return showFormError(err, 'Daily goal must be at least 1.'); }
+  if (!quit && unitSel.value === 'custom' && !unit) { return showFormError(err, 'Please enter a custom unit.'); }
+  if (!days.length) { return showFormError(err, 'Pick at least one day.'); }
 
   if (editingId) {
     // draft is the source of truth for color/mode; form inputs are the
     // source of truth for title/goal/unit
     const color = editDraft ? editDraft.color : formColor;
     const trackingMode = editDraft ? editDraft.trackingMode : formTrackingMode;
-    updateHabit(editingId, { title, goal, unit, color, trackingMode });
+    updateHabit(editingId, quit ? { title, color, note, days } : { title, goal, unit, color, trackingMode, note, days });
     editingId = null;
     editDraft = null;
     showToast('Habit updated');
   } else {
-    addHabit(title, goal, unit, formColor, formTrackingMode);
+    addHabit(title, quit ? 1 : goal, quit ? 'times' : unit, formColor, formTrackingMode, { kind: formKind, note, days });
     showToast('Habit created');
   }
   formColor = PALETTE[0];
   formTrackingMode = 'check';
+  formKind = 'build';
+  formDays = [...ALL_DAYS];
   formCustomColor = null;
   switchTab('home');
 }
@@ -2329,26 +2664,32 @@ function dayBreakdownHTML(isFutureSel) {
     const prog = dayProgress(h, selectedDay);
     const val = h.completions[selectedDay];
     const numVal = Number.isFinite(val) ? val : (val ? h.goal : 0);
-    const statusLabel = done ? 'Done'
+    const due = isDue(h, selectedDay);
+    const quit = isQuit(h);
+    const statusLabel = quit
+      ? (selectedDay < h.createdAt || isFutureSel ? '' : val ? 'Slipped' : 'Clean')
+      : done ? 'Done'
       : (h.trackingMode === 'measure' && prog > 0) ? `${numVal} / ${h.goal}`
+      : !due ? 'Not scheduled'
       : 'Missed';
+    const sub = quit ? 'Quitting &middot; tap if you slipped'
+      : `${h.goal} ${escapeHtml(h.unit)} / day${h.trackingMode === 'measure' ? ' &middot; measured' : ''}`;
     breakdown += `
       <button data-toggle-day="${h.id}" ${isFutureSel ? 'disabled' : ''}
         class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl p-3.5 flex items-center gap-3 text-left ${isFutureSel ? 'opacity-40 cursor-not-allowed' : ''}"
         style="min-height:44px;">
-        <span class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center relative overflow-hidden"
+        ${quit ? `<span class="shrink-0 w-6 h-6 flex items-center justify-center" style="color:${val ? 'var(--text-faint)' : hc(h)}">
+            <i data-lucide="${val ? 'circle-x' : 'shield-check'}" class="w-5 h-5"></i></span>` : `<span class="check-box shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center relative overflow-hidden"
           style="border-color:${prog > 0 ? hc(h) : 'var(--border)'};">
           ${prog >= 1
             ? `<span style="position:absolute;inset:0;background:${hc(h)};display:flex;align-items:center;justify-content:center;"><i data-lucide='check' class='w-3.5 h-3.5' style='color:${inkOn(hc(h))}'></i></span>`
             : prog > 0
               ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:0.55;"></span>`
               : ''}
-        </span>
+        </span>`}
         <span class="min-w-0 flex-1">
           <span class="text-sm font-bold block truncate ${prog > 0 ? '' : 'text-[var(--text-dim)]'}">${escapeHtml(h.title)}</span>
-          <span class="text-[10px] text-[var(--text-faint)]">
-            ${h.goal} ${escapeHtml(h.unit)} / day${h.trackingMode === 'measure' ? ' &middot; measured' : ''}
-          </span>
+          <span class="text-[10px] text-[var(--text-faint)]">${sub}</span>
         </span>
         <span class="text-[11px] font-bold" style="color:${done ? hc(h) : prog > 0 ? hc(h) : 'var(--text-faint)'}">${statusLabel}</span>
       </button>`;
@@ -2425,11 +2766,12 @@ function renderCalendarTab() {
 
   let body;
   if (calMode === 'day') {
-    const doneN = state.habits.filter(h => isDayDone(h, selectedDay)).length;
+    const dueSel = state.habits.filter(h => isDue(h, selectedDay) && selectedDay >= habitStart(h));
+    const doneN = dueSel.filter(h => isDayDone(h, selectedDay)).length;
     body = `
       <div class="surface rounded-2xl p-5">
         ${nav}
-        <p class="text-[12px] text-[var(--text-dim)] text-center -mt-2 mb-4">${doneN} / ${state.habits.length} habits done</p>
+        <p class="text-[12px] text-[var(--text-dim)] text-center -mt-2 mb-4">${dueSel.length ? `${doneN} / ${dueSel.length} habits done` : 'Nothing scheduled'}</p>
         <div class="space-y-2.5">${dayBreakdownHTML(isFutureSel)}</div>
       </div>`;
   } else if (calMode === 'week') {
@@ -2619,7 +2961,7 @@ function applySettings() {
 function updateAppBadge() {
   if (!('setAppBadge' in navigator)) return;
   try {
-    const left = state.habits.filter(h => !isDayDone(h, todayISO())).length;
+    const left = state.habits.filter(h => isDue(h, todayISO()) && !isDayDone(h, todayISO())).length;
     if (state.settings.badge && left > 0) navigator.setAppBadge(left).catch(() => {});
     else navigator.clearAppBadge().catch(() => {});
   } catch (e) { /* unsupported */ }
@@ -2910,6 +3252,35 @@ function showUndoRestore() {
   setTimeout(() => t.remove(), 8000);
 }
 
+/* ---- achievement pop-ups: announce each milestone once ---- */
+let achQueue = [];
+function checkAchievements() {
+  const earned = badgeList().filter(b => b.earned);
+  if (!Array.isArray(state.seenBadges)) {
+    // first run (or old data): record what's already earned, quietly
+    state.seenBadges = earned.map(b => b.id);
+    saveData();
+    return;
+  }
+  const fresh = earned.filter(b => !state.seenBadges.includes(b.id));
+  if (!fresh.length) return;
+  state.seenBadges.push(...fresh.map(b => b.id));
+  saveData();
+  achQueue.push(...fresh);
+  if (document.getElementById('achievementModal').classList.contains('hidden')) showNextAchievement();
+}
+function showNextAchievement() {
+  const b = achQueue.shift();
+  if (!b) { hideModal('achievementModal'); return; }
+  document.getElementById('achIcon').innerHTML = `<i data-lucide="${b.icon}" class="w-10 h-10"></i>`;
+  document.getElementById('achLabel').textContent = b.label;
+  document.getElementById('achSub').textContent = achQueue.length ? `${achQueue.length} more unlocked` : 'Keep the cadence going.';
+  const icon = document.getElementById('achIcon');
+  icon.style.animation = 'none'; void icon.offsetWidth; icon.style.animation = '';
+  showModal('achievementModal');
+  drawIcons();
+}
+
 /* ---------------------------------------------------------------------
    UI: MODALS, TOASTS, TABS
    --------------------------------------------------------------------- */
@@ -2972,6 +3343,7 @@ function bindEvents() {
 
   document.getElementById('copyJsonBtn').addEventListener('click', copyWidgetJson);
   document.getElementById('confirmRestoreBtn').addEventListener('click', confirmRestore);
+  document.getElementById('achOkBtn').addEventListener('click', showNextAchievement);
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2979,13 +3351,13 @@ function bindEvents() {
       if (modal) hideModal(modal.id);
     });
   });
-  ['confirmModal','exportModal','restoreModal'].forEach(id => {
+  ['confirmModal','exportModal','restoreModal','achievementModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
-      if (e.target.id === id) hideModal(id);
+      if (e.target.id === id) { if (id === 'achievementModal') achQueue = []; hideModal(id); }
     });
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') ['confirmModal','exportModal','restoreModal'].forEach(id => hideModal(id));
+    if (e.key === 'Escape') { achQueue = []; ['confirmModal','exportModal','restoreModal','achievementModal'].forEach(id => hideModal(id)); }
   });
 }
 
