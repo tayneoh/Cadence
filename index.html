@@ -524,7 +524,7 @@
     transform: translate(-50%, -50%); pointer-events: none;
     color: var(--text-dim); }
 
-  input[type="text"], input[type="number"], select, textarea {
+  input[type="text"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 11px; color: var(--text); outline: none;
     transition: border-color 0.15s ease;
@@ -628,6 +628,33 @@
     align-items: center; justify-content: center; padding: 1rem;
   }
   [id$="Modal"]:not(.hidden) { display: flex; }
+
+  /* ---- social preview ---- */
+  .s-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; font-weight: 800; flex-shrink: 0; letter-spacing: 0.02em; }
+  .s-note { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-dim); padding: 10px 12px; border: 1px dashed var(--border); border-radius: 12px; }
+  .s-code { font-family: 'Space Mono', ui-monospace, monospace; font-weight: 700; letter-spacing: 0.08em; padding: 10px 14px; background: var(--surface-2); border-radius: 11px; font-size: 14px; }
+  .s-stack { display: flex; }
+  .s-stack > span { margin-left: -8px; border-radius: 999px; box-shadow: 0 0 0 2px var(--surface); display: inline-flex; }
+  .s-stack > span:first-child { margin-left: 0; }
+  .s-dim { opacity: 0.35; }
+  .s-grid { display: grid; grid-template-columns: minmax(64px, 1fr) repeat(7, 28px); gap: 8px 6px; align-items: center; min-width: 300px; }
+  .s-day { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-faint); }
+  .s-day.today { color: var(--gold); }
+  .s-who { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; min-width: 0; }
+  .s-cell { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--text-faint); }
+  .s-cell.off { background: transparent; border: 1px dashed var(--border); }
+  .s-cell.future { background: transparent; border: 1px solid var(--border); }
+  .s-cell.today { box-shadow: 0 0 0 2px var(--gold); }
+  .s-vis { display: flex; gap: 2px; background: var(--surface-2); border-radius: 10px; padding: 2px; flex-shrink: 0; }
+  .s-vis button { width: 32px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+  .s-vis button.on { background: var(--text); color: var(--bg); }
+  .s-vis button:disabled { opacity: 0.4; }
+  .s-row { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 12px; }
+  .s-row + .s-row { border-top: 1px solid var(--border); }
+  .s-friends-btn { position: relative; width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .s-friends-btn .s-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 99px; background: var(--gold); box-shadow: 0 0 0 2px var(--surface); }
+  .s-spin { animation: s-spin 0.9s linear infinite; }
+  @keyframes s-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 
@@ -657,6 +684,7 @@
   <section id="tab-new" class="tab-panel hidden"></section>
   <section id="tab-calendar" class="tab-panel hidden"></section>
   <section id="tab-settings" class="tab-panel hidden"></section>
+  <section id="tab-social" class="tab-panel hidden"></section>
 
 </div>
 
@@ -788,7 +816,7 @@
    --------------------------------------------------------------------- */
 const STORAGE_KEY = 'cadence.habits.v3';
 const LEGACY_KEYS = ['cadence.habits.v2', 'cadence.habits.v1'];
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 const LAST_BACKUP_KEY = 'cadence.lastBackup';
 const PRE_RESTORE_KEY = 'cadence.preRestore';
 
@@ -937,6 +965,8 @@ function checkStorage() {
    v3 -> v4 : add top-level `todos` (quick to-do list). Habits untouched;
               the storage key stays the same so nothing has to move.
    v4 -> v5 : add top-level `settings` (personalization), defaults filled in.
+   v6 -> v7 : habits gain `share` ('private' | 'friends' | 'public'), who
+              can see the habit once you sign in to Friends. Private by default.
    v5 -> v6 : habits gain `note` (''), `kind` ('build' | 'quit') and `days`
               (weekdays it's due, 0 = Sunday; all seven by default), and the
               state gains `seenBadges` (milestones already announced). Every
@@ -961,6 +991,7 @@ function migrateData(raw) {
         note: typeof h.note === 'string' ? h.note.slice(0, 200) : '',
         kind: h.kind === 'quit' ? 'quit' : 'build',
         days: cleanDays(h.days),
+        share: ['friends', 'public'].includes(h.share) ? h.share : 'private',
       }));
     // a habit to quit is always a simple yes/no
     safe.habits.forEach(h => { if (h.kind === 'quit') h.trackingMode = 'check'; });
@@ -1011,6 +1042,7 @@ function saveData() {
   if (!storageAvailable) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    scheduleSync();   // keep shared habits current when signed in to Friends
   } catch (e) {
     console.warn('saveData failed:', e);
     storageAvailable = false;
@@ -1048,6 +1080,7 @@ function addHabit(title, goal, unit, color, trackingMode, extra = {}) {
   const kind = extra.kind === 'quit' ? 'quit' : 'build';
   state.habits.push({
     id: genId(),
+    share: 'private',
     title: title.trim(),
     goal: kind === 'quit' ? 1 : Math.max(1, Math.min(9999, Math.round(goal) || 1)),
     unit: unit.trim() || 'times',
@@ -1725,12 +1758,13 @@ function render() {
 
   // dashboard designs draw their own header on Home; Stats always does
   document.getElementById('appHeader').classList.toggle('hidden',
-    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && state.habits.length > 0));
+    (activeTab === 'stats' && state.habits.length > 0) || (activeTab === 'home' && state.habits.length > 0) || activeTab === 'social');
 
   if (activeTab === 'home') renderHomeTab('home');
   else if (activeTab === 'stats') renderHomeTab('stats');
   else if (activeTab === 'new') renderNewTab();
   else if (activeTab === 'settings') renderSettingsTab();
+  else if (activeTab === 'social') renderSocialTab();
   else renderCalendarTab();
 
   updateAppBadge();
@@ -2126,10 +2160,15 @@ function renderHomeTab(page = 'home') {
     const now = new Date();
     const hr = now.getHours();
     const name = state.settings.name.trim();
+    const alert = net.requests.length || net.nudgesIn.length;
     dashHeader = `
-      <div class="pt-1">
-        <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
-        <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
+      <div class="pt-1 flex items-start gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
+          <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
+        </div>
+        <button onclick="switchTab('social')" class="s-friends-btn surface btn-press" aria-label="Friends and groups">
+          <i data-lucide="users" class="w-5 h-5"></i>${alert ? '<span class="s-dot"></span>' : ''}</button>
       </div>`;
   }
 
@@ -3306,7 +3345,7 @@ function switchTab(tab) {
     formCustomColor = null;
   }
   activeTab = tab;
-  ['home','stats','new','calendar','settings'].forEach(t => {
+  ['home','stats','new','calendar','settings','social'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3378,6 +3417,653 @@ function init() {
   bindEvents();
   render();
   drawIcons();
+  socialBoot();
+}
+
+/* =====================================================================
+   FRIENDS AND GROUPS (online, optional)
+   Everything else in Cadence stays on this device. Only what you choose
+   to share goes to the Cadence server (Supabase): habits set to Friends
+   or Public, your profile name, and group check-ins. Private habits
+   never leave the phone. The server's row-level security rules
+   (supabase/schema.sql) make sure people only see what was shared.
+   ===================================================================== */
+const SB_URL = 'https://trjdxrscmctxduvtuofp.supabase.co';
+const SB_KEY = 'sb_publishable_jyXSmSUEse5oEoWtlxd1vg_665XnO1k';   // public key, safe in the app
+const SB_LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+const SB_AUTH_KEY = 'cadence.auth';
+
+let sb = null, sbSession = null, sbStarting = null;
+const net = { loaded: false, loading: false, error: null, me: null, people: {}, friends: [], requests: [], sent: [],
+  habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], cheersOut: new Set(), nudgesIn: [], nudgesOut: new Set(), blocked: [] };
+const social = { view: 'friends', openFriend: null, openGroup: null, creating: false, adding: false, joining: false,
+  confirmLeave: null, authMode: 'signin', authMsg: '', busy: false, draft: { name: '', habit: null, days: [...ALL_DAYS] } };
+
+function loadSupabaseLib() {
+  if (window.supabase?.createClient) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = SB_LIB; s.onload = resolve; s.onerror = () => reject(new Error('offline'));
+    document.head.appendChild(s);
+  });
+}
+function sbStart() {
+  if (sb) return Promise.resolve(sb);
+  if (!sbStarting) sbStarting = (async () => {
+    await loadSupabaseLib();
+    sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: SB_AUTH_KEY, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession();
+    sbSession = data.session;
+    sb.auth.onAuthStateChange((_e, s) => { sbSession = s; });
+    return sb;
+  })().catch(e => { sbStarting = null; throw e; });
+  return sbStarting;
+}
+function myId() { return sbSession?.user?.id; }
+function hadSession() { try { return !!localStorage.getItem(SB_AUTH_KEY); } catch (e) { return false; } }
+
+/* ---- people ---- */
+const S_COLORS = ['#3f7d6e', '#3a6ea5', '#a8456f', '#c9761a', '#7a5bb5', '#5b7f2e', '#b03b3b', '#2f7f8f'];
+function personName(id) {
+  if (id === myId()) return net.me?.name || state.settings.name.trim() || 'You';
+  return net.people[id]?.name || 'Someone';
+}
+function personColor(id) {
+  if (id === myId()) return accentHex();
+  let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return S_COLORS[h % S_COLORS.length];
+}
+function firstName(id) { return personName(id).split(/\s+/)[0]; }
+function avatarHTML(id, size = 36) {
+  const n = personName(id).split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+  const c = personColor(id);
+  return `<span class="s-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.36)}px;background:${c};color:${inkOn(c)}">${escapeHtml(n)}</span>`;
+}
+
+/* ---- loading everything the social page shows ---- */
+async function loadSocial() {
+  if (!sbSession) return;
+  net.loading = true; net.error = null;
+  const uid = myId(), today = todayISO();
+  try {
+    const must = r => { if (r.error) throw r.error; return r.data || []; };
+    const [me, fr, groups, cheersIn, cheersOut, nudgesIn, nudgesOut, blocks] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      sb.from('friendships').select('requester,addressee,status'),
+      sb.from('groups').select('*').order('created_at'),
+      sb.from('cheers').select('sender,day').eq('receiver', uid).eq('day', today),
+      sb.from('cheers').select('receiver').eq('sender', uid).eq('day', today),
+      sb.from('nudges').select('sender,group_id').eq('receiver', uid).eq('day', today),
+      sb.from('nudges').select('receiver,group_id').eq('sender', uid).eq('day', today),
+      sb.from('blocks').select('blocked'),
+    ]);
+    if (me.error) throw me.error;
+    net.me = me.data;
+    const f = must(fr);
+    const other = r => r.requester === uid ? r.addressee : r.requester;
+    net.friends = f.filter(r => r.status === 'accepted').map(other);
+    net.requests = f.filter(r => r.status === 'pending' && r.addressee === uid).map(r => r.requester);
+    net.sent = f.filter(r => r.status === 'pending' && r.requester === uid).map(r => r.addressee);
+    net.groups = must(groups);
+    net.cheersIn = must(cheersIn).map(r => r.sender);
+    net.cheersOut = new Set(must(cheersOut).map(r => r.receiver));
+    net.nudgesIn = must(nudgesIn);
+    net.nudgesOut = new Set(must(nudgesOut).map(r => r.group_id + '|' + r.receiver));
+    net.blocked = must(blocks).map(r => r.blocked);
+
+    const gids = net.groups.map(g => g.id);
+    const [members, checks, habits] = await Promise.all([
+      gids.length ? sb.from('group_members').select('group_id,user_id,joined_at').in('group_id', gids) : { data: [] },
+      gids.length ? sb.from('group_checkins').select('group_id,user_id,day').in('group_id', gids).gte('day', addDays(today, -60)) : { data: [] },
+      net.friends.length ? sb.from('shared_habits').select('*').in('user_id', net.friends) : { data: [] },
+    ]);
+    net.members = {};
+    must(members).forEach(m => (net.members[m.group_id] = net.members[m.group_id] || []).push(m.user_id));
+    net.checkins = new Set(must(checks).map(c => `${c.group_id}|${c.user_id}|${c.day}`));
+    net.habits = {};
+    must(habits).forEach(h => (net.habits[h.user_id] = net.habits[h.user_id] || []).push(h));
+
+    const ids = [...new Set([...net.friends, ...net.requests, ...net.sent, ...Object.values(net.members).flat(),
+      ...net.cheersIn, ...net.nudgesIn.map(n => n.sender)])].filter(id => id !== uid);
+    if (ids.length) must(await sb.from('profiles').select('id,name,visibility,show_notes,show_streaks').in('id', ids)).forEach(p => { net.people[p.id] = p; });
+    net.loaded = true;
+  } catch (e) {
+    net.error = e.message || String(e);
+  }
+  net.loading = false;
+}
+async function refreshSocial() { await loadSocial(); if (activeTab === 'social' || activeTab === 'home') render(); }
+
+/* ---- sharing your own habits ---- */
+function habitShare(h) { return h.share || 'private'; }
+async function syncShared() {
+  if (!sb || !sbSession) return;
+  const uid = myId(), today = todayISO();
+  const showNotes = !!net.me?.show_notes, showStreaks = net.me ? net.me.show_streaks !== false : true;
+  const rows = state.habits.filter(h => habitShare(h) !== 'private').map(h => ({
+    user_id: uid, habit_id: h.id, title: h.title.slice(0, 40), kind: h.kind, visibility: habitShare(h),
+    note: showNotes && h.note ? h.note.slice(0, 200) : null,
+    streak: showStreaks ? currentStreak(h) : 0,
+    recent: Array.from({ length: 14 }, (_, i) => addDays(today, -i)).filter(d => isDayDone(h, d)),
+    updated_at: new Date().toISOString(),
+  }));
+  try {
+    if (rows.length) await sb.from('shared_habits').upsert(rows);
+    let del = sb.from('shared_habits').delete().eq('user_id', uid);
+    if (rows.length) del = del.not('habit_id', 'in', `(${rows.map(r => `"${r.habit_id}"`).join(',')})`);
+    await del;
+  } catch (e) { /* offline: the next change or visit to Friends syncs again */ }
+}
+let syncTimer = null;
+function scheduleSync() {
+  if (!sbSession) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncShared, 1500);
+}
+
+/* ---- group helpers ---- */
+function groupDone(g, member, iso) {
+  if (iso > todayISO()) return null;
+  if (!g.days.includes(fromISO(iso).getDay())) return 'off';
+  return net.checkins.has(`${g.id}|${member}|${iso}`);
+}
+/* days in a row (scheduled days only) that every member checked in */
+function groupStreak(g) {
+  const members = net.members[g.id] || [];
+  if (!members.length) return 0;
+  const start = g.created_at.slice(0, 10);
+  let d = todayISO(), n = 0;
+  const all = iso => members.every(m => net.checkins.has(`${g.id}|${m}|${iso}`));
+  if (g.days.includes(fromISO(d).getDay()) && !all(d)) d = addDays(d, -1);
+  for (let i = 0; i < 400 && d >= start; i++, d = addDays(d, -1)) {
+    if (!g.days.includes(fromISO(d).getDay())) continue;
+    if (!all(d)) break;
+    n++;
+  }
+  return n;
+}
+
+/* ---- UI ---- */
+function socialSeg(key, options, current) {
+  return `<div class="surface rounded-xl p-1 grid gap-1" style="grid-template-columns:repeat(${options.length},1fr)">
+    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg h-9 text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}">${ic ? `<i data-lucide="${ic}" class="w-3.5 h-3.5"></i>` : ''}${l}</button>`).join('')}
+  </div>`;
+}
+const sLabel = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
+const sBtn = 'btn-press bg-[var(--text)] text-[var(--bg)] rounded-xl text-[13px] font-bold';
+const sBtn2 = 'btn-press surface-2 border border-[var(--border)] rounded-xl text-[12px] font-bold';
+
+function renderSocialTab() {
+  const root = document.getElementById('tab-social');
+  const head = `
+    <div class="flex items-center gap-3 pt-1">
+      <button data-s="back" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+      <div class="flex-1 min-w-0">
+        <div class="dash-eyebrow">Community</div>
+        <h1 class="dash-title display">Friends</h1>
+      </div>
+      ${sbSession ? `<button data-s="refresh" class="home-edit-btn" aria-label="Refresh"><i data-lucide="rotate-cw" class="w-4 h-4 ${net.loading ? 's-spin' : ''}"></i></button>` : ''}
+    </div>`;
+  let body;
+  if (!sb) {
+    body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? "You're offline. Friends and groups need a connection." : 'Connecting...'}</div>`;
+    if (!net.error) sbStart().then(() => { if (sbSession) return loadSocial(); }).catch(e => { net.error = e.message; }).finally(() => { if (activeTab === 'social') render(); });
+  } else if (!sbSession) {
+    body = socialAuthHTML();
+  } else if (!net.loaded) {
+    body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? `Couldn't load: ${escapeHtml(net.error)}` : 'Loading...'}</div>`;
+    if (!net.loading && !net.error) refreshSocial();
+  } else {
+    const tabs = socialSeg('view', [['friends', 'Friends', 'users'], ['groups', 'Groups', 'users-round'], ['profile', 'Privacy', 'lock']], social.view);
+    const nudges = net.nudgesIn.length ? `
+      <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
+        <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
+        <div class="flex-1 min-w-0 text-[13px] leading-snug">${net.nudgesIn.map(n => {
+          const g = net.groups.find(x => x.id === n.group_id);
+          return `<div><b>${escapeHtml(firstName(n.sender))}</b> nudged you${g ? ` in ${escapeHtml(g.name)}` : ''}</div>`; }).join('')}</div>
+      </div>` : '';
+    const v = social.view;
+    const inner = v === 'friends' ? socialFriendsHTML()
+      : v === 'groups' ? (social.openGroup ? socialGroupHTML() : social.creating ? socialCreateHTML() : socialGroupsHTML())
+      : socialProfileHTML();
+    body = `${tabs}${nudges}${inner}${net.error ? `<p class="text-[12px] text-[var(--text-dim)] px-1">Last refresh failed: ${escapeHtml(net.error)}</p>` : ''}`;
+  }
+  root.innerHTML = `<div class="tab-enter space-y-6">${head}${body}</div>`;
+  root.onclick = socialClick;
+  root.oninput = e => { if (e.target.id === 'sGroupName') social.draft.name = e.target.value; };
+  root.onsubmit = e => { e.preventDefault(); if (e.target.id === 'sAuthForm') socialAuth(); };
+}
+
+function socialAuthHTML() {
+  const up = social.authMode === 'signup';
+  return `
+    <div class="surface rounded-2xl p-5 space-y-4">
+      <div>
+        <h2 class="display text-xl font-semibold">${up ? 'Create your account' : 'Sign in'}</h2>
+        <p class="text-[12px] text-[var(--text-dim)] mt-1">Only habits you choose to share go online. Everything else stays on this phone.</p>
+      </div>
+      <form id="sAuthForm" class="space-y-3" autocomplete="on">
+        ${up ? `<input id="sName" type="text" maxlength="30" placeholder="Your name" value="${escapeHtml(state.settings.name)}" class="w-full px-4 py-3 text-sm" autocomplete="name">` : ''}
+        <input id="sEmail" type="email" placeholder="Email" class="w-full px-4 py-3 text-sm s-input" autocomplete="email" required>
+        <input id="sPass" type="password" placeholder="Password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm s-input" autocomplete="${up ? 'new-password' : 'current-password'}" required>
+        ${social.authMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(social.authMsg)}</p>` : ''}
+        <button type="submit" ${social.busy ? 'disabled' : ''} class="${sBtn} w-full h-12">${social.busy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
+      </form>
+      <button data-s="authMode" class="w-full text-[13px] font-bold text-[var(--text-dim)]">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
+    </div>`;
+}
+
+async function socialAuth() {
+  const email = document.getElementById('sEmail')?.value.trim();
+  const pass = document.getElementById('sPass')?.value;
+  const name = (document.getElementById('sName')?.value || '').trim().slice(0, 30);
+  if (!email || !pass) return;
+  social.busy = true; social.authMsg = ''; render();
+  try {
+    if (social.authMode === 'signup') {
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+      if (error) throw error;
+      if (!data.session) { social.authMsg = 'Check your email to confirm your account, then sign in.'; social.authMode = 'signin'; }
+      else sbSession = data.session;
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      sbSession = data.session;
+    }
+    if (sbSession) { net.loaded = false; await loadSocial(); syncShared(); }
+  } catch (e) { social.authMsg = e.message || 'Something went wrong'; }
+  social.busy = false; render();
+}
+
+/* friends */
+function socialFriendsHTML() {
+  const code = net.me?.friend_code || '';
+  const add = social.adding ? `
+    <div class="surface rounded-2xl p-4 space-y-3">
+      <div class="text-[12px] text-[var(--text-dim)]">Your friend code</div>
+      <div class="flex items-center gap-2">
+        <span class="s-code flex-1">${escapeHtml(code)}</span>
+        <button data-s="copy" data-v="${escapeHtml(code)}" class="${sBtn2} h-10 px-4">Copy</button>
+      </div>
+      <div class="text-[12px] text-[var(--text-dim)] pt-1">Have a friend's code?</div>
+      <div class="flex gap-2">
+        <input id="sFriendCode" type="text" maxlength="12" placeholder="e.g. 7F3A2C" class="flex-1 min-w-0 px-4 py-2.5 text-sm" autocapitalize="characters">
+        <button data-s="addFriend" class="${sBtn} px-4">Add</button>
+      </div>
+    </div>` : '';
+  const requests = net.requests.length ? `
+    <div>${sLabel('Requests')}
+      <div class="space-y-2.5">${net.requests.map(id => `
+        <div class="surface rounded-2xl p-3.5 flex items-center gap-3">
+          ${avatarHTML(id)}
+          <div class="flex-1 min-w-0"><div class="text-[14px] font-bold truncate">${escapeHtml(personName(id))}</div><div class="text-[11px] text-[var(--text-dim)]">wants to be friends</div></div>
+          <button data-s="decline" data-v="${id}" class="home-edit-btn" aria-label="Decline"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <button data-s="accept" data-v="${id}" class="${sBtn} h-9 px-3.5">Accept</button>
+        </div>`).join('')}</div></div>` : '';
+  const sent = net.sent.length ? `
+    <div>${sLabel('Waiting on them')}
+      <div class="surface rounded-2xl p-2">${net.sent.map(id => `
+        <div class="flex items-center gap-3 p-2">${avatarHTML(id, 30)}
+          <span class="flex-1 min-w-0 text-[13px] font-bold truncate">${escapeHtml(personName(id))}</span>
+          <button data-s="remove" data-v="${id}" class="text-[12px] font-bold text-[var(--text-dim)]">Cancel</button></div>`).join('')}</div></div>` : '';
+  const today = todayISO();
+  const cards = net.friends.map(id => {
+    const p = net.people[id];
+    const hs = (net.habits[id] || []).sort((a, b) => a.title.localeCompare(b.title));
+    const done = hs.filter(h => h.recent.includes(today)).length;
+    const streaks = p?.show_streaks !== false;
+    const best = Math.max(0, ...hs.map(h => h.streak));
+    const open = social.openFriend === id;
+    return `
+      <div class="surface rounded-2xl overflow-hidden">
+        <button data-s="friend" data-v="${id}" class="w-full p-3.5 flex items-center gap-3 text-left">
+          ${avatarHTML(id, 40)}
+          <div class="flex-1 min-w-0">
+            <div class="text-[15px] font-bold truncate">${escapeHtml(personName(id))}</div>
+            <div class="text-[11px] text-[var(--text-dim)] mt-0.5">${hs.length ? `${done} of ${hs.length} done today` : 'Nothing shared with you yet'}</div>
+            ${hs.length ? `<div class="recap-bar mt-2"><i style="width:${Math.round(done / hs.length * 100)}%;background:${personColor(id)}"></i></div>` : ''}
+          </div>
+          ${streaks && best ? `<span class="mini-chip shrink-0"><i data-lucide="flame" class="w-3 h-3"></i>${best}</span>` : ''}
+        </button>
+        ${open ? `
+        <div class="px-3.5 pb-3.5 space-y-2">
+          ${hs.map(h => { const d = h.recent.includes(today); return `
+            <div class="surface-2 rounded-xl px-3 py-2.5">
+              <div class="flex items-center gap-3">
+                <i data-lucide="${h.kind === 'quit' ? (d ? 'shield-check' : 'circle-x') : (d ? 'circle-check' : 'circle')}" class="w-4 h-4 shrink-0" style="color:${d ? personColor(id) : 'var(--text-faint)'}"></i>
+                <span class="flex-1 min-w-0 text-[13px] font-bold truncate">${escapeHtml(h.title)}</span>
+                ${streaks ? `<span class="text-[11px] text-[var(--text-dim)] shrink-0">${h.streak}d</span>` : ''}
+              </div>
+              ${h.note ? `<div class="text-[11px] text-[var(--text-dim)] mt-1 pl-7">${escapeHtml(h.note)}</div>` : ''}
+            </div>`; }).join('')}
+          <div class="flex gap-2 pt-1">
+            <button data-s="cheer" data-v="${id}" ${net.cheersOut.has(id) ? 'disabled' : ''} class="btn-press flex-1 rounded-xl h-10 text-[13px] font-bold flex items-center justify-center gap-2 ${net.cheersOut.has(id) ? 'surface-2 text-[var(--text-dim)]' : 'bg-[var(--text)] text-[var(--bg)]'}">
+              <i data-lucide="${net.cheersOut.has(id) ? 'check' : 'sparkles'}" class="w-4 h-4"></i>${net.cheersOut.has(id) ? 'Cheered' : 'Cheer ' + escapeHtml(firstName(id))}</button>
+            <button data-s="remove" data-v="${id}" class="${sBtn2} h-10 px-3.5">Remove</button>
+            <button data-s="block" data-v="${id}" class="${sBtn2} h-10 px-3.5">Block</button>
+          </div>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+  const cheers = net.cheersIn.length ? `
+    <div class="surface rounded-2xl p-4 flex items-center gap-3">
+      <i data-lucide="sparkles" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
+      <div class="flex-1 min-w-0 text-[13px]"><b>${net.cheersIn.map(id => escapeHtml(firstName(id))).join(', ')}</b> cheered you on today</div>
+    </div>` : '';
+  return `
+    ${cheers}
+    <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
+      <i data-lucide="${social.adding ? 'x' : 'user-plus'}" class="w-4 h-4"></i>${social.adding ? 'Close' : 'Add a friend'}</button>
+    ${add}${requests}
+    <div>${sLabel(`Friends (${net.friends.length})`)}
+      <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Tap Add a friend and share your code.</p>'}</div></div>
+    ${sent}`;
+}
+
+/* groups */
+function socialGroupsHTML() {
+  const today = todayISO();
+  const cards = net.groups.map(g => {
+    const members = net.members[g.id] || [];
+    const due = g.days.includes(fromISO(today).getDay());
+    const doneN = members.filter(m => groupDone(g, m, today) === true).length;
+    return `
+      <button data-s="group" data-v="${g.id}" class="w-full surface rounded-2xl p-4 text-left block">
+        <div class="flex items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="text-[15px] font-bold truncate">${escapeHtml(g.name)}</div>
+            <div class="text-[11px] text-[var(--text-dim)] mt-0.5">${escapeHtml(g.habit)} · ${daysLabel(g.days)} · ${members.length} ${members.length === 1 ? 'member' : 'members'}</div>
+          </div>
+          <span class="mini-chip shrink-0"><i data-lucide="flame" class="w-3 h-3"></i>${groupStreak(g)}</span>
+        </div>
+        <div class="flex items-center gap-3 mt-3.5">
+          <div class="s-stack">${members.slice(0, 8).map(m => `<span class="${groupDone(g, m, today) === true ? '' : 's-dim'}">${avatarHTML(m, 30)}</span>`).join('')}</div>
+          <span class="text-[12px] text-[var(--text-dim)]">${due ? `${doneN} of ${members.length} done today` : 'Not scheduled today'}</span>
+        </div>
+      </button>`;
+  }).join('');
+  const join = social.joining ? `
+    <div class="surface rounded-2xl p-4 flex gap-2">
+      <input id="sGroupCode" type="text" maxlength="12" placeholder="Group code" class="flex-1 min-w-0 px-4 py-2.5 text-sm" autocapitalize="characters">
+      <button data-s="joinGroup" class="${sBtn} px-4">Join</button>
+    </div>` : '';
+  return `
+    <div class="grid grid-cols-2 gap-2.5">
+      <button data-s="create" class="${sBtn} rounded-2xl h-12 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>New group</button>
+      <button data-s="toggleJoin" class="btn-press surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2"><i data-lucide="${social.joining ? 'x' : 'log-in'}" class="w-4 h-4"></i>${social.joining ? 'Close' : 'Join with code'}</button>
+    </div>
+    ${join}
+    <div>${sLabel(`Your groups (${net.groups.length})`)}<div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No groups yet. Start one, or join with a code from a friend.</p>'}</div></div>`;
+}
+
+function socialGroupHTML() {
+  const g = net.groups.find(x => x.id === social.openGroup);
+  if (!g) { social.openGroup = null; return socialGroupsHTML(); }
+  const uid = myId(), today = todayISO();
+  const members = [...(net.members[g.id] || [])].sort((a, b) => (a === uid ? -1 : b === uid ? 1 : personName(a).localeCompare(personName(b))));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(today), i));
+  const due = g.days.includes(fromISO(today).getDay());
+  const mine = groupDone(g, uid, today) === true;
+  const cell = (m, iso) => {
+    const v = groupDone(g, m, iso);
+    const cls = v === true ? 'on' : v === false ? 'miss' : v === 'off' ? 'off' : 'future';
+    return `<span class="s-cell ${cls} ${iso === today ? 'today' : ''}" style="${v === true ? `background:${personColor(m)};color:${inkOn(personColor(m))}` : ''}">${v === true ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : v === false && iso < today ? '<i data-lucide="minus" class="w-3 h-3"></i>' : ''}</span>`;
+  };
+  const leaving = social.confirmLeave === g.id;
+  const row = m => {
+    const d = groupDone(g, m, today) === true;
+    const right = d ? `<span class="text-[12px] font-bold flex items-center gap-1" style="color:${personColor(m)}"><i data-lucide="circle-check" class="w-4 h-4"></i>Done</span>`
+      : m === uid ? '<span class="text-[12px] text-[var(--text-faint)]">Not yet</span>'
+      : `<button data-s="nudge" data-v="${g.id}|${m}" ${net.nudgesOut.has(g.id + '|' + m) ? 'disabled' : ''} class="${sBtn2} h-8 px-3 flex items-center gap-1.5">
+          <i data-lucide="${net.nudgesOut.has(g.id + '|' + m) ? 'check' : 'bell'}" class="w-3.5 h-3.5"></i>${net.nudgesOut.has(g.id + '|' + m) ? 'Nudged' : 'Nudge'}</button>`;
+    return `<div class="flex items-center gap-3 p-2">${avatarHTML(m, 32)}
+      <span class="flex-1 min-w-0 text-[13px] font-bold truncate ${d ? '' : 'text-[var(--text-dim)]'}">${escapeHtml(personName(m))}</span>${right}</div>`;
+  };
+  return `
+    <button data-s="groupBack" class="text-[13px] font-bold text-[var(--text-dim)] flex items-center gap-1.5 px-1"><i data-lucide="chevron-left" class="w-4 h-4"></i>All groups</button>
+    <div class="surface rounded-2xl p-4">
+      <div class="flex items-start gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="display text-xl font-semibold leading-tight">${escapeHtml(g.name)}</div>
+          <div class="text-[12px] text-[var(--text-dim)] mt-1">${escapeHtml(g.habit)} · ${daysLabel(g.days)}</div>
+        </div>
+        <span class="mini-chip shrink-0"><i data-lucide="flame" class="w-3 h-3"></i>${groupStreak(g)}d together</span>
+      </div>
+      ${due ? `
+      <button data-s="groupDone" data-v="${g.id}" class="btn-press w-full mt-4 rounded-xl h-11 text-[13px] font-bold flex items-center justify-center gap-2 ${mine ? 'surface-2 text-[var(--text-dim)]' : 'bg-[var(--text)] text-[var(--bg)]'}">
+        <i data-lucide="${mine ? 'undo-2' : 'check'}" class="w-4 h-4"></i>${mine ? 'Done today. Tap to undo' : 'Mark done for today'}</button>` :
+      '<p class="text-[12px] text-[var(--text-dim)] mt-4">Not scheduled today.</p>'}
+    </div>
+    ${due ? `<div>${sLabel('Today')}<div class="surface rounded-2xl p-2">${members.map(row).join('')}</div></div>` : ''}
+    <div>${sLabel('This week')}
+      <div class="surface rounded-2xl p-3.5 overflow-x-auto">
+        <div class="s-grid">
+          <span></span>${days.map(iso => `<span class="s-day ${iso === today ? 'today' : ''}">${WEEKDAY_LETTERS[fromISO(iso).getDay()]}</span>`).join('')}
+          ${members.map(m => `<span class="s-who">${avatarHTML(m, 26)}<span class="truncate">${escapeHtml(firstName(m))}</span></span>${days.map(iso => cell(m, iso)).join('')}`).join('')}
+        </div>
+      </div></div>
+    <div class="surface rounded-2xl p-4 space-y-3">
+      <div class="text-[12px] text-[var(--text-dim)]">Invite with this code</div>
+      <div class="flex items-center gap-2">
+        <span class="s-code flex-1">${escapeHtml(g.code)}</span>
+        <button data-s="copy" data-v="${escapeHtml(g.code)}" class="${sBtn2} h-10 px-4">Copy</button>
+      </div>
+    </div>
+    <button data-s="leave" data-v="${g.id}" class="btn-press w-full rounded-xl h-11 text-[13px] font-bold ${leaving ? '' : 'surface'}" style="${leaving ? 'background:#b03b3b;color:#fff' : 'color:#b03b3b'}">${leaving ? 'Tap again to leave' : 'Leave group'}</button>`;
+}
+
+function socialCreateHTML() {
+  const d = social.draft;
+  const order = [...ALL_DAYS.slice(state.settings.weekStart), ...ALL_DAYS.slice(0, state.settings.weekStart)];
+  return `
+    <button data-s="cancelCreate" class="text-[13px] font-bold text-[var(--text-dim)] flex items-center gap-1.5 px-1"><i data-lucide="chevron-left" class="w-4 h-4"></i>All groups</button>
+    <div class="surface rounded-2xl p-5 space-y-5">
+      <h2 class="display text-xl font-semibold">New group</h2>
+      <div>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2" for="sGroupName">Name</label>
+        <input id="sGroupName" type="text" maxlength="30" placeholder="e.g. Sunrise runners" value="${escapeHtml(d.name)}" class="w-full px-4 py-3 text-sm">
+      </div>
+      <div>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Shared habit</label>
+        <div class="flex flex-wrap gap-2">${state.habits.map(h => `
+          <button data-s="pickHabit" data-v="${h.id}" class="day-chip ${d.habit === h.id ? 'on' : ''}">${escapeHtml(h.title)}</button>`).join('') || '<span class="text-[12px] text-[var(--text-dim)]">Create a habit first.</span>'}</div>
+      </div>
+      <div>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Days</label>
+        <div class="flex flex-wrap gap-1.5">${order.map(n => `<button data-s="pickDay" data-v="${n}" class="day-chip ${d.days.includes(n) ? 'on' : ''}">${DAY_SHORT[n]}</button>`).join('')}</div>
+      </div>
+      <button data-s="createGroup" class="${sBtn} w-full h-12 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i>Create group</button>
+    </div>`;
+}
+
+/* privacy */
+function socialProfileHTML() {
+  const me = net.me || {};
+  const p = me.visibility || 'friends';
+  const hint = { private: 'Only you. Groups still see the group habits you check in.',
+    friends: 'Friends see the habits you share with them.',
+    public: 'Anyone signed in to Cadence can see your public habits.' }[p];
+  const friendSees = p === 'private' ? [] : state.habits.filter(h => habitShare(h) !== 'private');
+  const visOpts = [['private', 'lock'], ['friends', 'users'], ['public', 'globe']];
+  const rows = state.habits.map(h => {
+    const v = habitShare(h);
+    return `
+      <div class="flex items-center gap-3 py-2.5">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${hc(h)}"></span>
+        <span class="flex-1 min-w-0 text-[13px] font-bold truncate ${p === 'private' ? 'text-[var(--text-faint)]' : ''}">${escapeHtml(h.title)}</span>
+        <div class="s-vis">${visOpts.map(([o, ic]) => `
+          <button data-s="vis" data-v="${h.id}|${o}" class="${v === o ? 'on' : ''}" aria-label="${o}" title="${o[0].toUpperCase() + o.slice(1)}" ${p === 'private' ? 'disabled' : ''}>
+            <i data-lucide="${ic}" class="w-3.5 h-3.5"></i></button>`).join('')}</div>
+      </div>`;
+  }).join('');
+  const today = todayISO();
+  const done = friendSees.filter(h => isDayDone(h, today)).length;
+  return `
+    <div>${sLabel('Profile')}
+      <div class="surface rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-3">${avatarHTML(myId(), 44)}
+          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold truncate">${escapeHtml(personName(myId()))}</div>
+          <div class="text-[11px] text-[var(--text-dim)] truncate">${escapeHtml(sbSession.user.email || '')}</div></div>
+          <button data-s="rename" class="${sBtn2} h-9 px-3">Rename</button>
+        </div>
+        ${socialSeg('profile', [['private', 'Private', 'lock'], ['friends', 'Friends', 'users'], ['public', 'Public', 'globe']], p)}
+        <p class="text-[12px] text-[var(--text-dim)] px-1">${hint}</p>
+      </div></div>
+
+    <div>${sLabel('Who sees each habit')}
+      <div class="surface rounded-2xl px-4 py-1.5 divide-y divide-[var(--border)]">${rows || '<p class="text-[13px] text-[var(--text-dim)] py-3">No habits yet.</p>'}</div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--text-faint)] mt-2 px-1">
+        <span class="flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i>Only you</span>
+        <span class="flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i>Friends</span>
+        <span class="flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i>Anyone</span>
+      </div></div>
+
+    <div class="surface rounded-2xl px-4 py-1">
+      <div class="s-row"><span class="text-[14px] font-bold">Show notes</span>
+        <button data-s="toggleNotes" class="switch" role="switch" aria-checked="${!!me.show_notes}" aria-label="Show notes"></button></div>
+      <div class="s-row"><span class="text-[14px] font-bold">Show streaks</span>
+        <button data-s="toggleStreaks" class="switch" role="switch" aria-checked="${me.show_streaks !== false}" aria-label="Show streaks"></button></div>
+    </div>
+
+    <div>${sLabel('How friends see you')}
+      <div class="surface rounded-2xl p-3.5">
+        ${p === 'private' ? '<p class="text-[13px] text-[var(--text-dim)] p-1">Your profile is private. Friends can\'t see you.</p>' : `
+        <div class="flex items-center gap-3">${avatarHTML(myId(), 40)}
+          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold truncate">${escapeHtml(personName(myId()))}</div>
+          <div class="text-[11px] text-[var(--text-dim)] mt-0.5">${friendSees.length ? `${done} of ${friendSees.length} done today` : 'Nothing shared yet'}</div></div>
+        </div>
+        ${friendSees.length ? `<div class="space-y-2 mt-3">${friendSees.map(h => `
+          <div class="surface-2 rounded-xl px-3 py-2.5">
+            <div class="flex items-center gap-3">
+              <i data-lucide="${isDayDone(h, today) ? 'circle-check' : 'circle'}" class="w-4 h-4 shrink-0" style="color:${isDayDone(h, today) ? hc(h) : 'var(--text-faint)'}"></i>
+              <span class="flex-1 min-w-0 text-[13px] font-bold truncate">${escapeHtml(h.title)}</span>
+              ${me.show_streaks !== false ? `<span class="text-[11px] text-[var(--text-dim)] shrink-0">${currentStreak(h)}d</span>` : ''}
+            </div>
+            ${me.show_notes && h.note ? `<div class="text-[11px] text-[var(--text-dim)] mt-1 pl-7">${escapeHtml(h.note)}</div>` : ''}
+          </div>`).join('')}</div>` : ''}`}
+      </div></div>
+
+    <div class="surface rounded-2xl px-4 py-1">
+      <div class="s-row"><span class="text-[14px] font-bold">Blocked</span><span class="text-[13px] text-[var(--text-dim)]">${net.blocked.length}</span></div>
+      <div class="s-row"><span class="text-[14px] font-bold">Signed in</span><button data-s="signOut" class="${sBtn2} h-9 px-3">Sign out</button></div>
+    </div>`;
+}
+
+/* every button on the page goes through here */
+async function socialClick(e) {
+  const el = e.target.closest('[data-s]');
+  if (!el || el.disabled) return;
+  const a = el.dataset.s, v = el.dataset.v, uid = myId();
+  if (a !== 'leave') social.confirmLeave = null;
+  // a server action, then reload what changed
+  const act = async (fn, msg) => {
+    el.disabled = true;
+    try { const r = await fn(); if (r && r.error) throw r.error; if (msg) showToast(msg); }
+    catch (err) { showToast(err.message || "Couldn't reach the server"); }
+    await refreshSocial();
+  };
+  switch (a) {
+    case 'back': switchTab('home'); return;
+    case 'refresh': net.loading = true; render(); return refreshSocial();
+    case 'authMode': social.authMode = social.authMode === 'signup' ? 'signin' : 'signup'; social.authMsg = ''; break;
+    case 'view': social.view = v; social.openGroup = null; social.creating = false; break;
+    case 'toggleAdd': social.adding = !social.adding; break;
+    case 'copy': navigator.clipboard?.writeText(v).then(() => showToast('Code copied'), () => showToast(v)); return;
+    case 'addFriend': {
+      const code = document.getElementById('sFriendCode').value.trim();
+      if (!code) return;
+      el.disabled = true;
+      const { data, error } = await sb.rpc('add_friend', { code });
+      showToast(error ? (error.message || "Couldn't reach the server")
+        : { sent: 'Request sent', exists: "You're already connected", self: "That's your own code", not_found: 'No one has that code' }[data] || 'Done');
+      if (data === 'sent' || data === 'exists') social.adding = false;
+      return refreshSocial();
+    }
+    case 'accept': return act(() => sb.from('friendships').update({ status: 'accepted' }).eq('requester', v).eq('addressee', uid), `You and ${firstName(v)} are friends`);
+    case 'decline': return act(() => sb.from('friendships').delete().eq('requester', v).eq('addressee', uid));
+    case 'remove': return act(() => sb.from('friendships').delete().or(`and(requester.eq.${uid},addressee.eq.${v}),and(requester.eq.${v},addressee.eq.${uid})`), 'Removed');
+    case 'block': return act(() => sb.rpc('block_user', { target: v }), `${firstName(v)} blocked`);
+    case 'friend': social.openFriend = social.openFriend === v ? null : v; break;
+    case 'cheer': return act(() => sb.from('cheers').insert({ sender: uid, receiver: v, day: todayISO() }), `Cheer sent to ${firstName(v)}`);
+    case 'group': social.openGroup = v; break;
+    case 'groupBack': social.openGroup = null; break;
+    case 'groupDone': {
+      const done = net.checkins.has(`${v}|${uid}|${todayISO()}`);
+      return act(() => done
+        ? sb.from('group_checkins').delete().eq('group_id', v).eq('user_id', uid).eq('day', todayISO())
+        : sb.from('group_checkins').insert({ group_id: v, user_id: uid, day: todayISO() }));
+    }
+    case 'nudge': { const [g, m] = v.split('|'); return act(() => sb.from('nudges').insert({ sender: uid, receiver: m, group_id: g, day: todayISO() }), `Nudge sent to ${firstName(m)}`); }
+    case 'leave':
+      if (social.confirmLeave !== v) { social.confirmLeave = v; break; }
+      social.openGroup = null; social.confirmLeave = null;
+      return act(() => sb.from('group_members').delete().eq('group_id', v).eq('user_id', uid), 'You left the group');
+    case 'toggleJoin': social.joining = !social.joining; break;
+    case 'joinGroup': {
+      const code = document.getElementById('sGroupCode').value.trim();
+      if (!code) return;
+      el.disabled = true;
+      const { data, error } = await sb.rpc('join_group', { code });
+      if (error) showToast(error.message); else if (!data) showToast('No group has that code');
+      else { social.joining = false; social.openGroup = data; showToast('Joined'); }
+      return refreshSocial();
+    }
+    case 'create': social.creating = true; social.draft = { name: '', habit: state.habits[0]?.id || null, days: [...(state.habits[0]?.days || ALL_DAYS)] }; break;
+    case 'cancelCreate': social.creating = false; break;
+    case 'pickHabit': { social.draft.habit = v; const h = state.habits.find(x => x.id === v); if (h) social.draft.days = [...h.days]; break; }
+    case 'pickDay': {
+      const n = Number(v), d = social.draft.days;
+      social.draft.days = d.includes(n) ? (d.length > 1 ? d.filter(x => x !== n) : d) : [...d, n].sort();
+      break;
+    }
+    case 'createGroup': {
+      const h = state.habits.find(x => x.id === social.draft.habit);
+      const name = social.draft.name.trim();
+      if (!name) { showToast('Give the group a name'); return; }
+      if (!h) { showToast('Pick a habit to share'); return; }
+      el.disabled = true;
+      const { data, error } = await sb.from('groups').insert({ name, habit: h.title.slice(0, 40), days: social.draft.days, owner: uid }).select().single();
+      if (error) { showToast(error.message); el.disabled = false; return; }
+      social.creating = false; social.openGroup = data.id;
+      showToast('Group created. Share the code to invite people');
+      return refreshSocial();
+    }
+    case 'profile': return act(() => sb.from('profiles').update({ visibility: v }).eq('id', uid));
+    case 'rename': {
+      social.view = 'profile';
+      const cur = personName(uid);
+      el.outerHTML = `<form class="flex gap-2" onsubmit="event.preventDefault();socialRename(this.n.value)"><input name="n" type="text" maxlength="30" value="${escapeHtml(cur)}" class="w-32 px-3 py-2 text-sm"><button class="${sBtn} px-3 h-9">Save</button></form>`;
+      return;
+    }
+    case 'vis': {
+      const [id, o] = v.split('|');
+      const h = state.habits.find(x => x.id === id);
+      if (h) { h.share = o; saveData(); }
+      break;
+    }
+    case 'toggleNotes': return act(async () => { const r = await sb.from('profiles').update({ show_notes: !net.me.show_notes }).eq('id', uid); net.me.show_notes = !net.me.show_notes; syncShared(); return r; });
+    case 'toggleStreaks': return act(async () => { const r = await sb.from('profiles').update({ show_streaks: net.me.show_streaks === false }).eq('id', uid); net.me.show_streaks = net.me.show_streaks === false; syncShared(); return r; });
+    case 'signOut':
+      await sb.auth.signOut(); sbSession = null;
+      Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
+      break;
+    default: return;
+  }
+  render();
+}
+async function socialRename(name) {
+  name = String(name || '').trim().slice(0, 30);
+  if (!name) return;
+  const { error } = await sb.from('profiles').update({ name }).eq('id', myId());
+  if (error) showToast(error.message); else showToast('Name saved');
+  refreshSocial();
+}
+
+/* on launch: if you signed in before, connect quietly so sharing stays in sync
+   and the Friends button can show new requests or nudges */
+function socialBoot() {
+  if (!hadSession()) return;
+  sbStart().then(() => sbSession && loadSocial().then(() => { syncShared(); if (activeTab === 'home') render(); })).catch(() => {});
 }
 
 document.addEventListener('DOMContentLoaded', init);
