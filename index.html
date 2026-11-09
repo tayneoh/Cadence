@@ -3643,8 +3643,8 @@ function socialAuthHTML() {
         <p class="text-[12px] text-[var(--text-dim)] mt-1">Only habits you choose to share go online. Everything else stays on this phone.</p>
       </div>
       <form id="sAuthForm" class="space-y-3" autocomplete="on">
-        ${up ? `<input id="sName" type="text" maxlength="30" placeholder="Your name" value="${escapeHtml(state.settings.name)}" class="w-full px-4 py-3 text-sm" autocomplete="name">` : ''}
-        <input id="sEmail" type="email" placeholder="Email" class="w-full px-4 py-3 text-sm s-input" autocomplete="email" required>
+        ${up ? `<input id="sName" type="text" maxlength="30" placeholder="Display name" value="${escapeHtml(state.settings.name)}" class="w-full px-4 py-3 text-sm" autocomplete="nickname" required>` : ''}
+        <input id="sEmail" type="text" inputmode="email" placeholder="Email or phone number" class="w-full px-4 py-3 text-sm s-input" autocomplete="username" autocapitalize="off" required>
         <input id="sPass" type="password" placeholder="Password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm s-input" autocomplete="${up ? 'new-password' : 'current-password'}" required>
         ${social.authMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(social.authMsg)}</p>` : ''}
         <button type="submit" ${social.busy ? 'disabled' : ''} class="${sBtn} w-full h-12">${social.busy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
@@ -3653,11 +3653,32 @@ function socialAuthHTML() {
     </div>`;
 }
 
+/* sign in with an email or a phone number. A phone number becomes a private
+   login name on the server (no text message is sent; that would need a paid
+   SMS service), so it works exactly like an email with a password. */
+const PHONE_DOMAIN = '@phone.tayneoh.github.io';
+function loginId(raw) {
+  const v = String(raw || '').trim();
+  if (v.includes('@')) return { email: v.toLowerCase() };
+  let digits = v.replace(/\D/g, '');
+  if (digits.length === 10) digits = '1' + digits;          // US number without the country code
+  if (digits.length < 8 || digits.length > 15) return { error: 'Enter an email or a phone number' };
+  return { email: 'p' + digits + PHONE_DOMAIN };
+}
+function shownLogin(email) {
+  if (!email || !email.endsWith(PHONE_DOMAIN)) return email || '';
+  const d = email.slice(1, -PHONE_DOMAIN.length);
+  return d.length === 11 && d[0] === '1' ? `+1 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}` : '+' + d;
+}
+
 async function socialAuth() {
-  const email = document.getElementById('sEmail')?.value.trim();
+  const id = loginId(document.getElementById('sEmail')?.value);
+  if (id.error) { social.authMsg = id.error; render(); return; }
+  const email = id.email;
   const pass = document.getElementById('sPass')?.value;
   const name = (document.getElementById('sName')?.value || '').trim().slice(0, 30);
   if (!email || !pass) return;
+  if (social.authMode === 'signup' && !name) { social.authMsg = 'Pick a display name'; render(); return; }
   social.busy = true; social.authMsg = ''; render();
   try {
     if (social.authMode === 'signup') {
@@ -3903,7 +3924,7 @@ function socialProfileHTML() {
       <div class="surface rounded-2xl p-4 space-y-3">
         <div class="flex items-center gap-3">${avatarHTML(myId(), 44)}
           <div class="flex-1 min-w-0"><div class="text-[15px] font-bold truncate">${escapeHtml(personName(myId()))}</div>
-          <div class="text-[11px] text-[var(--text-dim)] truncate">${escapeHtml(sbSession.user.email || '')}</div></div>
+          <div class="text-[11px] text-[var(--text-dim)] truncate">${escapeHtml(shownLogin(sbSession.user.email))}</div></div>
           <button data-s="rename" class="${sBtn2} h-9 px-3">Rename</button>
         </div>
         ${socialSeg('profile', [['private', 'Private', 'lock'], ['friends', 'Friends', 'users'], ['public', 'Public', 'globe']], p)}
