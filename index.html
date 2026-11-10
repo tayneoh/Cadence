@@ -3705,7 +3705,15 @@ async function syncPosts() {
 }
 
 /* ---- feed ---- */
+// older reactions were saved by name; new ones are saved as the emoji itself
 const REACTIONS = [['heart', '\u2764\uFE0F'], ['fire', '\uD83D\uDD25'], ['clap', '\uD83D\uDC4F'], ['muscle', '\uD83D\uDCAA'], ['party', '\uD83C\uDF89']];
+const QUICK_EMOJI = ['\uD83D\uDD25', '\uD83D\uDC4F', '\uD83D\uDCAA', '\uD83C\uDF89', '\uD83D\uDE02', '\uD83D\uDE2E'];
+const emojiChar = k => (REACTIONS.find(r => r[0] === k) || [])[1] || k;
+// the first emoji in whatever was typed, or '' if there isn't one
+function firstEmoji(text) {
+  const parts = window.Intl?.Segmenter ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].map(x => x.segment) : Array.from(text);
+  return parts.find(g => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g)) || '';
+}
 function timeAgo(ts) {
   const m = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 60000));
   if (m < 1) return 'now';
@@ -3735,14 +3743,16 @@ function socialFeedHTML() {
     const cs = net.comments.filter(c => c.post_id === x.id);
     // heart is always there; other emoji show up once someone has used them
     const picking = social.openReact === x.id;
-    const bar = REACTIONS.map(([k, e]) => {
+    const keys = ['heart', ...new Set(rs.map(r => r.emoji).filter(k => k !== 'heart'))];
+    const bar = keys.map(k => {
       const n = rs.filter(r => r.emoji === k).length, me = rs.some(r => r.emoji === k && r.user_id === uid);
-      if (k !== 'heart' && !n) return '';
-      return `<button data-s="react" data-v="${x.id}|${k}" class="react-btn ${me ? 'on' : ''}" aria-label="${k}">${e}${n ? `<span>${n}</span>` : ''}</button>`;
+      return `<button data-s="react" data-v="${x.id}|${escapeHtml(k)}" class="react-btn ${me ? 'on' : ''}" aria-label="React ${escapeHtml(emojiChar(k))}">${escapeHtml(emojiChar(k))}${n ? `<span>${n}</span>` : ''}</button>`;
     }).join('') + `<button data-s="reactMenu" data-v="${x.id}" class="react-btn ${picking ? 'on' : ''}" aria-label="Add a reaction"><i data-lucide="smile-plus" class="w-4 h-4"></i></button>`;
     const picker = picking ? `
-        <div class="flex items-center gap-1.5 mt-2 flex-wrap">${REACTIONS.filter(([k]) => k !== 'heart' && !rs.some(r => r.emoji === k && r.user_id === uid))
-          .map(([k, e]) => `<button data-s="react" data-v="${x.id}|${k}" class="react-btn" aria-label="${k}">${e}</button>`).join('')}</div>` : '';
+        <div class="mt-2 space-y-2">
+          <input id="sEmoji-${x.id}" type="text" inputmode="text" enterkeyhint="done" autocomplete="off" placeholder="Tap the emoji key on your keyboard" class="w-full px-3 py-2.5 text-sm">
+          <div class="flex items-center gap-1.5 flex-wrap">${QUICK_EMOJI.map(e => `<button data-s="react" data-v="${x.id}|${REACTIONS.find(r => r[1] === e)?.[0] || e}" class="react-btn" aria-label="React ${e}">${e}</button>`).join('')}</div>
+        </div>` : '';
     const open = social.openComments === x.id;
     return `
       <div class="surface rounded-2xl p-4">
@@ -3855,7 +3865,18 @@ function renderSocialTab() {
   root.innerHTML = `<div class="tab-enter space-y-6">${head}${body}</div>`;
   root.querySelectorAll('#sPostBody, [id^="sComment-"]').forEach(f => { if (drafts[f.id]) f.value = drafts[f.id]; });
   root.onclick = socialClick;
-  root.oninput = e => { if (e.target.id === 'sGroupName') social.draft.name = e.target.value; };
+  root.oninput = e => {
+    if (e.target.id === 'sGroupName') social.draft.name = e.target.value;
+    if (e.target.id.startsWith('sEmoji-')) {
+      const em = firstEmoji(e.target.value);
+      if (!em) return;
+      const pid = e.target.id.slice(7);
+      const btn = document.createElement('button');
+      btn.dataset.s = 'react'; btn.dataset.v = pid + '|' + (REACTIONS.find(r => r[1] === em)?.[0] || em);
+      e.target.blur();
+      root.appendChild(btn); btn.click(); btn.remove();
+    }
+  };
   root.onsubmit = e => { e.preventDefault(); if (e.target.id === 'sAuthForm') socialAuth(); };
 }
 
@@ -4319,6 +4340,8 @@ async function socialClick(e) {
     default: return;
   }
   render();
+  // the smiley opens the keyboard straight away so any emoji can be picked
+  if (a === 'reactMenu' && social.openReact) document.getElementById('sEmoji-' + social.openReact)?.focus();
 }
 async function socialRename(name) {
   name = String(name || '').trim().slice(0, 30);

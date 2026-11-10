@@ -20,10 +20,15 @@ create index if not exists posts_recent on public.posts (created_at desc);
 create table if not exists public.reactions (
   post_id uuid not null references public.posts(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade default auth.uid(),
-  emoji text not null check (emoji in ('heart','fire','clap','muscle','party')),
+  emoji text not null,
   created_at timestamptz not null default now(),
   primary key (post_id, user_id, emoji)
 );
+
+-- any single emoji (older reactions are saved by name, like 'heart').
+-- Replaces the first version's fixed list, so it's safe to run on either.
+alter table public.reactions drop constraint if exists reactions_emoji_check;
+alter table public.reactions add constraint reactions_emoji_check check (char_length(emoji) between 1 and 16);
 
 create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),
