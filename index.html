@@ -414,6 +414,8 @@
   .day-sq-sub { font-size: 12px; opacity: 0.8; }
   .drag-handle { touch-action: none; cursor: grab; }
   [data-habit-row].dragging { position: relative; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: none; }
+  input[type="text"].s-code-input { background: transparent; border: 0; border-radius: 0; padding: 0; height: 40px; width: 0; flex: 1 1 0; min-width: 0; text-transform: uppercase; letter-spacing: 0.08em; }
+  input[type="text"].s-code-input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 500; }
   .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
@@ -966,6 +968,7 @@ const DEFAULT_SETTINGS = {
   badge: false,           // habits-left count on the home-screen icon
   postCheckins: true,     // feed: post when you finish a shared habit
   postStreaks: true,      // feed: post when a shared habit hits a streak milestone
+  nRemind: true, nNudge: true, nCheer: true, nLike: true, nComment: true, nPost: true,   // which notifications to get
 };
 
 const APP_STYLES = [
@@ -1068,7 +1071,7 @@ function cleanSettings(raw) {
     });
     out.homeOrder = order;
   }
-  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors','postCheckins','postStreaks'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors','postCheckins','postStreaks','nRemind','nNudge','nCheer','nLike','nComment','nPost'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -1139,6 +1142,7 @@ function migrateData(raw) {
       }));
   }
   safe.settings = cleanSettings(raw.settings);
+  safe.deleted = Array.isArray(raw.deleted) ? raw.deleted.filter(x => typeof x === 'string').slice(-500) : [];
   // null = never set; the current milestones are then recorded silently
   safe.seenBadges = Array.isArray(raw.seenBadges) ? raw.seenBadges.filter(x => typeof x === 'string') : null;
   return safe;
@@ -1170,6 +1174,7 @@ function saveData() {
   if (!storageAvailable) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (!applyingCloud) { syncMark('localAt', Date.now()); scheduleCloud(); }
     scheduleSync();   // keep shared habits current when signed in to Friends
   } catch (e) {
     console.warn('saveData failed:', e);
@@ -1255,6 +1260,7 @@ function updateHabit(id, patch) {
 
 function deleteHabit(id) {
   state.habits = state.habits.filter(h => h.id !== id);
+  state.deleted = [...(state.deleted || []), id].slice(-500);   // so other devices drop it too
   state.habits.forEach((h, i) => { h.order = i; });
   saveData();
 }
@@ -3423,7 +3429,10 @@ function accentDropdown(cur, accents) {
 
 /* Settings is a short menu; each entry opens its own page */
 let settingsPage = null;   // null = menu, or 'personal' | 'custom' | 'appearance' | 'calendar'
-function openSettingsPage(pg) { settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0); }
+function openSettingsPage(pg) {
+  settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0);
+  if (pg === 'notifications' || pg === 'custom') checkPush().then(() => { if (settingsPage === pg) render(); });
+}
 
 function renderSettingsTab() {
   const root = document.getElementById('tab-settings');
@@ -3439,9 +3448,9 @@ function renderSettingsTab() {
       <span class="flex-1 min-w-0 text-[14px] font-bold">${text}</span>
       <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
     </button>`;
-  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance', calendar: 'Calendar' };
+  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance', calendar: 'Calendar', notifications: 'Notifications' };
   const header = settingsPage
-    ? `<button data-page="" class="home-edit-btn" aria-label="Back to Settings"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+    ? `<button data-page="${settingsPage === 'notifications' ? 'custom' : ''}" class="home-edit-btn" aria-label="Back"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
        <h2 class="display text-2xl font-semibold">${titles[settingsPage]}</h2>`
     : `<button onclick="switchTab('home')" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
        <h2 class="display text-3xl font-semibold">Settings</h2>`;
@@ -3462,10 +3471,28 @@ function renderSettingsTab() {
   } else if (settingsPage === 'custom') {
     body = card(
       settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
-      settingsRow('Notifications', '', switchHTML('badge')) +
+      `<button data-page="notifications" class="w-full flex items-center gap-3 py-3 border-t border-[var(--border)] text-left">
+        <span class="flex-1 min-w-0 text-[13px] font-bold">Notifications</span>
+        <span class="text-[12px] text-[var(--text-dim)]">${pushState === 'on' ? 'On' : ''}</span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
+      </button>` +
       settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
       settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
     );
+  } else if (settingsPage === 'notifications') {
+    const note = t => `<p class="text-[13px] text-[var(--text-dim)] leading-snug py-3">${t}</p>`;
+    const top = !sbSession
+      ? settingsRow('Sign in to get notifications', '', smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
+      : pushState === 'install' ? note('On iPhone, notifications work once Cadence is on your Home Screen. In Safari, tap Share, then Add to Home Screen, and open Cadence from there.')
+      : pushState === 'unsupported' ? note("This browser can't show notifications.")
+      : pushState === 'denied' ? note("Notifications are blocked for Cadence. Turn them on in your phone's Settings, under Notifications.")
+      : pushState === 'unknown' ? note('Checking...')
+      : settingsRow('Allow notifications', '', `<button data-push role="switch" aria-checked="${pushState === 'on'}" class="switch" aria-label="Allow notifications"></button>`);
+    body = `<div class="space-y-6">
+      ${card(top)}
+      <div>${label('Notify me about')}${card(NOTIFY_KINDS.map(([k, , name]) => settingsRow(name, '', switchHTML(k))).join(''))}</div>
+      ${card(settingsRow('Habits left on app icon', '', switchHTML('badge')))}
+    </div>`;
   } else if (settingsPage === 'appearance') {
     body = card(
       settingsRow('Color-code habits', '', switchHTML('habitColors')) +
@@ -3521,6 +3548,7 @@ function renderSettingsTab() {
       render();
     });
   });
+  root.querySelector('[data-push]')?.addEventListener('click', () => pushState === 'on' ? disablePush() : enablePush());
   root.querySelector('#homeEditBtn')?.addEventListener('click', () => { homeEditing = true; switchTab('home'); });
   root.querySelectorAll('[data-accent]').forEach(btn => {
     btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); openPicker = null; render(); });
@@ -3531,6 +3559,7 @@ function renderSettingsTab() {
       const next = !state.settings[key];
       if (key === 'badge') return setBadgeEnabled(next);
       updateSetting(key, next);
+      if (NOTIFY_KINDS.some(([k]) => k === key)) pushPrefsChanged();
       render();
     });
   });
@@ -3783,10 +3812,10 @@ function init() {
 
 /* =====================================================================
    FRIENDS AND GROUPS (online, optional)
-   Everything else in Cadence stays on this device. Only what you choose
-   to share goes to the Cadence server (Supabase): habits set to Friends
-   or Public, your profile name, and group check-ins. Private habits
-   never leave the phone. The server's row-level security rules
+   When you're signed in, your data is backed up to your own account (see
+   ACCOUNT SYNC), readable only by you. Friends only see what you choose
+   to share: habits set to Friends or Public, your profile name, and group
+   check-ins. The server's row-level security rules
    (supabase/schema.sql) make sure people only see what was shared.
    ===================================================================== */
 const SB_URL = 'https://trjdxrscmctxduvtuofp.supabase.co';
@@ -3821,6 +3850,73 @@ function sbStart() {
   return sbStarting;
 }
 function myId() { return sbSession?.user?.id; }
+
+/* ---------------------------------------------------------------------
+   ACCOUNT SYNC
+   Your habits, check-ins, to-dos and settings are saved to your account,
+   so signing in on another phone or computer brings them along. This
+   phone keeps its own copy too, so Cadence still works offline. When two
+   devices both changed something, habits are merged: every check-in from
+   either device is kept, and a habit deleted on one is deleted on both.
+   --------------------------------------------------------------------- */
+let applyingCloud = false, cloudTimer = null, cloudBusy = null;
+function syncMark(k, v) {
+  try { if (v === undefined) return localStorage.getItem('cadence.sync.' + k); localStorage.setItem('cadence.sync.' + k, String(v)); }
+  catch (e) { return null; }
+}
+function scheduleCloud(ms = 2000) {
+  if (!sbSession) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => cloudSync(), ms);
+}
+function mergeStates(local, cloud, cloudNewer) {
+  const newer = cloudNewer ? cloud : local, older = cloudNewer ? local : cloud;
+  const gone = new Set([...(local.deleted || []), ...(cloud.deleted || [])]);
+  const olderById = new Map((older.habits || []).map(h => [h.id, h]));
+  const habits = [];
+  (newer.habits || []).forEach(h => {
+    if (gone.has(h.id)) return;
+    const o = olderById.get(h.id);
+    habits.push(o ? { ...h, completions: { ...(o.completions || {}), ...(h.completions || {}) } } : h);
+    olderById.delete(h.id);
+  });
+  olderById.forEach(h => { if (!gone.has(h.id)) habits.push({ ...h, order: 1e6 + (h.order || 0) }); });
+  return { ...newer, habits, deleted: [...gone].slice(-500) };
+}
+async function cloudSync() {
+  if (!sb || !sbSession) return;
+  if (cloudBusy) return cloudBusy;
+  cloudBusy = (async () => {
+    const uid = myId();
+    const { data: row, error } = await sb.from('user_data').select('data,updated_at').eq('user_id', uid).maybeSingle();
+    if (error) return;   // not set up yet, or offline
+    const lastUser = syncMark('user'), pulledAt = syncMark('pulledAt');
+    const localAt = Number(syncMark('localAt') || 0);
+    let next = null;
+    if (row && row.data) {
+      const cloudAt = new Date(row.updated_at).getTime();
+      if (lastUser && lastUser !== uid) next = migrateData(row.data);           // someone else signed in on this phone
+      else if (pulledAt === row.updated_at && localAt <= cloudAt) return;       // nothing new either side
+      else if (pulledAt === row.updated_at) next = null;                        // only this phone changed: upload
+      else if (!state.habits.length && !lastUser) next = migrateData(row.data); // fresh phone: take the account's data
+      else next = migrateData(mergeStates(state, row.data, cloudAt > localAt));
+    }
+    if (next) {
+      applyingCloud = true;
+      state = next;
+      saveData();
+      applyingCloud = false;
+      applySettings();
+      render();
+    }
+    const now = new Date().toISOString();
+    const up = await sb.from('user_data').upsert({ user_id: uid, data: state, updated_at: now });
+    if (up.error) return;
+    syncMark('user', uid); syncMark('pulledAt', now); syncMark('localAt', Date.parse(now));
+  })().catch(() => {}).finally(() => { cloudBusy = null; });
+  return cloudBusy;
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleCloud(300); });
 /* names of people you blocked, kept on this device (the server hides their profile from you) */
 function blockedNames() { try { return JSON.parse(localStorage.getItem('cadence.blockedNames') || '{}'); } catch (e) { return {}; } }
 function saveBlockedName(id, name) { try { const m = blockedNames(); m[id] = name; localStorage.setItem('cadence.blockedNames', JSON.stringify(m)); } catch (e) {} }
@@ -3907,6 +4003,12 @@ async function loadSocial() {
     const ids = [...new Set([...net.friends, ...net.requests, ...net.sent, ...Object.values(net.members).flat(), ...posts.map(x => x.user_id),
       ...net.cheersIn, ...net.nudgesIn.map(n => n.sender)])].filter(id => id !== uid);
     if (ids.length) must(await sb.from('profiles').select('id,name,visibility,show_notes,show_streaks').in('id', ids)).forEach(p => { net.people[p.id] = p; });
+    // people you may know: friends of friends and group mates (needs notifications.sql)
+    try {
+      const sg = await sb.rpc('friend_suggestions');
+      net.suggestions = sg && !sg.error && Array.isArray(sg.data) ? sg.data : [];
+      net.suggestions.forEach(r => { net.people[r.id] = net.people[r.id] || { id: r.id, name: r.name }; });
+    } catch (e) { net.suggestions = []; }
     net.loaded = true;
   } catch (e) {
     net.error = e.message || String(e);
@@ -3935,6 +4037,92 @@ async function syncShared() {
     await del;
     await syncPosts();
   } catch (e) { /* offline: the next change or visit to Friends syncs again */ }
+  syncReminders();
+}
+
+/* ---------------------------------------------------------------------
+   PUSH NOTIFICATIONS
+   The phone gives us an address to send to; we store it with your choices
+   of which kinds you want. Supabase sends reminders and social alerts to
+   it (see supabase/notifications.sql and supabase/functions/push).
+   --------------------------------------------------------------------- */
+const VAPID_PUBLIC = 'BCMptmidv82rVEkyqS5Cb5cTi6SyQY4MQo0v0inYeV28k1VGRPOAOdWbUpsAb1B6RwIl7d8Jpih1odwo4DqIaGQ';
+const NOTIFY_KINDS = [['nRemind', 'reminders', 'Habit reminders'], ['nNudge', 'nudges', 'Nudges'], ['nCheer', 'cheers', 'Cheers'],
+  ['nLike', 'likes', 'Likes'], ['nComment', 'comments', 'Comments'], ['nPost', 'posts', "Friends' posts"]];
+let pushState = 'unknown';   // 'on' | 'off' | 'denied' | 'unsupported' | 'install'
+function pushPrefs() { const o = {}; NOTIFY_KINDS.forEach(([k, kind]) => { o[kind] = state.settings[k] !== false; }); return o; }
+function isIOSDevice() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function isStandaloneApp() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+function userTZ() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } }
+function b64urlBytes(str) {
+  const b = atob((str + '='.repeat((4 - str.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(b, c => c.charCodeAt(0));
+}
+async function currentPushSub() {
+  try { const reg = await navigator.serviceWorker.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; }
+  catch (e) { return null; }
+}
+async function checkPush() {
+  if (!('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window))
+    pushState = isIOSDevice() && !isStandaloneApp() ? 'install' : 'unsupported';
+  else if (Notification.permission === 'denied') pushState = 'denied';
+  else pushState = (await currentPushSub()) ? 'on' : 'off';
+  return pushState;
+}
+async function savePushSub(sub) {
+  const j = sub.toJSON();
+  const { error } = await sb.from('push_subscriptions').upsert({
+    endpoint: j.endpoint, user_id: myId(), p256dh: j.keys.p256dh, auth: j.keys.auth, tz: userTZ(), prefs: pushPrefs() });
+  if (error) throw error;
+}
+async function enablePush() {
+  if (!sbSession) { showToast('Sign in on Social first'); return; }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { pushState = perm === 'denied' ? 'denied' : 'off'; render(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription())
+      || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlBytes(VAPID_PUBLIC) });
+    await savePushSub(sub);
+    pushState = 'on';
+    showToast('Notifications on');
+    syncReminders(true);
+  } catch (e) {
+    console.warn('push', e);
+    showToast("Couldn't turn on notifications");
+  }
+  render();
+}
+async function disablePush() {
+  const sub = await currentPushSub();
+  try { if (sub) { if (sb) await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); } } catch (e) {}
+  pushState = 'off';
+  render();
+}
+async function pushPrefsChanged() {
+  if (pushState !== 'on' || !sb) return;
+  const sub = await currentPushSub();
+  try { if (sub) await savePushSub(sub); } catch (e) {}
+}
+
+/* habits with a reminder time are copied up so the server knows when to
+   remind you, and whether today's is already done */
+let lastReminderSig = null;
+async function syncReminders(force) {
+  if (!sb || !sbSession) return;
+  const today = todayISO(), tz = userTZ(), uid = myId();
+  const rows = state.habits.filter(h => h.remind).map(h => ({
+    user_id: uid, habit_id: h.id, title: h.title.slice(0, 40), remind_at: h.remind,
+    days: h.days.length ? h.days : [0, 1, 2, 3, 4, 5, 6], tz, done_on: isDayDone(h, today) ? today : null }));
+  const sig = JSON.stringify(rows);
+  if (!force && sig === lastReminderSig) return;
+  try {
+    if (rows.length) { const { error } = await sb.from('reminders').upsert(rows); if (error) return; }
+    let del = sb.from('reminders').delete().eq('user_id', uid);
+    if (rows.length) del = del.not('habit_id', 'in', `(${rows.map(r => `"${r.habit_id}"`).join(',')})`);
+    await del;
+    lastReminderSig = sig;
+  } catch (e) { /* offline or not set up yet: tries again on the next change */ }
 }
 
 /* finishing a shared habit posts it to your friends' feed (once a day),
@@ -4144,7 +4332,7 @@ function socialAuthHTML() {
     <div class="surface rounded-2xl p-5 space-y-4">
       <div>
         <h2 class="display text-xl font-semibold">${up ? 'Create your account' : 'Sign in'}</h2>
-        <p class="text-[12px] text-[var(--text-dim)] mt-1">Only habits you choose to share go online. Everything else stays on this phone.</p>
+        <p class="text-[12px] text-[var(--text-dim)] mt-1">Your habits are saved to your account, so they follow you to any device. Friends only see the habits you choose to share.</p>
       </div>
       <form id="sAuthForm" class="space-y-3" autocomplete="on">
         ${up ? `<input id="sName" type="text" maxlength="30" placeholder="Display name" value="${escapeHtml(state.settings.name)}" class="w-full px-4 py-3 text-sm" autocomplete="nickname" required>` : ''}
@@ -4254,27 +4442,32 @@ async function socialAuth() {
       if (error) throw error;
       sbSession = data.session;
     }
-    if (sbSession) { net.loaded = false; await loadSocial(); syncShared(); }
+    if (sbSession) { net.loaded = false; await cloudSync(); await loadSocial(); syncShared(); }
   } catch (e) { social.authMsg = e.message || 'Something went wrong'; }
   social.busy = false; render();
 }
 
 /* friends */
+function hiddenSuggestions() {
+  try { return JSON.parse(localStorage.getItem('cadence.hiddenSuggestions') || '[]'); } catch (e) { return []; }
+}
 function socialFriendsHTML() {
   const code = net.me?.friend_code || '';
-  const add = social.adding ? `
-    <div class="surface rounded-2xl p-4 space-y-3">
-      <div class="text-[12px] text-[var(--text-dim)]">Your friend code</div>
-      <div class="flex items-center gap-2">
-        <span class="s-code flex-1">${escapeHtml(code)}</span>
-        <button data-s="copy" data-v="${escapeHtml(code)}" class="${sBtn2} h-10 px-4">Copy</button>
+  // two small bubbles: your code (tap to copy), and a box for a friend's code
+  const add = `
+    <div class="grid grid-cols-2 gap-2.5">
+      <button data-s="copy" data-v="${escapeHtml(code)}" class="btn-press surface rounded-2xl px-3.5 h-14 text-left flex items-center gap-2 min-w-0" aria-label="Copy your friend code">
+        <div class="flex-1 min-w-0">
+          <div class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-faint)]">Your code</div>
+          <div class="text-[15px] font-bold tracking-[0.12em] truncate">${escapeHtml(code)}</div>
+        </div>
+        <i data-lucide="copy" class="w-4 h-4 text-[var(--text-dim)] shrink-0"></i>
+      </button>
+      <div class="surface rounded-2xl pl-3 pr-1.5 h-14 flex items-center gap-1.5 min-w-0">
+        <input id="sFriendCode" type="text" maxlength="12" placeholder="Friend's code" class="s-code-input flex-1 min-w-0 text-[14px] font-bold" autocapitalize="characters" autocomplete="off">
+        <button data-s="addFriend" class="${sBtn} w-10 h-10 shrink-0 flex items-center justify-center" aria-label="Add friend"><i data-lucide="plus" class="w-4 h-4"></i></button>
       </div>
-      <div class="text-[12px] text-[var(--text-dim)] pt-1">Have a friend's code?</div>
-      <div class="flex gap-2">
-        <input id="sFriendCode" type="text" maxlength="12" placeholder="e.g. 7F3A2C" class="flex-1 min-w-0 px-4 py-2.5 text-sm" autocapitalize="characters">
-        <button data-s="addFriend" class="${sBtn} px-4">Add</button>
-      </div>
-    </div>` : '';
+    </div>`;
   const requests = net.requests.length ? `
     <div>${sLabel('Requests')}
       <div class="space-y-2.5">${net.requests.map(id => `
@@ -4334,13 +4527,24 @@ function socialFriendsHTML() {
       </div>`;
   }).join('');
   const cheers = '';  // cheers arrive as a pop-up, so no notice here
+  const hidden = hiddenSuggestions();
+  const sugg = (net.suggestions || []).filter(r => !hidden.includes(r.id) && !net.sent.includes(r.id) && !net.friends.includes(r.id));
+  const why = r => [r.mutuals ? `${r.mutuals} mutual friend${r.mutuals === 1 ? '' : 's'}` : '', r.groups ? `in ${r.groups === 1 ? 'a group' : r.groups + ' groups'} with you` : '']
+    .filter(Boolean).join(' · ');
+  const suggestions = sugg.length ? `
+    <div>${sLabel('Suggested for you')}
+      <div class="space-y-2.5">${sugg.map(r => `
+        <div class="surface rounded-2xl p-3.5 flex items-center gap-3">
+          ${avatarHTML(r.id)}
+          <div class="flex-1 min-w-0"><div class="text-[14px] font-bold truncate">${escapeHtml(personName(r.id))}</div><div class="text-[11px] text-[var(--text-dim)] truncate">${why(r)}</div></div>
+          <button data-s="hideSuggestion" data-v="${r.id}" class="home-edit-btn" aria-label="Hide suggestion"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <button data-s="suggestAdd" data-v="${r.id}" class="${sBtn} h-9 px-3.5">Add</button>
+        </div>`).join('')}</div></div>` : '';
   return `
-    ${cheers}
-    <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
-      <i data-lucide="${social.adding ? 'x' : 'user-plus'}" class="w-4 h-4"></i>${social.adding ? 'Close' : 'Add a friend'}</button>
+    ${cheers}${suggestions}
     ${add}${requests}
     <div>${sLabel(`Friends (${net.friends.length})`)}
-      <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Tap Add a friend and share your code.</p>'}</div></div>
+      <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Share your code above, or enter a friend&rsquo;s code.</p>'}</div></div>
     ${sent}`;
 }
 
@@ -4587,6 +4791,17 @@ async function socialClick(e) {
       if (data === 'sent' || data === 'exists') social.adding = false;
       return refreshSocial();
     }
+    case 'suggestAdd': {
+      el.disabled = true;
+      const { data, error } = await sb.rpc('request_friend', { target: v });
+      showToast(error ? (error.message || "Couldn't reach the server") : data === 'exists' ? `You and ${firstName(v)} are friends` : 'Request sent');
+      return refreshSocial();
+    }
+    case 'hideSuggestion': {
+      const list = hiddenSuggestions(); list.push(v);
+      try { localStorage.setItem('cadence.hiddenSuggestions', JSON.stringify(list.slice(-100))); } catch (e) {}
+      break;
+    }
     case 'accept': return act(() => sb.from('friendships').update({ status: 'accepted' }).eq('requester', v).eq('addressee', uid), `You and ${firstName(v)} are friends`);
     case 'decline': return act(() => sb.from('friendships').delete().eq('requester', v).eq('addressee', uid));
     case 'remove': return act(() => sb.from('friendships').delete().or(`and(requester.eq.${uid},addressee.eq.${v}),and(requester.eq.${v},addressee.eq.${uid})`), 'Removed');
@@ -4708,7 +4923,7 @@ async function socialRename(name) {
    and the Friends button can show new requests or nudges */
 function socialBoot() {
   if (!hadSession()) return;
-  sbStart().then(() => sbSession && loadSocial().then(() => { syncShared(); if (activeTab === 'home') render(); announceSocial(); })).catch(() => {});
+  sbStart().then(() => sbSession && cloudSync().then(() => loadSocial()).then(() => { syncShared(); if (activeTab === 'home') render(); announceSocial(); })).catch(() => {});
 }
 
 /* cheers and nudges you haven't seen yet pop up, once each */
@@ -4810,7 +5025,7 @@ function renderOnboarding() {
         <button type="button" id="obMode" class="w-full text-[13px] font-bold text-[var(--text-dim)] pt-1">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
       </form>
       <button id="obSkip" class="text-[13px] font-bold text-[var(--text-faint)]">Not now</button>
-      <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Your habits stay on this phone either way.</p>`);
+      <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Sign in to keep your habits on every device.</p>`);
     el.querySelector('#obForm').onsubmit = e => { e.preventDefault(); onboardAuth(); };
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
     el.querySelector('#obForgot')?.addEventListener('click', () => showForgotPage(el.querySelector('#obEmail').value, () => renderOnboarding()));
@@ -4933,7 +5148,7 @@ async function onboardAuth() {
       sbSession = data.session;
     }
     net.loaded = false;
-    loadSocial().then(() => { syncShared(); announceSocial(); });
+    cloudSync().then(() => { render(); return loadSocial(); }).then(() => { syncShared(); announceSocial(); });
     onboardStep = 1;
   } catch (e) {
     onboardMsg = e.message === 'offline' ? "You're offline. Tap Not now and sign in later from the Social tab." : (e.message || 'Something went wrong');
