@@ -524,6 +524,11 @@
     border: 2px dashed var(--border);
     background: transparent; cursor: pointer; margin: 0; }
   .custom-swatch-wrap.selected .custom-color-input { border: none; }
+  /* until a custom color is chosen, the slot is a rainbow swirl */
+  .custom-swatch-wrap:not(.selected) {
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 58%),
+      conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
+  .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
   /* strip the native color-picker padding on all browsers */
   .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
   .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
@@ -2466,7 +2471,7 @@ function renderNewTab() {
     <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color">
       <input type="color" id="habitCustomColor" value="${customSwatchColor}"
         class="custom-color-input" aria-label="Pick a custom color">
-      ${customSelected ? '' : "<i data-lucide='plus' class='custom-plus w-4 h-4'></i>"}
+
     </span>`;
 
   const unitOpts = UNIT_PRESETS.map(u =>
@@ -2518,25 +2523,25 @@ function renderNewTab() {
 
   root.innerHTML = `
     <div class="tab-enter space-y-6">
-      <div class="surface rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-6">
+      <div class="surface rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
           <h2 class="display text-2xl font-semibold">${isEditing ? 'Edit Habit' : 'New Habit'}</h2>
           ${isEditing ? `<button id="cancelEditBtn" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold">Cancel</button>` : ''}
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Title</label>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Title</label>
         <input id="habitTitle" type="text" placeholder="e.g. Drink water" maxlength="40" value="${escapeHtml(initTitle)}"
-          class="w-full px-4 py-3 text-sm mb-5">
+          class="w-full px-4 py-2.5 text-sm mb-4">
 
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2" for="habitNote">Note</label>
-        <textarea id="habitNote" rows="2" maxlength="200" placeholder="Optional: why, when, or how"
-          class="w-full px-4 py-3 text-sm mb-5 resize-none">${escapeHtml(initNote)}</textarea>
+        <textarea id="habitNote" rows="1" maxlength="200" placeholder="Optional: why, when, or how"
+          class="w-full px-4 py-2.5 text-sm mb-4 resize-none">${escapeHtml(initNote)}</textarea>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Type</label>
-        <div class="grid grid-cols-2 gap-2 mb-5">
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Type</label>
+        <div class="grid grid-cols-2 gap-2 mb-4">
           ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
             <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
-              class="btn-press surface-2 border rounded-xl p-3 flex items-center gap-2 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
+              class="btn-press surface-2 border rounded-xl px-3 py-2 flex items-center gap-2 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
               style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
               <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
               <span class="text-[13px] font-bold">${label}</span>
@@ -2544,27 +2549,25 @@ function renderNewTab() {
         </div>
 
         <div id="buildFields" class="${initKind === 'quit' ? 'hidden' : ''}">
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Tracking</label>
-        <div class="grid grid-cols-2 gap-2 mb-5">
-          <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Tracking</label>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl px-3 py-2 text-left"
             style="border-color:${initMode==='check' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2 mb-0.5">
+            <div class="flex items-center gap-2">
               <i data-lucide="check-square" class="w-4 h-4" style="color:${initMode==='check' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
               <span class="text-[13px] font-bold">Checkbox</span>
             </div>
-            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Tap once to mark done.</div>
           </button>
-          <button data-mode="measure" class="mode-btn ${initMode==='measure'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
+          <button data-mode="measure" class="mode-btn ${initMode==='measure'?'selected':''} btn-press surface-2 border rounded-xl px-3 py-2 text-left"
             style="border-color:${initMode==='measure' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2 mb-0.5">
+            <div class="flex items-center gap-2">
               <i data-lucide="sliders-horizontal" class="w-4 h-4" style="color:${initMode==='measure' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
               <span class="text-[13px] font-bold">Measured</span>
             </div>
-            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Log an amount each day.</div>
           </button>
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Daily target</label>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Daily target</label>
         <div class="flex items-center gap-2.5 mb-2.5">
           <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
             class="w-20 px-3 py-3 text-sm text-center font-bold">
@@ -2576,15 +2579,15 @@ function renderNewTab() {
         <div class="mb-5"></div>
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Days</label>
-        <div class="flex gap-1.5 mb-2">
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Days</label>
+        <div class="flex gap-1.5 mb-1.5">
           ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
             `<button type="button" data-day-preset="${k}" class="day-preset btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold ${presetOf(curDays()) === k ? 'on' : ''}">${l}</button>`).join('')}
         </div>
-        <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-5">${dayChips}</div>
+        <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-4">${dayChips}</div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2.5">Color</label>
-        <div id="colorPalette" class="flex flex-wrap gap-2.5 mb-6">${swatches}${customSwatch}</div>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Color</label>
+        <div id="colorPalette" class="flex flex-wrap gap-2 mb-5">${swatches}${customSwatch}</div>
 
         <p id="habitFormError" class="hidden text-[12px] mb-3" style="color:#b03b3b;"></p>
 
@@ -3252,6 +3255,11 @@ function renderSettingsTab() {
         settingsRow('Edit layout', '',
           `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit layout"></button>`)
       )}
+
+      ${sbSession ? section('Account',
+        settingsRow('Email', '', `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(sbSession.user?.email || '')}</span>`) +
+        settingsRow('Password', '', `<button onclick="showNewPasswordForm('', true)" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">Change password</button>`)
+      ) : ''}
 
       ${section('Your data',
         `<div class="py-3">
@@ -4335,7 +4343,6 @@ function socialProfileHTML() {
       ${net.blocked.map(id => `
       <div class="s-row"><span class="text-[13px] text-[var(--text-dim)] truncate">${escapeHtml(blockedNames()[id] || 'Someone')}</span>
         <button data-s="unblock" data-v="${id}" class="${sBtn2} h-9 px-3">Unblock</button></div>`).join('')}
-      <div class="s-row"><span class="text-[14px] font-bold">Password</span><button data-s="changePass" class="${sBtn2} h-9 px-3">Change password</button></div>
       <div class="s-row"><span class="text-[14px] font-bold">Signed in</span><button data-s="signOut" class="${sBtn2} h-9 px-3">Sign out</button></div>
     </div>`;
 }
@@ -4357,7 +4364,6 @@ async function socialClick(e) {
   switch (a) {
     case 'back': switchTab('home'); return;
     case 'refresh': net.loading = true; render(); return refreshSocial();
-    case 'changePass': showNewPasswordForm('', true); return;
     case 'autoPost':
       updateSetting(v, state.settings[v] === false);
       syncPosts().then(() => refreshSocial()).catch(() => {});
