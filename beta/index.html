@@ -558,8 +558,14 @@
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 58%),
       conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
   .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
-  .custom-swatch-wrap.pending { background: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text-faint); }
-  .custom-swatch-wrap.pending .custom-color-input { opacity: 1; }
+  .form-time { height: 44px; border-radius: 12px; }
+  .form-dd { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 12px;
+    border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); text-align: left; }
+  /* custom color picker window */
+  .cp-hue { background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+  .cp-range { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 99px; outline: none; }
+  .cp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 99px; background: #fff; border: 2px solid rgba(0,0,0,0.25); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .cp-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 99px; background: #fff; border: 2px solid rgba(0,0,0,0.25); }
   /* strip the native color-picker padding on all browsers */
   .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
   .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
@@ -569,7 +575,7 @@
     transform: translate(-50%, -50%); pointer-events: none;
     color: var(--text-dim); }
 
-  input[type="text"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
+  input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="time"], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 11px; color: var(--text); outline: none;
     transition: border-color 0.15s ease;
@@ -610,6 +616,7 @@
   .off-today[open] > summary::before { content: "\2212  "; }
   /* week board: days a habit isn't scheduled are faded but still tappable */
   [data-week-toggle][data-off] { opacity: 0.35; }
+  .cal-readonly [data-week-toggle], .cal-readonly [data-toggle-day] { pointer-events: none; cursor: default; }
   .day-chip { height: 36px; border-radius: 10px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border);
     background: var(--surface-2); color: var(--text-dim); }
   .day-chip.on, .day-preset.on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
@@ -788,6 +795,24 @@
 </nav>
 
 <!-- ============ DELETE CONFIRM MODAL ============ -->
+<!-- ============ CUSTOM COLOR PICKER ============ -->
+<div id="colorModal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+  <div class="surface rounded-2xl p-5 w-full max-w-sm space-y-4" role="dialog" aria-label="Custom color">
+    <div class="flex items-center gap-3">
+      <span id="cpPreview" class="w-12 h-12 rounded-xl shrink-0"></span>
+      <div><div class="display text-xl font-semibold">Custom color</div><div id="cpHex" class="text-[12px] text-[var(--text-dim)] uppercase"></div></div>
+    </div>
+    <div class="space-y-1.5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">Color</div>
+      <input id="cpHue" type="range" min="0" max="359" class="cp-range cp-hue" aria-label="Color"></div>
+    <div class="space-y-1.5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">Shade</div>
+      <input id="cpShade" type="range" min="22" max="78" class="cp-range" aria-label="Shade"></div>
+    <div class="flex gap-2.5 pt-1">
+      <button type="button" id="cpReset" class="btn-press flex-1 surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold">Reset</button>
+      <button type="button" id="cpOk" class="btn-press flex-1 bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirmModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
   <div class="modal-enter surface rounded-2xl w-full max-w-xs p-6 text-center">
     <div class="surface-2 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border" style="border-color:#e3b3b3;">
@@ -1084,6 +1109,7 @@ function migrateData(raw) {
         kind: h.kind === 'quit' ? 'quit' : 'build',
         days: cleanDays(h.days),
         share: ['friends', 'public'].includes(h.share) ? h.share : 'private',
+        remind: cleanRemind(h.remind),
       }));
     // a habit to quit is always a simple yes/no
     safe.habits.forEach(h => { if (h.kind === 'quit') h.trackingMode = 'check'; });
@@ -1184,8 +1210,16 @@ function addHabit(title, goal, unit, color, trackingMode, extra = {}) {
     note: String(extra.note || '').trim().slice(0, 200),
     kind,
     days: cleanDays(extra.days),
+    remind: cleanRemind(extra.remind),
   });
   saveData();
+}
+/* reminder time as 'HH:MM' (24h), or '' for none */
+function cleanRemind(v) { return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : ''; }
+function remindLabel(v) {
+  if (!v) return '';
+  const [h, m] = v.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 /* Update an existing habit's editable fields in place. History is
@@ -1204,6 +1238,7 @@ function updateHabit(id, patch) {
   }
   if (typeof patch.note === 'string') h.note = patch.note.trim().slice(0, 200);
   if (Array.isArray(patch.days)) h.days = cleanDays(patch.days);
+  if (typeof patch.remind === 'string') h.remind = cleanRemind(patch.remind);
   if (h.kind === 'quit') h.trackingMode = 'check';
   saveData();
 }
@@ -2453,7 +2488,42 @@ let formTrackingMode = 'check';  // 'check' | 'measure'
 let formKind = 'build';          // 'build' | 'quit' (new habits only)
 let formDays = [];    // weekdays the new habit is due (none until picked)
 let formCustomColor = null;
-let lastPresetColor = null;        // preset in use before a custom color, for Reset      // hex string when user picks via the color input
+let lastPresetColor = null;        // preset in use before a custom color, for Reset
+
+/* custom color window: a hue slider and a shade slider. done(hex) on
+   Confirm, done(null) on Reset; tapping outside closes without a change */
+function hslHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, '0');
+  return '#' + f(0) + f(8) + f(4);
+}
+function hexHsl(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: Math.round((h * 60 + 360) % 360), l: Math.round(l * 100) };
+}
+function openColorPicker(current, done) {
+  const m = document.getElementById('colorModal');
+  const hue = m.querySelector('#cpHue'), shade = m.querySelector('#cpShade');
+  const start = current && /^#[0-9a-f]{6}$/i.test(current) ? hexHsl(current) : { h: 165, l: 45 };
+  hue.value = start.h; shade.value = Math.max(22, Math.min(78, start.l));
+  const color = () => hslHex(+hue.value, 62, +shade.value);
+  const paint = () => {
+    const c = color();
+    m.querySelector('#cpPreview').style.background = c;
+    m.querySelector('#cpHex').textContent = c;
+    shade.style.background = `linear-gradient(to right, ${hslHex(+hue.value, 62, 22)}, ${hslHex(+hue.value, 62, 50)}, ${hslHex(+hue.value, 62, 78)})`;
+  };
+  hue.oninput = paint; shade.oninput = paint; paint();
+  const close = () => m.classList.add('hidden');
+  m.querySelector('#cpOk').onclick = () => { close(); done(color()); };
+  m.querySelector('#cpReset').onclick = () => { close(); done(null); };
+  m.onclick = e => { if (e.target === m) close(); };
+  m.classList.remove('hidden');
+}      // hex string when user picks via the color input
 let editingId = null;            // when set, form is editing an existing habit
 let editDraft = null;            // working copy of the habit being edited;
                                  // committed by Save Changes, discarded by Cancel
@@ -2500,9 +2570,8 @@ function renderNewTab() {
   // a hidden input. Programmatic .click() on a hidden color input is refused
   // by Safari; a directly-tappable, visible input works everywhere.
   const customSwatch = `
-    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color">
-      <input type="color" id="habitCustomColor" value="${customSwatchColor}"
-        class="custom-color-input" aria-label="Pick a custom color">
+    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color" style="${customSelected ? `background:${initColor}` : ''}">
+      <button type="button" id="habitCustomColor" class="custom-color-input" aria-label="Pick a custom color"></button>
 
     </span>`;
 
@@ -2535,7 +2604,7 @@ function renderNewTab() {
             <div class="display text-base font-semibold truncate">${escapeHtml(h.title)}</div>
             <div class="text-[11px] text-[var(--text-dim)]">
               ${isQuit(h) ? "<span style='color:var(--gold)'>quit</span>" : `${h.goal} ${escapeHtml(h.unit)}`}
-              &middot; ${daysLabel(h.days)}
+              &middot; ${daysLabel(h.days)}${h.remind ? ` &middot; ${remindLabel(h.remind)}` : ''}
               ${h.trackingMode === 'measure' ? "&middot; <span style='color:var(--gold)'>measured</span>" : ''}
             </div>
           </div>
@@ -2595,34 +2664,48 @@ function renderNewTab() {
           </div>
         </div>
 
-        <div id="buildFields" class="${initKind === 'quit' ? 'hidden' : ''}">
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Daily target</label>
-        <div class="flex items-center gap-2.5 mb-2.5">
-          <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
-            class="w-20 px-3 py-3 text-sm text-center font-bold">
-          <select id="habitUnit" class="flex-1 px-4 py-3 text-sm">${unitOpts}</select>
+        <div class="flex gap-3 mb-4">
+          <div id="buildFields" class="flex-1 min-w-0 ${initKind === 'quit' ? 'hidden' : ''}">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Daily target</label>
+            <div class="flex items-center gap-1.5">
+              <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
+                class="w-11 px-1 py-2.5 text-sm text-center font-bold">
+              <select id="habitUnit" class="flex-1 min-w-0 pl-2.5 pr-5 py-2.5 text-sm" style="background-position:right 7px center">${unitOpts}</select>
+            </div>
+            <input id="habitCustomUnit" type="text" placeholder="Custom unit" maxlength="16"
+              value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
+              class="w-full px-3 py-2.5 text-sm mt-1.5 ${unitIsPreset ? 'hidden' : ''}">
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Days</label>
+            <button type="button" id="daysToggle" class="form-dd w-full" aria-expanded="false">
+              <span id="daysLabel" class="truncate">${curDays().length ? daysLabel(curDays()) : 'Pick days'}</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 dd-chev"></i>
+            </button>
+          </div>
         </div>
-        <input id="habitCustomUnit" type="text" placeholder="Enter custom unit (e.g. chapters)" maxlength="16"
-          value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
-          class="w-full px-4 py-3 text-sm ${unitIsPreset ? 'hidden' : ''}">
-        <div class="mb-5"></div>
+        <div id="daysPanel" class="hidden mb-4">
+          <div class="flex gap-1.5 mb-1.5">
+            ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
+              `<button type="button" data-day-preset="${k}" class="day-preset btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold ${presetOf(curDays()) === k ? 'on' : ''}">${l}</button>`).join('')}
+          </div>
+          <div id="dayChips" class="grid grid-cols-7 gap-1.5">${dayChips}</div>
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Days</label>
-        <div class="flex gap-1.5 mb-1.5">
-          ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
-            `<button type="button" data-day-preset="${k}" class="day-preset btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold ${presetOf(curDays()) === k ? 'on' : ''}">${l}</button>`).join('')}
+        <div class="flex gap-3 mb-4">
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Color</label>
+            <button type="button" id="colorToggle" class="form-dd w-full" aria-expanded="false">
+              <span id="colorCurrent" class="w-6 h-6 rounded-md shrink-0" style="background:${initColor}"></span>
+              <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 dd-chev"></i>
+            </button>
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5" for="habitRemind">Reminder</label>
+            <input id="habitRemind" type="time" value="${editing ? (editing.remind || '') : ''}" class="w-full px-3 text-sm form-time" aria-label="Reminder time (optional)">
+          </div>
         </div>
-        <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-4">${dayChips}</div>
-
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Color</label>
-        <div id="colorPalette" class="flex flex-wrap gap-2 mb-3">${swatches}${customSwatch}</div>
-        <div id="customColorBar" class="hidden items-center gap-2 mb-3">
-          <span class="text-[12px] font-bold text-[var(--text-dim)] flex-1" id="customColorLabel">New color</span>
-          <button type="button" id="customColorReset" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[12px] font-bold">Reset</button>
-          <button type="button" id="customColorOk" class="btn-press bg-[var(--text)] text-[var(--bg)] rounded-lg h-8 px-3 text-[12px] font-bold">Confirm</button>
-        </div>
-        <div class="mb-2"></div>
+        <div id="colorPalette" class="hidden flex-wrap gap-2 mb-4">${swatches}${customSwatch}</div>
 
         <p id="habitFormError" class="hidden text-[12px] mb-3" style="color:#b03b3b;"></p>
 
@@ -2663,21 +2746,13 @@ function renderNewTab() {
     });
     // custom swatch: selected if formColor isn't in the preset list
     const customWrap = root.querySelector('.custom-swatch-wrap');
-    const customInputEl = root.querySelector('#habitCustomColor');
-    if (customWrap && customInputEl) {
+    if (customWrap) {
       const isCustom = !PALETTE.includes(formColor);
       customWrap.classList.toggle('selected', isCustom);
-      if (isCustom) {
-        // show the picked color as the swatch fill; hide the "+" glyph
-        customInputEl.value = formColor;
-        const plus = customWrap.querySelector('.custom-plus');
-        if (plus) plus.style.display = 'none';
-      } else {
-        // reset visible fill and restore the "+" glyph
-        const plus = customWrap.querySelector('.custom-plus');
-        if (plus) plus.style.display = '';
-      }
+      customWrap.style.background = isCustom ? formColor : '';
     }
+    const cur = root.querySelector('#colorCurrent');
+    if (cur) cur.style.background = formColor;
     // mode buttons: swap the accent border/icon color
     root.querySelectorAll('[data-mode]').forEach(el => {
       const active = el.dataset.mode === formTrackingMode;
@@ -2694,8 +2769,7 @@ function renderNewTab() {
       formColor = chosen;
       formCustomColor = null;
       if (editing) editing.color = chosen;
-      pendingColor = null;
-      refreshSelections(); showBar();
+      refreshSelections();
     });
   });
 
@@ -2704,41 +2778,33 @@ function renderNewTab() {
   // fires when they confirm. Only refresh the selection visuals — never
   // re-render the whole form, so typed input in the title/goal fields
   // is preserved.
-  // a picked custom color waits for Confirm; Reset throws it away (or, if a
-  // custom color is already in use, goes back to the last preset)
-  const customInput = root.querySelector('#habitCustomColor');
-  const bar = root.querySelector('#customColorBar');
-  const wrap = root.querySelector('.custom-swatch-wrap');
-  let pendingColor = null;
-  const showBar = () => {
-    const custom = !PALETTE.includes(formColor);
-    const on = !!pendingColor || custom;
-    bar.classList.toggle('hidden', !on); bar.classList.toggle('flex', on);
-    root.querySelector('#customColorOk').classList.toggle('hidden', !pendingColor);
-    root.querySelector('#customColorLabel').textContent = pendingColor ? 'Use this color?' : 'Custom color';
-    wrap.classList.toggle('pending', !!pendingColor);
-  };
-  if (customInput) {
-    const pick = () => { pendingColor = customInput.value; showBar(); };
-    customInput.addEventListener('input', pick);
-    customInput.addEventListener('change', pick);
-    root.querySelector('#customColorOk').addEventListener('click', () => {
-      if (PALETTE.includes(formColor)) lastPresetColor = formColor;
-      formColor = pendingColor; formCustomColor = pendingColor;
-      if (editing) editing.color = pendingColor;
-      pendingColor = null; refreshSelections(); showBar();
-    });
-    root.querySelector('#customColorReset').addEventListener('click', () => {
-      if (!pendingColor && !PALETTE.includes(formColor)) {
-        formColor = lastPresetColor || PALETTE[0]; formCustomColor = null;
-        if (editing) editing.color = formColor;
+  // custom color: our own picker window, with Reset and Confirm inside it
+  root.querySelector('#habitCustomColor')?.addEventListener('click', () => {
+    openColorPicker(PALETTE.includes(formColor) ? null : formColor, chosen => {
+      if (chosen === null) {
+        // Reset: back to the preset used before the custom color
+        if (!PALETTE.includes(formColor)) formColor = lastPresetColor || PALETTE[0];
+        formCustomColor = null;
+      } else {
+        if (PALETTE.includes(formColor)) lastPresetColor = formColor;
+        formColor = chosen; formCustomColor = chosen;
       }
-      pendingColor = null;
-      customInput.value = PALETTE.includes(formColor) ? '#666666' : formColor;
-      refreshSelections(); showBar();
+      if (editing) editing.color = formColor;
+      refreshSelections();
     });
-    showBar();
-  }
+  });
+  const togglePanel = (btnId, panelId, flex) => {
+    const btn = root.querySelector(btnId), panel = root.querySelector(panelId);
+    btn.addEventListener('click', () => {
+      const open = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !open);
+      if (flex) panel.classList.toggle('flex', open);
+      btn.setAttribute('aria-expanded', open);
+      btn.querySelector('.dd-chev')?.classList.toggle('open', open);
+    });
+  };
+  togglePanel('#daysToggle', '#daysPanel');
+  togglePanel('#colorToggle', '#colorPalette', true);
 
   // tracking-mode buttons
   root.querySelectorAll('[data-mode]').forEach(btn => {
@@ -2777,6 +2843,7 @@ function renderNewTab() {
     });
     const preset = presetOf(next);
     root.querySelectorAll('[data-day-preset]').forEach(el => el.classList.toggle('on', el.dataset.dayPreset === preset));
+    root.querySelector('#daysLabel').textContent = next.length ? daysLabel(next) : 'Pick days';
   };
   root.querySelectorAll('[data-day]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2848,6 +2915,7 @@ function submitHabit() {
   const unit = unitSel.value === 'custom' ? customUnit.value.trim() : unitSel.value;
   const err = root.querySelector('#habitFormError');
   const note = root.querySelector('#habitNote').value;
+  const remind = root.querySelector('#habitRemind').value;
   const days = editingId && editDraft ? editDraft.days : formDays;
   const quit = (editingId && editDraft ? editDraft.kind : formKind) === 'quit';
 
@@ -2861,12 +2929,12 @@ function submitHabit() {
     // source of truth for title/goal/unit
     const color = editDraft ? editDraft.color : formColor;
     const trackingMode = editDraft ? editDraft.trackingMode : formTrackingMode;
-    updateHabit(editingId, quit ? { title, color, note, days } : { title, goal, unit, color, trackingMode, note, days });
+    updateHabit(editingId, quit ? { title, color, note, days, remind } : { title, goal, unit, color, trackingMode, note, days, remind });
     editingId = null;
     editDraft = null;
     showToast('Habit updated');
   } else {
-    addHabit(title, quit ? 1 : goal, quit ? 'times' : unit, formColor, formTrackingMode, { kind: formKind, note, days });
+    addHabit(title, quit ? 1 : goal, quit ? 'times' : unit, formColor, formTrackingMode, { kind: formKind, note, days, remind });
     showToast('Habit created');
   }
   formColor = PALETTE[0];
@@ -3027,7 +3095,7 @@ function renderCalendarTab() {
       ${dayList}`;
   }
 
-  root.innerHTML = `<div class="tab-enter space-y-6">${seg}${body}</div>`;
+  root.innerHTML = `<div class="tab-enter space-y-6 cal-readonly">${seg}${body}</div>`;
 
   const calGrid = root.querySelector('#calGrid');
   if (calGrid) calGrid.appendChild(buildUnifiedCalendar());
@@ -3046,16 +3114,7 @@ function renderCalendarTab() {
     });
   });
 
-  root.querySelectorAll('[data-toggle-day]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      toggleCompletion(btn.dataset.toggleDay, selectedDay);
-      renderCalendarTab();
-      drawIcons();
-    });
-  });
-
-  bindWeekGrid(root, renderCalendarTab);
+  // the calendar is for looking back only: habits are checked off on Home
 
   root.querySelectorAll('[data-year-day]').forEach(el => {
     el.addEventListener('click', () => { selectedDay = el.dataset.yearDay; calMode = 'day'; renderCalendarTab(); });
@@ -3969,9 +4028,11 @@ function groupStreak(g) {
 }
 
 /* ---- UI ---- */
+/* filled three-person icon for groups */
+const GROUP_SVG = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="6.6" r="3.3"/><circle cx="5" cy="9" r="2.4"/><circle cx="19" cy="9" r="2.4"/><path d="M5.6 20.5c0-3.9 2.9-6.8 6.4-6.8s6.4 2.9 6.4 6.8z"/><path d="M4.3 19.3H.9c0-2.9 1.8-5 4.1-5 .8 0 1.5.2 2.1.6-1.6 1.1-2.6 2.6-2.8 4.4z"/><path d="M19.7 19.3h3.4c0-2.9-1.8-5-4.1-5-.8 0-1.5.2-2.1.6 1.6 1.1 2.6 2.6 2.8 4.4z"/></svg>`;
 function socialSeg(key, options, current, iconsOnly = false) {
   return `<div class="surface rounded-xl p-1 grid gap-1" style="grid-template-columns:repeat(${options.length},1fr)">
-    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
+    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic === 'group-fill' ? GROUP_SVG(iconsOnly ? 22 : 14) : ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
   </div>`;
 }
 const sLabel = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
@@ -3998,7 +4059,7 @@ function renderSocialTab() {
     body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? `Couldn't load: ${escapeHtml(net.error)}` : 'Loading...'}</div>`;
     if (!net.loading && !net.error) refreshSocial();
   } else {
-    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'smile'], ['groups', 'Groups', 'flag'], ['profile', 'Privacy', 'lock']], social.view, true);
+    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'smile'], ['groups', 'Groups', 'group-fill'], ['profile', 'Privacy', 'lock']], social.view, true);
     const nudges = net.nudgesIn.length ? `
       <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
         <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
@@ -4244,10 +4305,10 @@ function socialFriendsHTML() {
 }
 
 /* groups */
-/* groups get a rounded square with a flag; people get round initials */
+/* groups get a rounded square with the group icon; people get round initials */
 function groupBadgeHTML(g, size = 40) {
   const c = personColor('group:' + g.id);
-  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}"><i data-lucide="flag" style="width:${Math.round(size * 0.5)}px;height:${Math.round(size * 0.5)}px"></i></span>`;
+  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}">${GROUP_SVG(Math.round(size * 0.6))}</span>`;
 }
 function socialGroupsHTML() {
   const today = todayISO();
@@ -4665,7 +4726,7 @@ const TOUR = [
   { tab: 'home', target: '.tab-btn[data-tab="new"] .tab-icon-wrap', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
   { tab: 'social', target: '.tab-btn[data-tab="social"]', title: 'Do it with friends', body: 'Social has your feed, friends and groups. You choose which habits anyone can see.' },
   { tab: 'stats', target: '.tab-btn[data-tab="stats"]', title: 'See your progress', body: 'Stats has your recaps for yesterday, last week, month and year, plus the milestones you unlock.' },
-  { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year. Tap a day to fix a missed check-in.' },
+  { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year, shaded by how much you got done.' },
   { tab: 'home', target: '.s-settings-btn', title: 'Make it yours', body: 'Settings has themes, styles, text size, calendar looks and your home layout. You can replay this tour there too.' },
 ];
 let onboardStep = 0, onboardMode = 'signup', onboardMsg = '', onboardBusy = false;
