@@ -1,7 +1,7 @@
 /* Cadence service worker — enables offline use.
    Bump CACHE_VERSION whenever index.html or assets change so clients
    pick up the new files instead of a stale cache. */
-const CACHE_VERSION = 'cadence-v23';
+const CACHE_VERSION = 'cadence-v24';
 
 /* The app shell: local files that make up the installable app. */
 const APP_SHELL = [
@@ -85,4 +85,30 @@ self.addEventListener('fetch', (event) => {
         .catch(() => caches.match(request))
     );
   }
+});
+
+/* Push notifications: reminders, nudges, cheers, likes, comments and posts
+   arrive from the Cadence server as { title, body, tag, url }. */
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(d.title || 'Cadence', {
+    body: d.body || '',
+    tag: d.tag,
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    data: { url: d.url || './' },
+  }));
+});
+
+/* tapping a notification opens Cadence (or brings it to the front) */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || './', self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) if ('focus' in c) return c.focus();
+      return self.clients.openWindow(url);
+    })
+  );
 });
