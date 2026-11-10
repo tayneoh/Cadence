@@ -413,6 +413,8 @@
   .day-sq-sub { font-size: 12px; opacity: 0.8; }
   .drag-handle { touch-action: none; cursor: grab; }
   [data-habit-row].dragging { position: relative; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: none; }
+  input[type="text"].s-code-input { background: transparent; border: 0; border-radius: 0; padding: 0; height: 40px; width: 0; flex: 1 1 0; min-width: 0; text-transform: uppercase; letter-spacing: 0.08em; }
+  input[type="text"].s-code-input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 500; }
   .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
@@ -4454,19 +4456,21 @@ function hiddenSuggestions() {
 }
 function socialFriendsHTML() {
   const code = net.me?.friend_code || '';
-  const add = social.adding ? `
-    <div class="surface rounded-2xl p-4 space-y-3">
-      <div class="text-[12px] text-[var(--text-dim)]">Your friend code</div>
-      <div class="flex items-center gap-2">
-        <span class="s-code flex-1">${escapeHtml(code)}</span>
-        <button data-s="copy" data-v="${escapeHtml(code)}" class="${sBtn2} h-10 px-4">Copy</button>
+  // two small bubbles: your code (tap to copy), and a box for a friend's code
+  const add = `
+    <div class="grid grid-cols-2 gap-2.5">
+      <button data-s="copy" data-v="${escapeHtml(code)}" class="btn-press surface rounded-2xl px-3.5 h-14 text-left flex items-center gap-2 min-w-0" aria-label="Copy your friend code">
+        <div class="flex-1 min-w-0">
+          <div class="text-[10px] uppercase tracking-[0.14em] text-[var(--text-faint)]">Your code</div>
+          <div class="text-[15px] font-bold tracking-[0.12em] truncate">${escapeHtml(code)}</div>
+        </div>
+        <i data-lucide="copy" class="w-4 h-4 text-[var(--text-dim)] shrink-0"></i>
+      </button>
+      <div class="surface rounded-2xl pl-3 pr-1.5 h-14 flex items-center gap-1.5 min-w-0">
+        <input id="sFriendCode" type="text" maxlength="12" placeholder="Friend's code" class="s-code-input flex-1 min-w-0 text-[14px] font-bold" autocapitalize="characters" autocomplete="off">
+        <button data-s="addFriend" class="${sBtn} w-10 h-10 shrink-0 flex items-center justify-center" aria-label="Add friend"><i data-lucide="plus" class="w-4 h-4"></i></button>
       </div>
-      <div class="text-[12px] text-[var(--text-dim)] pt-1">Have a friend's code?</div>
-      <div class="flex gap-2">
-        <input id="sFriendCode" type="text" maxlength="12" placeholder="e.g. 7F3A2C" class="flex-1 min-w-0 px-4 py-2.5 text-sm" autocapitalize="characters">
-        <button data-s="addFriend" class="${sBtn} px-4">Add</button>
-      </div>
-    </div>` : '';
+    </div>`;
   const requests = net.requests.length ? `
     <div>${sLabel('Requests')}
       <div class="space-y-2.5">${net.requests.map(id => `
@@ -4541,11 +4545,9 @@ function socialFriendsHTML() {
         </div>`).join('')}</div></div>` : '';
   return `
     ${cheers}${suggestions}
-    <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
-      <i data-lucide="${social.adding ? 'x' : 'user-plus'}" class="w-4 h-4"></i>${social.adding ? 'Close' : 'Add a friend'}</button>
     ${add}${requests}
     <div>${sLabel(`Friends (${net.friends.length})`)}
-      <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Tap Add a friend and share your code.</p>'}</div></div>
+      <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Share your code above, or enter a friend&rsquo;s code.</p>'}</div></div>
     ${sent}`;
 }
 
