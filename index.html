@@ -3492,14 +3492,14 @@ function renderSettingsTab() {
     const email = sbSession?.user?.email || '';
     body = card(
       settingsRow('Name', '',
-        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
+        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml((email && net.me?.name) || st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
       settingsRow('Email', '', email
         ? `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(email)}</span>`
         : `<span class="text-[12px] text-[var(--text-faint)]">Not signed in</span>`) +
       settingsRow('Password', '', email
         ? smallBtn(`onclick="showNewPasswordForm('', true)"`, 'Change password')
         : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
-    );
+    ) + (email ? `<div class="mt-6">${card(settingsRow('Signed in', '', smallBtn('onclick="signOutNow()"', 'Sign out')))}</div>` : '');
   } else if (settingsPage === 'custom') {
     body = card(
       settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
@@ -3564,7 +3564,12 @@ function renderSettingsTab() {
     btn.addEventListener('click', () => openSettingsPage(btn.dataset.page || null));
   });
   const nameInput = root.querySelector('#setName');
-  if (nameInput) nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
+  if (nameInput) nameInput.addEventListener('change', () => {
+    const n = nameInput.value.trim();
+    updateSetting('name', n);
+    if (sbSession && n) { if (net.me) net.me.name = n; socialRename(n); }   // one name for the app and friends
+    render();
+  });
 
   root.querySelectorAll('[data-dd]').forEach(btn => {
     btn.addEventListener('click', () => { openPicker = openPicker === btn.dataset.dd ? null : btn.dataset.dd; render(); });
@@ -4738,13 +4743,8 @@ function socialProfileHTML() {
   const today = todayISO();
   const done = friendSees.filter(h => isDayDone(h, today)).length;
   return `
-    <div>${sLabel('Profile')}
+    <div>${sLabel('Who can see your profile')}
       <div class="surface rounded-2xl p-4 space-y-3">
-        <div class="flex items-center gap-3">${avatarHTML(myId(), 44)}
-          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold truncate">${escapeHtml(personName(myId()))}</div>
-          <div class="text-[11px] text-[var(--text-dim)] truncate">${escapeHtml(sbSession.user.email || '')}</div></div>
-          <button data-s="rename" class="${sBtn2} h-9 px-3">Rename</button>
-        </div>
         ${socialSeg('profile', [['private', 'Private', 'lock'], ['friends', 'Friends', 'users'], ['public', 'Public', 'globe']], p)}
         <p class="text-[12px] text-[var(--text-dim)] px-1">${hint}</p>
       </div></div>
@@ -4796,7 +4796,6 @@ function socialProfileHTML() {
       ${net.blocked.map(id => `
       <div class="s-row"><span class="text-[13px] text-[var(--text-dim)] truncate">${escapeHtml(blockedNames()[id] || 'Someone')}</span>
         <button data-s="unblock" data-v="${id}" class="${sBtn2} h-9 px-3">Unblock</button></div>`).join('')}
-      <div class="s-row"><span class="text-[14px] font-bold">Signed in</span><button data-s="signOut" class="${sBtn2} h-9 px-3">Sign out</button></div>
     </div>`;
 }
 
@@ -4932,12 +4931,6 @@ async function socialClick(e) {
       return refreshSocial();
     }
     case 'profile': return act(() => sb.from('profiles').update({ visibility: v }).eq('id', uid));
-    case 'rename': {
-      social.view = 'profile';
-      const cur = personName(uid);
-      el.outerHTML = `<form class="flex gap-2" onsubmit="event.preventDefault();socialRename(this.n.value)"><input name="n" type="text" maxlength="30" value="${escapeHtml(cur)}" class="w-32 px-3 py-2 text-sm"><button class="${sBtn} px-3 h-9">Save</button></form>`;
-      return;
-    }
     case 'vis': {
       const [id, o] = v.split('|');
       const h = state.habits.find(x => x.id === id);
@@ -4946,15 +4939,17 @@ async function socialClick(e) {
     }
     case 'toggleNotes': return act(async () => { const r = await sb.from('profiles').update({ show_notes: !net.me.show_notes }).eq('id', uid); net.me.show_notes = !net.me.show_notes; syncShared(); return r; });
     case 'toggleStreaks': return act(async () => { const r = await sb.from('profiles').update({ show_streaks: net.me.show_streaks === false }).eq('id', uid); net.me.show_streaks = net.me.show_streaks === false; syncShared(); return r; });
-    case 'signOut':
-      await sb.auth.signOut(); sbSession = null;
-      Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
-      break;
     default: return;
   }
   render();
   // the smiley opens the keyboard straight away so any emoji can be picked
   if (a === 'reactMenu' && social.openReact) document.getElementById('sEmoji-' + social.openReact)?.focus();
+}
+async function signOutNow() {
+  try { await sb.auth.signOut(); } catch (e) {}
+  sbSession = null;
+  Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
+  settingsPage = null; render(); showToast('Signed out');
 }
 async function socialRename(name) {
   name = String(name || '').trim().slice(0, 30);
