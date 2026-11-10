@@ -403,6 +403,13 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
   .wv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
   .wv-row { display: flex; align-items: center; gap: 4px; height: 16px; }
+  .wv-sq { width: 18px; height: 16px; border-radius: 4px; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .wk-sq { position: relative; border-radius: 8px; background: var(--surface-2); aspect-ratio: 1 / 1.15; display: flex; align-items: center; justify-content: center; padding-top: 10px; }
+  .wk-sq .sq-num { position: absolute; top: 4px; left: 5px; font-size: 9px; line-height: 1; opacity: 0.75; white-space: nowrap; }
+  .wk-sq .sq-frac { font-size: 14px; font-weight: 700; line-height: 1; }
+  .wk-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+  .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
   .wv-circle i { width: 7px; height: 7px; border: 1.5px solid var(--text); border-radius: 2px; }
   .wv-circle.on i { background: color-mix(in srgb, var(--gold) 45%, transparent); }
@@ -931,9 +938,9 @@ const DEFAULT_SETTINGS = {
   calDefault: 'month',    // view the Calendar tab opens on
   style: 'classic',       // shapes, surfaces and textures: a key of APP_STYLES
   font: 'auto',           // type: 'auto' follows the style, or a key of APP_STYLES
-  weekStyle: 'circles',
+  weekStyle: 'gradient', // week board look: 'gradient' | 'circles' | 'tiles' | 'dots' | 'pills' | 'bars' | 'plain'
   monthLook: 'squares',   // month calendar: 'squares' | 'dots' | 'color' | 'colorcount' | 'count'
-  yearLook: 'color',      // year calendar: 'color' | 'colorcount' | 'count'   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
+  yearLook: 'colorcount', // year calendar: 'color' | 'colorcount' | 'count'
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
   textSize: 'l',          // 's' | 'm' | 'l' | 'xl': scales the whole app
@@ -964,7 +971,7 @@ const APP_STYLES = [
 ];
 const MONTH_LOOKS = [['squares', 'Squares'], ['dots', 'Dots'], ['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
 const YEAR_LOOKS = [['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
-const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
+const WEEK_STYLES = [['gradient','Gradient'],['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
   ['bars','Bars'],['plain','Plain']];
 /* light or dark, after resolving Auto against the device */
 function effectiveMode() {
@@ -1041,7 +1048,7 @@ function cleanSettings(raw) {
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
   if (MONTH_LOOKS.some(([v]) => v === raw.monthLook)) out.monthLook = raw.monthLook;
   if (YEAR_LOOKS.some(([v]) => v === raw.yearLook)) out.yearLook = raw.yearLook;
-  if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
+  out.layout = 'focus';   // the Everything layout was retired; Home is always Focus
   if (['s','m','l','xl'].includes(raw.textSize)) out.textSize = raw.textSize;
   if (Array.isArray(raw.homeOrder)) {
     // keep known sections in the saved order, then append any new ones
@@ -1646,6 +1653,25 @@ function weekGridHTML(start) {
     ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:${opacity};"></span>` : '';
   const countOf = h => days.filter(iso => isDayDone(h, iso)).length;
 
+  if (style === 'gradient') {
+    // like the month squares: each day shaded by how close it got to 100%,
+    // with done/due in the middle, then each habit's count for the week
+    const sq = days.map(iso => {
+      const future = iso > today, c = dayCount(iso), score = c.due ? c.done / c.due : 0;
+      return `<div class="wk-sq ${future ? 'future' : ''} ${iso === today ? 'is-today' : ''}" style="${future ? '' : heatBg(score)}${!future && score >= 0.8 ? 'color:var(--bg);' : ''}">
+          <span class="sq-num">${letter(iso)} ${fromISO(iso).getDate()}</span>
+          ${!future && c.due ? `<span class="sq-frac">${c.done}<small>/${c.due}</small></span>` : ''}</div>`;
+    }).join('');
+    const rows = state.habits.map(h => {
+      const due = days.filter(iso => isDue(h, iso) && iso >= habitStart(h)).length;
+      return `<div class="flex items-center gap-2 text-[12px]">
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${hc(h)}"></span>
+          <span class="truncate flex-1">${escapeHtml(h.title)}</span>
+          <span class="text-[var(--text-dim)] shrink-0">${countOf(h)}/${due}</span></div>`;
+    }).join('');
+    return `<div class="grid grid-cols-7 gap-1.5">${sq}</div>${rows ? `<div class="space-y-2 mt-4">${rows}</div>` : ''}`;
+  }
+
   if (style === 'dots') {
     let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
     state.habits.forEach(h => {
@@ -1939,7 +1965,7 @@ function render() {
     now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
 
   const greet = document.getElementById('greeting');
-  const name = state.settings.name.trim();
+  const name = state.settings.name.trim().split(/\s+/)[0];
   greet.classList.toggle('hidden', !name);
   if (name) {
     const hr = now.getHours();
@@ -2349,14 +2375,14 @@ function renderHomeTab(page = 'home') {
   } else {
     const now = new Date();
     const hr = now.getHours();
-    const name = state.settings.name.trim();
+    const name = state.settings.name.trim().split(/\s+/)[0];   // first name only
     dashHeader = `
       <div class="pt-1 flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
           <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
         </div>
-        <button onclick="switchTab('settings')" class="s-friends-btn s-settings-btn surface btn-press" aria-label="Settings">
+        <button onclick="settingsPage=null; switchTab('settings')" class="s-friends-btn s-settings-btn surface btn-press" aria-label="Settings">
           <i data-lucide="settings" class="w-5 h-5"></i></button>
       </div>`;
   }
@@ -3332,6 +3358,7 @@ function weekStyleSample(style) {
   const on = [1, 1, 0, 1];
   const cells = cls => on.map(v => `<span class="${cls} ${v ? 'on' : ''}"><i></i></span>`).join('');
   const body = {
+    gradient: [[2, 3], [3, 3], [1, 3], [3, 3]].map(([d, n]) => `<span class="wv-sq" style="background:color-mix(in srgb, var(--gold) ${Math.round(10 + 90 * d / n)}%, var(--surface-2));${d / n >= 0.8 ? 'color:var(--bg);' : ''}">${d}/${n}</span>`).join(''),
     circles: cells('wv-circle'),
     tiles: cells('wv-tile'),
     dots: cells('wv-dot'),
@@ -3359,90 +3386,91 @@ function accentDropdown(cur, accents) {
     </div>`;
 }
 
+/* Settings is a short menu; each entry opens its own page */
+let settingsPage = null;   // null = menu, or 'personal' | 'custom' | 'appearance'
+function openSettingsPage(pg) { settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0); }
+
 function renderSettingsTab() {
   const root = document.getElementById('tab-settings');
   const st = state.settings;
-  const last = readLastBackup();
-  const lastLabel = last
-    ? 'Last backup: ' + new Date(last).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })
-    : 'No backup saved from this device yet.';
   const accents = PALETTE.map(c =>
     `<button data-accent="${c}" class="swatch ${c === st.accent ? 'selected' : ''}" style="background:${c}; width:30px; height:30px; border-radius:9px;" aria-label="Accent ${c}"></button>`).join('');
-  const section = (title, body) => `
-    <div>
-      <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${title}</h3>
-      <div class="surface rounded-2xl px-4 py-1">${body}</div>
-    </div>`;
+  const card = body => `<div class="surface rounded-2xl px-4 py-1">${body}</div>`;
+  const label = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
+  const smallBtn = (attrs, text) => `<button ${attrs} class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">${text}</button>`;
+  const menuRow = (pg, icon, text) => `
+    <button data-page="${pg}" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] first:border-t-0 text-left">
+      <i data-lucide="${icon}" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
+      <span class="flex-1 min-w-0 text-[14px] font-bold">${text}</span>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
+    </button>`;
+  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance' };
+  const header = settingsPage
+    ? `<button data-page="" class="home-edit-btn" aria-label="Back to Settings"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+       <h2 class="display text-2xl font-semibold">${titles[settingsPage]}</h2>`
+    : `<button onclick="switchTab('home')" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+       <h2 class="display text-3xl font-semibold">Settings</h2>`;
 
-  root.innerHTML = `
-    <div class="tab-enter space-y-6">
-      <div class="flex items-center gap-3 px-1">
-        <button onclick="switchTab('home')" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-        <h2 class="display text-3xl font-semibold">Settings</h2>
-      </div>
-
-      ${section('Personalize',
-        settingsRow('Your name', '',
-          `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
-        settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
-        settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
+  let body;
+  if (settingsPage === 'personal') {
+    const email = sbSession?.user?.email || '';
+    body = card(
+      settingsRow('Name', '',
+        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
+      settingsRow('Email', '', email
+        ? `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(email)}</span>`
+        : `<span class="text-[12px] text-[var(--text-faint)]">Not signed in</span>`) +
+      settingsRow('Password', '', email
+        ? smallBtn(`onclick="showNewPasswordForm('', true)"`, 'Change password')
+        : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
+    );
+  } else if (settingsPage === 'custom') {
+    body = card(
+      settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
+      settingsRow('Notifications', '', switchHTML('badge')) +
+      settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
+      settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
+    );
+  } else if (settingsPage === 'appearance') {
+    body = `<div class="space-y-6">
+      ${card(
+        settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
+        settingsRow('Color-code habits', '', switchHTML('habitColors')) +
         accentDropdown(st.accent, accents) +
-        settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']])) +
-        settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
-        settingsRow('Notifications', '', switchHTML('badge')) +
-        settingsRow('Walkthrough', '', `<button onclick="startOnboarding(1)" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">Show again</button>`)
+        dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
+        dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
+        settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']]))
       )}
-
-      ${section('Calendar',
+      <div>${label('Calendar')}${card(
         dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
         dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
         dropdownHTML('Year view', 'yearLook', YEAR_LOOKS, 'wv-chip', ([val, name]) => yearLookSample(val) + `<span>${name}</span>`)
-      )}
+      )}</div>
+    </div>`;
+  } else {
+    body = card(
+      menuRow('personal', 'user', 'Personal information') +
+      menuRow('custom', 'sliders-horizontal', 'Customizations') +
+      menuRow('appearance', 'palette', 'Appearance') +
+      `<button onclick="startOnboarding(1)" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] text-left">
+        <i data-lucide="map" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
+        <span class="flex-1 min-w-0 text-[14px] font-bold">Walkthrough</span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
+      </button>`
+    );
+  }
 
-      ${section('Appearance',
-        settingsRow('Color-code habits', '', switchHTML('habitColors')) +
-        dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
-        dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name)
-      )}
-
-      ${section('Home screen',
-        settingsRow('Layout', '', segHTML('layout', [['focus','Focus'],['full','Everything']])) +
-        settingsRow('Edit layout', '',
-          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit layout"></button>`)
-      )}
-
-      ${sbSession ? section('Account',
-        settingsRow('Email', '', `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(sbSession.user?.email || '')}</span>`) +
-        settingsRow('Password', '', `<button onclick="showNewPasswordForm('', true)" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">Change password</button>`)
-      ) : ''}
-
-      ${section('Your data',
-        `<div class="py-3">
-           <p class="text-[12px] font-bold mb-3" style="color:${last ? 'var(--text)' : '#b5651d'}">${lastLabel}</p>
-           <button id="downloadBackupBtn"
-             class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 mb-2.5" style="min-height:44px;">
-             <i data-lucide="download" class="w-4 h-4"></i><span>Save backup file</span>
-           </button>
-           <label for="restoreFileInput"
-             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 cursor-pointer" style="min-height:44px;">
-             <i data-lucide="upload" class="w-4 h-4"></i><span>Restore from file…</span>
-           </label>
-           <input id="restoreFileInput" type="file" accept=".json,application/json,text/plain" class="visually-hidden">
-         </div>`
-      )}
-
-      ${section('Widget',
-        `<div class="py-3">
-           <button id="exportBtn"
-             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2" style="min-height:44px;">
-             <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
-           </button>
-         </div>`
-      )}
+  root.innerHTML = `
+    <div class="tab-enter space-y-6">
+      <div class="flex items-center gap-3 px-1">${header}</div>
+      ${body}
     </div>`;
 
+  root.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => openSettingsPage(btn.dataset.page || null));
+  });
   const nameInput = root.querySelector('#setName');
-  nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
+  if (nameInput) nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
 
   root.querySelectorAll('[data-dd]').forEach(btn => {
     btn.addEventListener('click', () => { openPicker = openPicker === btn.dataset.dd ? null : btn.dataset.dd; render(); });
@@ -3458,10 +3486,7 @@ function renderSettingsTab() {
       render();
     });
   });
-  root.querySelector('#homeEditSwitch').addEventListener('click', () => {
-    homeEditing = !homeEditing;
-    if (homeEditing) switchTab('home'); else render();
-  });
+  root.querySelector('#homeEditBtn')?.addEventListener('click', () => { homeEditing = true; switchTab('home'); });
   root.querySelectorAll('[data-accent]').forEach(btn => {
     btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); openPicker = null; render(); });
   });
@@ -3474,13 +3499,6 @@ function renderSettingsTab() {
       render();
     });
   });
-
-  root.querySelector('#downloadBackupBtn').addEventListener('click', downloadBackup);
-  root.querySelector('#restoreFileInput').addEventListener('change', e => {
-    handleRestoreFile(e.target.files[0]);
-    e.target.value = '';   // allow picking the same file again
-  });
-  root.querySelector('#exportBtn').addEventListener('click', openExportModal);
 }
 
 /* ---------------------------------------------------------------------
