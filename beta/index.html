@@ -4540,13 +4540,13 @@ function socialFriendsHTML() {
           <button data-s="suggestAdd" data-v="${r.id}" class="${sBtn} h-9 px-3.5">Add</button>
         </div>`).join('')}</div></div>` : '';
   return `
-    ${cheers}
+    ${cheers}${suggestions}
     <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
       <i data-lucide="${social.adding ? 'x' : 'user-plus'}" class="w-4 h-4"></i>${social.adding ? 'Close' : 'Add a friend'}</button>
     ${add}${requests}
     <div>${sLabel(`Friends (${net.friends.length})`)}
       <div class="space-y-2.5">${cards || '<p class="text-[13px] text-[var(--text-dim)] px-1">No friends yet. Tap Add a friend and share your code.</p>'}</div></div>
-    ${suggestions}${sent}`;
+    ${sent}`;
 }
 
 /* groups */
