@@ -664,6 +664,8 @@
   .s-vis button:disabled { opacity: 0.4; }
   .ob-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--border); transition: width 0.2s ease; }
   .ob-dot.on { width: 20px; background: var(--gold); }
+  .tour-lock, .tour-lock body { overflow: hidden !important; overscroll-behavior: none; }
+  #tour { touch-action: none; }
   #tourHole { position: fixed; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62), 0 0 0 2px var(--gold);
     transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease; pointer-events: none; }
   #tourHole.tour-none { box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62); }
@@ -3882,7 +3884,7 @@ function renderSocialTab() {
     body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? `Couldn't load: ${escapeHtml(net.error)}` : 'Loading...'}</div>`;
     if (!net.loading && !net.error) refreshSocial();
   } else {
-    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'heart-handshake'], ['groups', 'Groups', 'tent'], ['profile', 'Privacy', 'lock']], social.view, true);
+    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'smile'], ['groups', 'Groups', 'flag'], ['profile', 'Privacy', 'lock']], social.view, true);
     const nudges = net.nudgesIn.length ? `
       <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
         <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
@@ -3941,7 +3943,7 @@ function socialAuthHTML() {
    signs you in for long enough to choose a new password */
 async function sendPasswordReset(email) {
   email = String(email || '').trim().toLowerCase();
-  if (!email) return 'Type your email above, then tap Forgot password.';
+  if (!email) return 'Type your email first.';
   try {
     await sbStart();
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
@@ -3951,6 +3953,33 @@ async function sendPasswordReset(email) {
     return e.message === 'offline' ? "You're offline. Try again with a connection." : (e.message || 'Something went wrong');
   }
 }
+/* its own page: just an email box and a button that sends the link */
+function showForgotPage(email = '', back = () => {}, msg = '') {
+  const el = document.getElementById('onboard');
+  el.classList.remove('hidden');
+  el.innerHTML = `<div class="max-w-md mx-auto min-h-full flex flex-col justify-center gap-6" style="padding:max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))">
+      <div class="text-center">
+        <div class="ach-badge mb-5" style="animation:none"><i data-lucide="mail" class="w-10 h-10"></i></div>
+        <h1 class="display text-3xl font-semibold">Reset your password</h1>
+        <p class="text-[13px] text-[var(--text-dim)] mt-2">Enter your email and we'll send you a link to choose a new password.</p>
+      </div>
+      <form id="fpForm" class="surface rounded-2xl p-5 space-y-3">
+        <input id="fpEmail" type="email" placeholder="Email" value="${escapeHtml(email || '')}" class="w-full px-4 py-3 text-sm" autocomplete="email" autocapitalize="off" required>
+        ${msg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(msg)}</p>` : ''}
+        <button type="submit" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">Send reset link</button>
+      </form>
+      <button id="fpBack" class="text-[13px] font-bold text-[var(--text-dim)]">Back to sign in</button>
+    </div>`;
+  drawIcons();
+  el.scrollTop = 0;
+  el.querySelector('#fpBack').onclick = back;
+  el.querySelector('#fpForm').onsubmit = async e => {
+    e.preventDefault();
+    const typed = el.querySelector('#fpEmail').value;
+    el.querySelector('#fpForm button').disabled = true;
+    showForgotPage(typed, back, await sendPasswordReset(typed));
+  };
+}
 const RECOVERING = /type=recovery/.test(location.hash);
 async function checkPasswordRecovery() {
   if (!RECOVERING) return;
@@ -3959,7 +3988,7 @@ async function checkPasswordRecovery() {
   if (!sbSession) { showToast('That reset link has expired. Ask for a new one.'); return; }
   showNewPasswordForm();
 }
-function showNewPasswordForm(msg = '') {
+function showNewPasswordForm(msg = '', cancellable = false) {
   const el = document.getElementById('onboard');
   el.classList.remove('hidden');
   el.innerHTML = `<div class="max-w-md mx-auto min-h-full flex flex-col justify-center gap-6" style="padding:max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))">
@@ -3973,12 +4002,14 @@ function showNewPasswordForm(msg = '') {
         ${msg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(msg)}</p>` : ''}
         <button type="submit" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">Save password</button>
       </form>
+      ${cancellable ? `<button id="npCancel" class="text-[13px] font-bold text-[var(--text-dim)]">Cancel</button>` : ''}
     </div>`;
   drawIcons();
+  el.querySelector('#npCancel')?.addEventListener('click', () => el.classList.add('hidden'));
   el.querySelector('#npForm').onsubmit = async e => {
     e.preventDefault();
     const { error } = await sb.auth.updateUser({ password: el.querySelector('#npPass').value });
-    if (error) return showNewPasswordForm(error.message || 'Something went wrong');
+    if (error) return showNewPasswordForm(error.message || 'Something went wrong', cancellable);
     el.classList.add('hidden');
     try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (err) {}
     showToast('Password updated');
@@ -4099,10 +4130,10 @@ function socialFriendsHTML() {
 }
 
 /* groups */
-/* groups get a rounded square with a tent; people get round initials */
+/* groups get a rounded square with a flag; people get round initials */
 function groupBadgeHTML(g, size = 40) {
   const c = personColor('group:' + g.id);
-  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}"><i data-lucide="tent" style="width:${Math.round(size * 0.5)}px;height:${Math.round(size * 0.5)}px"></i></span>`;
+  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}"><i data-lucide="flag" style="width:${Math.round(size * 0.5)}px;height:${Math.round(size * 0.5)}px"></i></span>`;
 }
 function socialGroupsHTML() {
   const today = todayISO();
@@ -4301,6 +4332,7 @@ function socialProfileHTML() {
       ${net.blocked.map(id => `
       <div class="s-row"><span class="text-[13px] text-[var(--text-dim)] truncate">${escapeHtml(blockedNames()[id] || 'Someone')}</span>
         <button data-s="unblock" data-v="${id}" class="${sBtn2} h-9 px-3">Unblock</button></div>`).join('')}
+      <div class="s-row"><span class="text-[14px] font-bold">Password</span><button data-s="changePass" class="${sBtn2} h-9 px-3">Change password</button></div>
       <div class="s-row"><span class="text-[14px] font-bold">Signed in</span><button data-s="signOut" class="${sBtn2} h-9 px-3">Sign out</button></div>
     </div>`;
 }
@@ -4322,11 +4354,12 @@ async function socialClick(e) {
   switch (a) {
     case 'back': switchTab('home'); return;
     case 'refresh': net.loading = true; render(); return refreshSocial();
+    case 'changePass': showNewPasswordForm('', true); return;
     case 'autoPost':
       updateSetting(v, state.settings[v] === false);
       syncPosts().then(() => refreshSocial()).catch(() => {});
       break;
-    case 'forgot': social.authMsg = await sendPasswordReset(document.getElementById('sEmail')?.value); break;
+    case 'forgot': showForgotPage(document.getElementById('sEmail')?.value, () => document.getElementById('onboard').classList.add('hidden')); return;
     case 'authMode': social.authMode = social.authMode === 'signup' ? 'signin' : 'signup'; social.authMsg = ''; break;
     case 'view': social.view = v; social.openGroup = null; social.creating = false; break;
     case 'toggleAdd': social.adding = !social.adding; break;
@@ -4517,7 +4550,7 @@ const ONBOARD_KEY = 'cadence.onboarded';
 // each stop points at the real screen: which tab to show and what to light up
 const TOUR = [
   { tab: 'home', target: '[data-tour="habits"] > *', title: 'Check off your habits', body: "These are today's habits. Tap one to mark it done, or slide to log an amount." },
-  { tab: 'home', target: '.tab-btn[data-tab="new"]', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
+  { tab: 'home', target: '.tab-btn[data-tab="new"] .tab-icon-wrap', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
   { tab: 'social', target: '.tab-btn[data-tab="social"]', title: 'Do it with friends', body: 'Social has your feed, friends and groups. You choose which habits anyone can see.' },
   { tab: 'stats', target: '.tab-btn[data-tab="stats"]', title: 'See your progress', body: 'Stats has your recaps for yesterday, last week, month and year, plus the milestones you unlock.' },
   { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year. Tap a day to fix a missed check-in.' },
@@ -4530,6 +4563,7 @@ function finishOnboarding() {
   try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
   document.getElementById('onboard').classList.add('hidden');
   document.getElementById('tour').classList.add('hidden');
+  document.documentElement.classList.remove('tour-lock');
   tourOn = false;
   switchTab('home');
   if (net.loaded) announceSocial();
@@ -4566,12 +4600,7 @@ function renderOnboarding() {
       <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Your habits stay on this phone either way.</p>`);
     el.querySelector('#obForm').onsubmit = e => { e.preventDefault(); onboardAuth(); };
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
-    el.querySelector('#obForgot')?.addEventListener('click', async () => {
-      const email = el.querySelector('#obEmail').value;
-      onboardMsg = await sendPasswordReset(email);
-      renderOnboarding();
-      el.querySelector('#obEmail').value = email;
-    });
+    el.querySelector('#obForgot')?.addEventListener('click', () => showForgotPage(el.querySelector('#obEmail').value, () => renderOnboarding()));
     el.querySelector('#obSkip').onclick = () => { onboardStep = 1; renderOnboarding(); };
   } else {
     el.classList.add('hidden');
@@ -4597,6 +4626,7 @@ function showTourStep(i) {
   if (ov.parentNode !== document.documentElement) document.documentElement.appendChild(ov);
   ov.style.fontFamily = getComputedStyle(document.body).fontFamily;
   ov.classList.remove('hidden');
+  document.documentElement.classList.add('tour-lock');
   const last = i === TOUR.length - 1;
   document.getElementById('tourTip').innerHTML = `
     <span id="tourCaret" aria-hidden="true"></span>
@@ -4637,7 +4667,9 @@ function placeTour(i) {
   const r = el ? el.getBoundingClientRect() : null;
   if (r) {
     const top = Math.max(6, r.top - pad), bottom = Math.min(vh - 6, r.bottom + pad);
-    hole.style.cssText = `top:${top}px;left:${Math.max(6, r.left - pad)}px;width:${Math.min(vw - 12, r.width + pad * 2)}px;height:${bottom - top}px;`;
+    // round targets (the raised + button) get a round spotlight
+    const round = parseFloat(getComputedStyle(el).borderRadius) >= Math.min(r.width, r.height) / 2 - 1;
+    hole.style.cssText = `top:${top}px;left:${Math.max(6, r.left - pad)}px;width:${Math.min(vw - 12, r.width + pad * 2)}px;height:${bottom - top}px;border-radius:${round ? '999px' : '16px'};`;
     hole.classList.remove('tour-none');
   } else {
     hole.style.cssText = `top:${vh / 2}px;left:${vw / 2}px;width:0;height:0;`;
@@ -4661,6 +4693,12 @@ function placeTour(i) {
   }
 }
 window.addEventListener('resize', () => { if (tourOn) placeTour(onboardStep - 1); });
+// during the tour only Back, Next and Skip work: no scrolling, no other taps or keys
+['wheel', 'touchmove'].forEach(t => window.addEventListener(t, e => { if (tourOn) e.preventDefault(); }, { passive: false }));
+window.addEventListener('keydown', e => {
+  if (!tourOn) return;
+  if (!e.target.closest?.('#tourTip')) e.preventDefault();
+}, true);
 
 async function onboardAuth() {
   const email = (document.getElementById('obEmail')?.value || '').trim().toLowerCase();
