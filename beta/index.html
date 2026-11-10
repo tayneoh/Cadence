@@ -3396,7 +3396,7 @@ function accentDropdown(cur, accents) {
 }
 
 /* Settings is a short menu; each entry opens its own page */
-let settingsPage = null;   // null = menu, or 'personal' | 'custom'
+let settingsPage = null;   // null = menu, or 'personal' | 'custom' | 'appearance' | 'calendar'
 function openSettingsPage(pg) { settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0); }
 
 function renderSettingsTab() {
@@ -3413,7 +3413,7 @@ function renderSettingsTab() {
       <span class="flex-1 min-w-0 text-[14px] font-bold">${text}</span>
       <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
     </button>`;
-  const titles = { personal: 'Personal information', custom: 'Customizations' };
+  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance', calendar: 'Calendar' };
   const header = settingsPage
     ? `<button data-page="" class="home-edit-btn" aria-label="Back to Settings"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
        <h2 class="display text-2xl font-semibold">${titles[settingsPage]}</h2>`
@@ -3434,31 +3434,33 @@ function renderSettingsTab() {
         : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
     );
   } else if (settingsPage === 'custom') {
-    body = `<div class="space-y-6">
-      ${card(
-        settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
-        settingsRow('Notifications', '', switchHTML('badge')) +
-        settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
-        settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
-      )}
-      <div>${label('Appearance')}${card(
-        settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
-        settingsRow('Color-code habits', '', switchHTML('habitColors')) +
-        accentDropdown(st.accent, accents) +
-        dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
-        dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
-        settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']]))
-      )}</div>
-      <div>${label('Calendar')}${card(
-        dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
-        dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
-        dropdownHTML('Year view', 'yearLook', YEAR_LOOKS, 'wv-chip', ([val, name]) => yearLookSample(val) + `<span>${name}</span>`)
-      )}</div>
-    </div>`;
+    body = card(
+      settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
+      settingsRow('Notifications', '', switchHTML('badge')) +
+      settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
+      settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
+    );
+  } else if (settingsPage === 'appearance') {
+    body = card(
+      settingsRow('Color-code habits', '', switchHTML('habitColors')) +
+      accentDropdown(st.accent, accents) +
+      dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
+      dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
+      settingsRow('Font size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
+      settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']]))
+    );
+  } else if (settingsPage === 'calendar') {
+    body = card(
+      dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
+      dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
+      dropdownHTML('Year view', 'yearLook', YEAR_LOOKS, 'wv-chip', ([val, name]) => yearLookSample(val) + `<span>${name}</span>`)
+    );
   } else {
     body = card(
       menuRow('personal', 'user', 'Personal information') +
       menuRow('custom', 'sliders-horizontal', 'Customizations') +
+      menuRow('appearance', 'palette', 'Appearance') +
+      menuRow('calendar', 'calendar', 'Calendar') +
       `<button onclick="startOnboarding(1)" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] text-left">
         <i data-lucide="map" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
         <span class="flex-1 min-w-0 text-[14px] font-bold">Walkthrough</span>
