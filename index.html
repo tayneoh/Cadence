@@ -4949,7 +4949,16 @@ async function signOutNow() {
   try { await sb.auth.signOut(); } catch (e) {}
   sbSession = null;
   Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
-  settingsPage = null; render(); showToast('Signed out');
+  try { localStorage.removeItem(SB_AUTH_KEY); } catch (e) {}
+  settingsPage = null; render();
+  showSignIn();
+}
+// the sign-in screen on its own (after signing out): no walkthrough afterwards
+let onboardReturn = false;
+function showSignIn() {
+  onboardReturn = true; onboardMode = 'signin'; onboardStep = 0; onboardMsg = '';
+  document.getElementById('onboard').classList.remove('hidden');
+  renderOnboarding();
 }
 async function socialRename(name) {
   name = String(name || '').trim().slice(0, 30);
@@ -5073,6 +5082,7 @@ function renderOnboarding() {
   } else {
     el.classList.add('hidden');
     el.innerHTML = '';
+    if (onboardReturn) { onboardReturn = false; switchTab('home'); return; }
     showTourStep(onboardStep - 1);
     return;
   }
