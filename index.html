@@ -408,6 +408,10 @@
   .wk-sq .sq-num { position: absolute; top: 4px; left: 5px; font-size: 9px; line-height: 1; opacity: 0.75; white-space: nowrap; }
   .wk-sq .sq-frac { font-size: 14px; font-weight: 700; line-height: 1; }
   .wk-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .day-sq { border-radius: 14px; background: var(--surface-2); padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .day-sq .sq-frac { font-size: 30px; font-weight: 700; line-height: 1; }
+  .day-sq .sq-frac small { font-size: 16px; opacity: 0.75; }
+  .day-sq-sub { font-size: 12px; opacity: 0.8; }
   .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
@@ -3092,7 +3096,9 @@ function renderCalendarTab() {
     body = `
       <div class="surface rounded-2xl p-5">
         ${nav}
-        <p class="text-[12px] text-[var(--text-dim)] text-center -mt-2 mb-4">${dueSel.length ? `${doneN} / ${dueSel.length} habits done` : 'Nothing scheduled'}</p>
+        <div class="day-sq mb-4" style="${dueSel.length ? heatBg(doneN / dueSel.length) : ''}${dueSel.length && doneN / dueSel.length >= 0.8 ? 'color:var(--bg);' : ''}">
+          ${dueSel.length ? `<span class="sq-frac">${doneN}<small>/${dueSel.length}</small></span><span class="day-sq-sub">habits done</span>` : '<span class="day-sq-sub">Nothing scheduled</span>'}
+        </div>
         <div class="space-y-2.5">${dayBreakdownHTML(isFutureSel)}</div>
       </div>`;
   } else if (calMode === 'week') {
@@ -3387,7 +3393,7 @@ function accentDropdown(cur, accents) {
 }
 
 /* Settings is a short menu; each entry opens its own page */
-let settingsPage = null;   // null = menu, or 'personal' | 'custom' | 'appearance'
+let settingsPage = null;   // null = menu, or 'personal' | 'custom'
 function openSettingsPage(pg) { settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0); }
 
 function renderSettingsTab() {
@@ -3404,7 +3410,7 @@ function renderSettingsTab() {
       <span class="flex-1 min-w-0 text-[14px] font-bold">${text}</span>
       <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
     </button>`;
-  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance' };
+  const titles = { personal: 'Personal information', custom: 'Customizations' };
   const header = settingsPage
     ? `<button data-page="" class="home-edit-btn" aria-label="Back to Settings"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
        <h2 class="display text-2xl font-semibold">${titles[settingsPage]}</h2>`
@@ -3425,22 +3431,21 @@ function renderSettingsTab() {
         : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
     );
   } else if (settingsPage === 'custom') {
-    body = card(
-      settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
-      settingsRow('Notifications', '', switchHTML('badge')) +
-      settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
-      settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
-    );
-  } else if (settingsPage === 'appearance') {
     body = `<div class="space-y-6">
       ${card(
+        settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
+        settingsRow('Notifications', '', switchHTML('badge')) +
+        settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
+        settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
+      )}
+      <div>${label('Appearance')}${card(
         settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
         settingsRow('Color-code habits', '', switchHTML('habitColors')) +
         accentDropdown(st.accent, accents) +
         dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
         dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
         settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']]))
-      )}
+      )}</div>
       <div>${label('Calendar')}${card(
         dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
         dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
@@ -3451,7 +3456,6 @@ function renderSettingsTab() {
     body = card(
       menuRow('personal', 'user', 'Personal information') +
       menuRow('custom', 'sliders-horizontal', 'Customizations') +
-      menuRow('appearance', 'palette', 'Appearance') +
       `<button onclick="startOnboarding(1)" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] text-left">
         <i data-lucide="map" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
         <span class="flex-1 min-w-0 text-[14px] font-bold">Walkthrough</span>
