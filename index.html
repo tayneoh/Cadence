@@ -616,12 +616,15 @@
     background: transparent; height: 44px; padding: 0; margin: 0;
     outline: none; cursor: pointer;
   }
-  .measure-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
-  .measure-slider::-moz-range-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
+  /* the part of the track left of the dot fills with the habit's color */
+  .measure-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 99px;
+    background: linear-gradient(to right, currentColor 0, currentColor var(--fill, 0%), var(--surface-2) var(--fill, 0%)); }
+  .measure-slider::-moz-range-track { height: 6px; border-radius: 99px; background: var(--surface-2); }
+  .measure-slider::-moz-range-progress { height: 6px; border-radius: 99px; background: currentColor; }
   .measure-slider::-webkit-slider-thumb { -webkit-appearance:none;
     width: 22px; height: 22px; border-radius: 99px;
     background: currentColor; border: 3px solid var(--surface);
-    margin-top: -9px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    margin-top: -8px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .measure-slider::-moz-range-thumb {
     width: 22px; height: 22px; border-radius: 99px;
@@ -677,6 +680,7 @@
   .react-btn.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--text); }
   .s-row { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 12px; }
   .s-row + .s-row { border-top: 1px solid var(--border); }
+  .s-group-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; flex-shrink: 0; }
   .s-friends-btn { position: relative; width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .tab-dot { position: absolute; top: 2px; right: 10px; width: 8px; height: 8px; border-radius: 99px; background: var(--gold); box-shadow: 0 0 0 2px var(--surface); }
   .s-friends-btn .s-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 99px; background: var(--gold); box-shadow: 0 0 0 2px var(--surface); }
@@ -884,6 +888,8 @@ const DEFAULT_SETTINGS = {
   homeMilestones: false,
   homeRecap: false,
   badge: false,           // habits-left count on the home-screen icon
+  postCheckins: true,     // feed: post when you finish a shared habit
+  postStreaks: true,      // feed: post when a shared habit hits a streak milestone
 };
 
 const APP_STYLES = [
@@ -986,7 +992,7 @@ function cleanSettings(raw) {
     });
     out.homeOrder = order;
   }
-  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors','postCheckins','postStreaks'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -1955,7 +1961,7 @@ function renderHomeTab(page = 'home') {
           <div class="flex items-center gap-3 mt-2">
             <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
               data-measured-slider="${h.id}" aria-label="${escapeHtml(h.title)} amount"
-              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)}; ${sliderFill(currentVal, h.goal)}">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;" aria-label="Add 1 ${escapeHtml(h.unit)}">+1</button>
@@ -1984,7 +1990,7 @@ function renderHomeTab(page = 'home') {
           <div class="flex items-center gap-3">
             <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
               data-measured-slider="${h.id}"
-              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)}; ${sliderFill(currentVal, h.goal)}">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;">+1</button>
@@ -2319,6 +2325,7 @@ function renderHomeTab(page = 'home') {
       const label = root.querySelector(`[data-measured-val="${id}"]`);
       if (bar) bar.style.width = Math.round((v / h.goal) * 100) + '%';
       if (label) label.textContent = v;
+      slider.style.setProperty('--fill', sliderFillAt(v, h.goal));
       const chip = root.querySelector(`[data-measured-pct="${id}"]`);
       if (chip) chip.textContent = Math.round((v / h.goal) * 100) + '%';
     });
@@ -3545,7 +3552,8 @@ function init() {
   render();
   drawIcons();
   socialBoot();
-  if (needsOnboarding()) startOnboarding(0);
+  if (RECOVERING) checkPasswordRecovery();
+  else if (needsOnboarding()) startOnboarding(0);
 }
 
 /* =====================================================================
@@ -3605,6 +3613,12 @@ function personColor(id) {
   return S_COLORS[h % S_COLORS.length];
 }
 function firstName(id) { return personName(id).split(/\s+/)[0]; }
+/* where the colored fill ends on a measured habit's slider: the dot's centre */
+function sliderFillAt(v, goal) {
+  const f = goal > 0 ? Math.max(0, Math.min(1, v / goal)) : 0;
+  return `calc(11px + (100% - 22px) * ${f.toFixed(4)})`;
+}
+const sliderFill = (v, goal) => `--fill:${sliderFillAt(Math.min(v, goal), goal)};`;
 function avatarHTML(id, size = 36) {
   const n = personName(id).split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const c = personColor(id);
@@ -3711,7 +3725,8 @@ async function syncPosts() {
     const shared = habitShare(h) !== 'private';
     const done = shared && isDayDone(h, today);
     const streak = currentStreak(h);
-    const want = { checkin: done && h.kind !== 'quit', streak: done && STREAK_MILESTONES.includes(streak) };
+    const want = { checkin: done && h.kind !== 'quit' && state.settings.postCheckins !== false,
+      streak: done && STREAK_MILESTONES.includes(streak) && state.settings.postStreaks !== false };
     for (const kind of ['checkin', 'streak']) {
       const key = `${today}|${h.id}|${kind}`;
       if (want[kind] && !posted[key]) {
@@ -3838,9 +3853,9 @@ function groupStreak(g) {
 }
 
 /* ---- UI ---- */
-function socialSeg(key, options, current) {
+function socialSeg(key, options, current, iconsOnly = false) {
   return `<div class="surface rounded-xl p-1 grid gap-1" style="grid-template-columns:repeat(${options.length},1fr)">
-    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg h-9 text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}">${ic ? `<i data-lucide="${ic}" class="w-3.5 h-3.5"></i>` : ''}${l}</button>`).join('')}
+    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
   </div>`;
 }
 const sLabel = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
@@ -3867,7 +3882,7 @@ function renderSocialTab() {
     body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? `Couldn't load: ${escapeHtml(net.error)}` : 'Loading...'}</div>`;
     if (!net.loading && !net.error) refreshSocial();
   } else {
-    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'users'], ['groups', 'Groups', 'users-round'], ['profile', 'Privacy', 'lock']], social.view);
+    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'heart-handshake'], ['groups', 'Groups', 'tent'], ['profile', 'Privacy', 'lock']], social.view, true);
     const nudges = net.nudgesIn.length ? `
       <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
         <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
@@ -3917,8 +3932,58 @@ function socialAuthHTML() {
         ${social.authMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(social.authMsg)}</p>` : ''}
         <button type="submit" ${social.busy ? 'disabled' : ''} class="${sBtn} w-full h-12">${social.busy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
       </form>
+      ${up ? '' : `<button data-s="forgot" class="w-full text-[13px] font-bold text-[var(--text-faint)]">Forgot password?</button>`}
       <button data-s="authMode" class="w-full text-[13px] font-bold text-[var(--text-dim)]">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
     </div>`;
+}
+
+/* forgot password: Supabase emails a link back to this app; opening it
+   signs you in for long enough to choose a new password */
+async function sendPasswordReset(email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!email) return 'Type your email above, then tap Forgot password.';
+  try {
+    await sbStart();
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if (error) throw error;
+    return 'Check your email for a link to reset your password.';
+  } catch (e) {
+    return e.message === 'offline' ? "You're offline. Try again with a connection." : (e.message || 'Something went wrong');
+  }
+}
+const RECOVERING = /type=recovery/.test(location.hash);
+async function checkPasswordRecovery() {
+  if (!RECOVERING) return;
+  try { await sbStart(); } catch (e) { return; }
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!sbSession) { showToast('That reset link has expired. Ask for a new one.'); return; }
+  showNewPasswordForm();
+}
+function showNewPasswordForm(msg = '') {
+  const el = document.getElementById('onboard');
+  el.classList.remove('hidden');
+  el.innerHTML = `<div class="max-w-md mx-auto min-h-full flex flex-col justify-center gap-6" style="padding:max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))">
+      <div class="text-center">
+        <div class="ach-badge mb-5" style="animation:none"><i data-lucide="key-round" class="w-10 h-10"></i></div>
+        <h1 class="display text-3xl font-semibold">Choose a new password</h1>
+        <p class="text-[13px] text-[var(--text-dim)] mt-2">${escapeHtml(sbSession?.user?.email || '')}</p>
+      </div>
+      <form id="npForm" class="surface rounded-2xl p-5 space-y-3">
+        <input id="npPass" type="password" placeholder="New password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm" autocomplete="new-password" required>
+        ${msg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(msg)}</p>` : ''}
+        <button type="submit" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">Save password</button>
+      </form>
+    </div>`;
+  drawIcons();
+  el.querySelector('#npForm').onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.auth.updateUser({ password: el.querySelector('#npPass').value });
+    if (error) return showNewPasswordForm(error.message || 'Something went wrong');
+    el.classList.add('hidden');
+    try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (err) {}
+    showToast('Password updated');
+    net.loaded = false; refreshSocial().catch(() => {});
+  };
 }
 
 async function socialAuth() {
@@ -4034,6 +4099,11 @@ function socialFriendsHTML() {
 }
 
 /* groups */
+/* groups get a rounded square with a tent; people get round initials */
+function groupBadgeHTML(g, size = 40) {
+  const c = personColor('group:' + g.id);
+  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}"><i data-lucide="tent" style="width:${Math.round(size * 0.5)}px;height:${Math.round(size * 0.5)}px"></i></span>`;
+}
 function socialGroupsHTML() {
   const today = todayISO();
   const cards = net.groups.map(g => {
@@ -4043,6 +4113,7 @@ function socialGroupsHTML() {
     return `
       <button data-s="group" data-v="${g.id}" class="w-full surface rounded-2xl p-4 text-left block">
         <div class="flex items-start gap-3">
+          ${groupBadgeHTML(g, 40)}
           <div class="flex-1 min-w-0">
             <div class="text-[15px] font-bold truncate">${escapeHtml(g.name)}</div>
             <div class="text-[11px] text-[var(--text-dim)] mt-0.5">${escapeHtml(g.habit)} · ${daysLabel(g.days)} · ${members.length} ${members.length === 1 ? 'member' : 'members'}</div>
@@ -4191,6 +4262,15 @@ function socialProfileHTML() {
         <span class="flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i>Anyone</span>
       </div></div>
 
+    <div>${sLabel('Post automatically')}
+      <div class="surface rounded-2xl px-4 py-1">
+        <div class="s-row"><span class="text-[14px] font-bold">When I finish a habit</span>
+          <button data-s="autoPost" data-v="postCheckins" class="switch" role="switch" aria-checked="${state.settings.postCheckins !== false}" aria-label="Post when I finish a habit"></button></div>
+        <div class="s-row"><span class="text-[14px] font-bold">Streak milestones</span>
+          <button data-s="autoPost" data-v="postStreaks" class="switch" role="switch" aria-checked="${state.settings.postStreaks !== false}" aria-label="Post streak milestones"></button></div>
+      </div>
+      <p class="text-[11px] text-[var(--text-faint)] mt-2 px-1">Only for habits you share. Turning one off removes today's post.</p></div>
+
     <div class="surface rounded-2xl px-4 py-1">
       <div class="s-row"><span class="text-[14px] font-bold">Show notes</span>
         <button data-s="toggleNotes" class="switch" role="switch" aria-checked="${!!me.show_notes}" aria-label="Show notes"></button></div>
@@ -4242,6 +4322,11 @@ async function socialClick(e) {
   switch (a) {
     case 'back': switchTab('home'); return;
     case 'refresh': net.loading = true; render(); return refreshSocial();
+    case 'autoPost':
+      updateSetting(v, state.settings[v] === false);
+      syncPosts().then(() => refreshSocial()).catch(() => {});
+      break;
+    case 'forgot': social.authMsg = await sendPasswordReset(document.getElementById('sEmail')?.value); break;
     case 'authMode': social.authMode = social.authMode === 'signup' ? 'signin' : 'signup'; social.authMsg = ''; break;
     case 'view': social.view = v; social.openGroup = null; social.creating = false; break;
     case 'toggleAdd': social.adding = !social.adding; break;
@@ -4474,12 +4559,19 @@ function renderOnboarding() {
         <input id="obPass" type="password" placeholder="Password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm" autocomplete="${up ? 'new-password' : 'current-password'}" required>
         ${onboardMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(onboardMsg)}</p>` : ''}
         <button type="submit" ${onboardBusy ? 'disabled' : ''} class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">${onboardBusy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
+        ${up ? '' : `<button type="button" id="obForgot" class="w-full text-[13px] font-bold text-[var(--text-faint)]">Forgot password?</button>`}
         <button type="button" id="obMode" class="w-full text-[13px] font-bold text-[var(--text-dim)] pt-1">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
       </form>
       <button id="obSkip" class="text-[13px] font-bold text-[var(--text-faint)]">Not now</button>
       <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Your habits stay on this phone either way.</p>`);
     el.querySelector('#obForm').onsubmit = e => { e.preventDefault(); onboardAuth(); };
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
+    el.querySelector('#obForgot')?.addEventListener('click', async () => {
+      const email = el.querySelector('#obEmail').value;
+      onboardMsg = await sendPasswordReset(email);
+      renderOnboarding();
+      el.querySelector('#obEmail').value = email;
+    });
     el.querySelector('#obSkip').onclick = () => { onboardStep = 1; renderOnboarding(); };
   } else {
     el.classList.add('hidden');
