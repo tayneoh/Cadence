@@ -1535,11 +1535,12 @@ function dayCount(iso) {
   return { done: due.filter(h => isDayDone(h, iso)).length, due: due.length };
 }
 function heatBg(score) {
-  return score > 0 ? `background:color-mix(in srgb, var(--gold) ${Math.round(20 + 80 * score)}%, var(--surface-2));` : '';
+  return score > 0 ? `background:color-mix(in srgb, var(--gold) ${Math.round(10 + 90 * score)}%, var(--surface-2));` : '';
 }
 
 function dayScore(iso) {
-  const due = state.habits.filter(h => isDue(h, iso));
+  // share of the day's scheduled habits that were done (1 = 100%)
+  const due = state.habits.filter(h => isDue(h, iso) && iso >= habitStart(h));
   if (!due.length) return 0;
   return due.reduce((s, h) => s + dayProgress(h, iso), 0) / due.length;
 }
@@ -1766,9 +1767,10 @@ function buildUnifiedCalendar() {
       cell.classList.add('cal-sq');
       num.className = 'sq-num';
       if (!isFuture) {
-        const c = dayCount(iso), score = dayScore(iso);
+        // shade by how close the day got to 100%, matching the fraction shown
+        const c = dayCount(iso), score = c.due ? c.done / c.due : 0;
         cell.style.cssText += heatBg(score);
-        if (score >= 0.6) cell.style.color = 'var(--bg)';
+        if (score >= 0.8) cell.style.color = 'var(--bg)';
         if (c.due) {
           const r = document.createElement('span');
           r.className = 'sq-frac';
@@ -2896,7 +2898,7 @@ function renderCalendarTab() {
     </div>`;
 
   const legend = state.settings.monthLook !== 'dots'
-    ? `<p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.monthLook === 'count' ? 'Habits done out of habits scheduled.' : state.settings.monthLook === 'squares' ? 'Darker days mean more habits done. Numbers show habits done out of habits scheduled.' : 'Darker days mean more habits done.'}</p>`
+    ? `<p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.monthLook === 'count' ? 'Habits done out of habits scheduled.' : state.settings.monthLook === 'squares' ? 'Darker days are closer to 100%. Numbers show habits done out of habits scheduled.' : 'Darker days are closer to 100%.'}</p>`
     : `
     <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
       ${state.habits.map(h => `
@@ -2936,7 +2938,7 @@ function renderCalendarTab() {
       <div class="surface rounded-2xl p-5">
         ${nav}
         ${yearHTML(calYear)}
-        <p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.yearLook === 'count' ? 'Habits done out of habits scheduled. Tap a month to open it.' : 'Darker days mean more habits done. Tap a day to open it.'}</p>
+        <p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.yearLook === 'count' ? 'Habits done out of habits scheduled. Tap a month to open it.' : 'Darker days are closer to 100%. Tap a day to open it.'}</p>
       </div>`;
   } else {
     body = `
