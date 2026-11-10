@@ -575,6 +575,9 @@
       conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
   .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
   .form-time { height: 44px; border-radius: 12px; }
+  .remind-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 99px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); display: flex; align-items: center; justify-content: center; }
+  .remind-clear.hidden { display: none; }
   .form-dd { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 12px;
     border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); text-align: left; }
   /* custom color picker window */
@@ -624,6 +627,24 @@
   [data-text="s"] body { zoom: 0.92; }
   [data-text="l"] body { zoom: 1.1; }
   [data-text="xl"] body { zoom: 1.2; }
+  /* fit the screen: keep clear of notches and rounded corners (landscape
+     too), shrink a step on very narrow phones, and use more of a tablet */
+  .app-main { padding-top: max(28px, calc(env(safe-area-inset-top) + 16px));
+    padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  nav .tab-row { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  @media (min-width: 640px) { .app-main { padding-top: max(40px, calc(env(safe-area-inset-top) + 16px)); } }
+  @media (max-width: 359px) {
+    .type-track-row { grid-template-columns: 1fr; }
+    .type-track-row #trackingField.invisible { display: none; }
+    [data-text="s"] body { zoom: 0.85; } [data-text="m"] body { zoom: 0.92; }
+    [data-text="l"] body { zoom: 1; } [data-text="xl"] body { zoom: 1.1; }
+  }
+  @media (min-width: 768px) { .app-main, nav .tab-row.app-width { max-width: 680px; } }
+  /* phones on their side: a slimmer tab bar leaves more room */
+  @media (max-height: 500px) and (orientation: landscape) {
+    nav .tab-btn { min-height: 46px !important; padding-top: 4px; padding-bottom: 4px; }
+    .app-main { padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: 96px; }
+  }
   .habit-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     font-size: 12px; line-height: 1.35; color: var(--text-dim); margin-top: 2px; white-space: normal; }
   .off-today > summary { list-style: none; }
@@ -751,7 +772,7 @@
 
 <body class="min-h-screen">
 
-<div class="relative z-10 max-w-xl mx-auto px-4 pb-32 pt-7 sm:pt-10">
+<div class="app-main relative z-10 max-w-xl mx-auto px-4 pb-32 pt-7 sm:pt-10">
 
   <!-- ============ HEADER ============ -->
   <header id="appHeader" class="mb-6">
@@ -782,7 +803,7 @@
 <!-- ============ BOTTOM TAB BAR ============ -->
 <nav class="fixed bottom-0 left-0 right-0 z-30 surface border-t border-[var(--border)]"
      style="padding-bottom: env(safe-area-inset-bottom);">
-  <div class="tab-row max-w-xl mx-auto grid">
+  <div class="tab-row app-width max-w-xl mx-auto grid">
     <button data-tab="home" class="tab-btn active flex flex-col items-center gap-1 py-2.5 text-[var(--text-dim)]" style="min-height:56px;">
       <span class="tab-icon-wrap rounded-lg px-4 py-1 flex items-center justify-center"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
       <span class="text-[10px] font-bold uppercase tracking-[0.1em]">Home</span>
@@ -2705,7 +2726,7 @@ function renderNewTab() {
         <textarea id="habitNote" rows="1" maxlength="200" placeholder="Optional: why, when, or how"
           class="w-full px-4 py-2.5 text-sm mb-4 resize-none">${escapeHtml(initNote)}</textarea>
 
-        <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="type-track-row grid grid-cols-2 gap-3 mb-4">
           <div>
             <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Type</label>
             <div class="grid grid-cols-2 gap-1.5">
@@ -2769,7 +2790,10 @@ function renderNewTab() {
           </div>
           <div class="flex-1 min-w-0">
             <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5" for="habitRemind">Reminder</label>
-            <input id="habitRemind" type="time" value="${editing ? (editing.remind || '') : ''}" class="w-full px-3 text-sm form-time" aria-label="Reminder time (optional)">
+            <div class="relative">
+              <input id="habitRemind" type="time" value="${editing ? (editing.remind || '') : ''}" class="w-full px-3 text-sm form-time" aria-label="Reminder time (optional)">
+              <button type="button" id="remindClear" class="remind-clear ${editing && editing.remind ? '' : 'hidden'}" aria-label="Remove reminder"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>
           </div>
         </div>
         <div id="colorPalette" class="hidden flex-wrap gap-2 mb-4">${swatches}${customSwatch}</div>
@@ -2872,6 +2896,14 @@ function renderNewTab() {
   };
   togglePanel('#daysToggle', '#daysPanel');
   togglePanel('#colorToggle', '#colorPalette', true);
+  // the time box has no clear button on iPhone, so add one
+  const remindBox = root.querySelector('#habitRemind'), remindClear = root.querySelector('#remindClear');
+  if (remindBox && remindClear) {
+    const syncClear = () => remindClear.classList.toggle('hidden', !remindBox.value);
+    remindBox.addEventListener('input', syncClear);
+    remindBox.addEventListener('change', syncClear);
+    remindClear.addEventListener('click', () => { remindBox.value = ''; syncClear(); });
+  }
 
   // tracking-mode buttons
   root.querySelectorAll('[data-mode]').forEach(btn => {
@@ -3460,14 +3492,14 @@ function renderSettingsTab() {
     const email = sbSession?.user?.email || '';
     body = card(
       settingsRow('Name', '',
-        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
+        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml((email && net.me?.name) || st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
       settingsRow('Email', '', email
         ? `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(email)}</span>`
         : `<span class="text-[12px] text-[var(--text-faint)]">Not signed in</span>`) +
       settingsRow('Password', '', email
         ? smallBtn(`onclick="showNewPasswordForm('', true)"`, 'Change password')
         : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
-    );
+    ) + (email ? `<div class="mt-6">${card(settingsRow('Signed in', '', smallBtn('onclick="signOutNow()"', 'Sign out')))}</div>` : '');
   } else if (settingsPage === 'custom') {
     body = card(
       settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
@@ -3532,7 +3564,12 @@ function renderSettingsTab() {
     btn.addEventListener('click', () => openSettingsPage(btn.dataset.page || null));
   });
   const nameInput = root.querySelector('#setName');
-  if (nameInput) nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
+  if (nameInput) nameInput.addEventListener('change', () => {
+    const n = nameInput.value.trim();
+    updateSetting('name', n);
+    if (sbSession && n) { if (net.me) net.me.name = n; socialRename(n); }   // one name for the app and friends
+    render();
+  });
 
   root.querySelectorAll('[data-dd]').forEach(btn => {
     btn.addEventListener('click', () => { openPicker = openPicker === btn.dataset.dd ? null : btn.dataset.dd; render(); });
@@ -4706,13 +4743,8 @@ function socialProfileHTML() {
   const today = todayISO();
   const done = friendSees.filter(h => isDayDone(h, today)).length;
   return `
-    <div>${sLabel('Profile')}
+    <div>${sLabel('Who can see your profile')}
       <div class="surface rounded-2xl p-4 space-y-3">
-        <div class="flex items-center gap-3">${avatarHTML(myId(), 44)}
-          <div class="flex-1 min-w-0"><div class="text-[15px] font-bold truncate">${escapeHtml(personName(myId()))}</div>
-          <div class="text-[11px] text-[var(--text-dim)] truncate">${escapeHtml(sbSession.user.email || '')}</div></div>
-          <button data-s="rename" class="${sBtn2} h-9 px-3">Rename</button>
-        </div>
         ${socialSeg('profile', [['private', 'Private', 'lock'], ['friends', 'Friends', 'users'], ['public', 'Public', 'globe']], p)}
         <p class="text-[12px] text-[var(--text-dim)] px-1">${hint}</p>
       </div></div>
@@ -4764,7 +4796,6 @@ function socialProfileHTML() {
       ${net.blocked.map(id => `
       <div class="s-row"><span class="text-[13px] text-[var(--text-dim)] truncate">${escapeHtml(blockedNames()[id] || 'Someone')}</span>
         <button data-s="unblock" data-v="${id}" class="${sBtn2} h-9 px-3">Unblock</button></div>`).join('')}
-      <div class="s-row"><span class="text-[14px] font-bold">Signed in</span><button data-s="signOut" class="${sBtn2} h-9 px-3">Sign out</button></div>
     </div>`;
 }
 
@@ -4900,12 +4931,6 @@ async function socialClick(e) {
       return refreshSocial();
     }
     case 'profile': return act(() => sb.from('profiles').update({ visibility: v }).eq('id', uid));
-    case 'rename': {
-      social.view = 'profile';
-      const cur = personName(uid);
-      el.outerHTML = `<form class="flex gap-2" onsubmit="event.preventDefault();socialRename(this.n.value)"><input name="n" type="text" maxlength="30" value="${escapeHtml(cur)}" class="w-32 px-3 py-2 text-sm"><button class="${sBtn} px-3 h-9">Save</button></form>`;
-      return;
-    }
     case 'vis': {
       const [id, o] = v.split('|');
       const h = state.habits.find(x => x.id === id);
@@ -4914,15 +4939,26 @@ async function socialClick(e) {
     }
     case 'toggleNotes': return act(async () => { const r = await sb.from('profiles').update({ show_notes: !net.me.show_notes }).eq('id', uid); net.me.show_notes = !net.me.show_notes; syncShared(); return r; });
     case 'toggleStreaks': return act(async () => { const r = await sb.from('profiles').update({ show_streaks: net.me.show_streaks === false }).eq('id', uid); net.me.show_streaks = net.me.show_streaks === false; syncShared(); return r; });
-    case 'signOut':
-      await sb.auth.signOut(); sbSession = null;
-      Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
-      break;
     default: return;
   }
   render();
   // the smiley opens the keyboard straight away so any emoji can be picked
   if (a === 'reactMenu' && social.openReact) document.getElementById('sEmoji-' + social.openReact)?.focus();
+}
+async function signOutNow() {
+  try { await sb.auth.signOut(); } catch (e) {}
+  sbSession = null;
+  Object.assign(net, { loaded: false, me: null, people: {}, friends: [], requests: [], sent: [], habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], nudgesIn: [] });
+  try { localStorage.removeItem(SB_AUTH_KEY); } catch (e) {}
+  settingsPage = null; render();
+  showSignIn();
+}
+// the sign-in screen on its own (after signing out): no walkthrough afterwards
+let onboardReturn = false;
+function showSignIn() {
+  onboardReturn = true; onboardMode = 'signin'; onboardStep = 0; onboardMsg = '';
+  document.getElementById('onboard').classList.remove('hidden');
+  renderOnboarding();
 }
 async function socialRename(name) {
   name = String(name || '').trim().slice(0, 30);
@@ -5046,6 +5082,7 @@ function renderOnboarding() {
   } else {
     el.classList.add('hidden');
     el.innerHTML = '';
+    if (onboardReturn) { onboardReturn = false; switchTab('home'); return; }
     showTourStep(onboardStep - 1);
     return;
   }
