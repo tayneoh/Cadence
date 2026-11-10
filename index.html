@@ -1140,6 +1140,7 @@ function migrateData(raw) {
       }));
   }
   safe.settings = cleanSettings(raw.settings);
+  safe.deleted = Array.isArray(raw.deleted) ? raw.deleted.filter(x => typeof x === 'string').slice(-500) : [];
   // null = never set; the current milestones are then recorded silently
   safe.seenBadges = Array.isArray(raw.seenBadges) ? raw.seenBadges.filter(x => typeof x === 'string') : null;
   return safe;
@@ -1171,6 +1172,7 @@ function saveData() {
   if (!storageAvailable) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (!applyingCloud) { syncMark('localAt', Date.now()); scheduleCloud(); }
     scheduleSync();   // keep shared habits current when signed in to Friends
   } catch (e) {
     console.warn('saveData failed:', e);
@@ -1256,6 +1258,7 @@ function updateHabit(id, patch) {
 
 function deleteHabit(id) {
   state.habits = state.habits.filter(h => h.id !== id);
+  state.deleted = [...(state.deleted || []), id].slice(-500);   // so other devices drop it too
   state.habits.forEach((h, i) => { h.order = i; });
   saveData();
 }
@@ -3807,10 +3810,10 @@ function init() {
 
 /* =====================================================================
    FRIENDS AND GROUPS (online, optional)
-   Everything else in Cadence stays on this device. Only what you choose
-   to share goes to the Cadence server (Supabase): habits set to Friends
-   or Public, your profile name, and group check-ins. Private habits
-   never leave the phone. The server's row-level security rules
+   When you're signed in, your data is backed up to your own account (see
+   ACCOUNT SYNC), readable only by you. Friends only see what you choose
+   to share: habits set to Friends or Public, your profile name, and group
+   check-ins. The server's row-level security rules
    (supabase/schema.sql) make sure people only see what was shared.
    ===================================================================== */
 const SB_URL = 'https://trjdxrscmctxduvtuofp.supabase.co';
@@ -3845,6 +3848,73 @@ function sbStart() {
   return sbStarting;
 }
 function myId() { return sbSession?.user?.id; }
+
+/* ---------------------------------------------------------------------
+   ACCOUNT SYNC
+   Your habits, check-ins, to-dos and settings are saved to your account,
+   so signing in on another phone or computer brings them along. This
+   phone keeps its own copy too, so Cadence still works offline. When two
+   devices both changed something, habits are merged: every check-in from
+   either device is kept, and a habit deleted on one is deleted on both.
+   --------------------------------------------------------------------- */
+let applyingCloud = false, cloudTimer = null, cloudBusy = null;
+function syncMark(k, v) {
+  try { if (v === undefined) return localStorage.getItem('cadence.sync.' + k); localStorage.setItem('cadence.sync.' + k, String(v)); }
+  catch (e) { return null; }
+}
+function scheduleCloud(ms = 2000) {
+  if (!sbSession) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => cloudSync(), ms);
+}
+function mergeStates(local, cloud, cloudNewer) {
+  const newer = cloudNewer ? cloud : local, older = cloudNewer ? local : cloud;
+  const gone = new Set([...(local.deleted || []), ...(cloud.deleted || [])]);
+  const olderById = new Map((older.habits || []).map(h => [h.id, h]));
+  const habits = [];
+  (newer.habits || []).forEach(h => {
+    if (gone.has(h.id)) return;
+    const o = olderById.get(h.id);
+    habits.push(o ? { ...h, completions: { ...(o.completions || {}), ...(h.completions || {}) } } : h);
+    olderById.delete(h.id);
+  });
+  olderById.forEach(h => { if (!gone.has(h.id)) habits.push({ ...h, order: 1e6 + (h.order || 0) }); });
+  return { ...newer, habits, deleted: [...gone].slice(-500) };
+}
+async function cloudSync() {
+  if (!sb || !sbSession) return;
+  if (cloudBusy) return cloudBusy;
+  cloudBusy = (async () => {
+    const uid = myId();
+    const { data: row, error } = await sb.from('user_data').select('data,updated_at').eq('user_id', uid).maybeSingle();
+    if (error) return;   // not set up yet, or offline
+    const lastUser = syncMark('user'), pulledAt = syncMark('pulledAt');
+    const localAt = Number(syncMark('localAt') || 0);
+    let next = null;
+    if (row && row.data) {
+      const cloudAt = new Date(row.updated_at).getTime();
+      if (lastUser && lastUser !== uid) next = migrateData(row.data);           // someone else signed in on this phone
+      else if (pulledAt === row.updated_at && localAt <= cloudAt) return;       // nothing new either side
+      else if (pulledAt === row.updated_at) next = null;                        // only this phone changed: upload
+      else if (!state.habits.length && !lastUser) next = migrateData(row.data); // fresh phone: take the account's data
+      else next = migrateData(mergeStates(state, row.data, cloudAt > localAt));
+    }
+    if (next) {
+      applyingCloud = true;
+      state = next;
+      saveData();
+      applyingCloud = false;
+      applySettings();
+      render();
+    }
+    const now = new Date().toISOString();
+    const up = await sb.from('user_data').upsert({ user_id: uid, data: state, updated_at: now });
+    if (up.error) return;
+    syncMark('user', uid); syncMark('pulledAt', now); syncMark('localAt', Date.parse(now));
+  })().catch(() => {}).finally(() => { cloudBusy = null; });
+  return cloudBusy;
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleCloud(300); });
 /* names of people you blocked, kept on this device (the server hides their profile from you) */
 function blockedNames() { try { return JSON.parse(localStorage.getItem('cadence.blockedNames') || '{}'); } catch (e) { return {}; } }
 function saveBlockedName(id, name) { try { const m = blockedNames(); m[id] = name; localStorage.setItem('cadence.blockedNames', JSON.stringify(m)); } catch (e) {} }
@@ -4260,7 +4330,7 @@ function socialAuthHTML() {
     <div class="surface rounded-2xl p-5 space-y-4">
       <div>
         <h2 class="display text-xl font-semibold">${up ? 'Create your account' : 'Sign in'}</h2>
-        <p class="text-[12px] text-[var(--text-dim)] mt-1">Only habits you choose to share go online. Everything else stays on this phone.</p>
+        <p class="text-[12px] text-[var(--text-dim)] mt-1">Your habits are saved to your account, so they follow you to any device. Friends only see the habits you choose to share.</p>
       </div>
       <form id="sAuthForm" class="space-y-3" autocomplete="on">
         ${up ? `<input id="sName" type="text" maxlength="30" placeholder="Display name" value="${escapeHtml(state.settings.name)}" class="w-full px-4 py-3 text-sm" autocomplete="nickname" required>` : ''}
@@ -4370,7 +4440,7 @@ async function socialAuth() {
       if (error) throw error;
       sbSession = data.session;
     }
-    if (sbSession) { net.loaded = false; await loadSocial(); syncShared(); }
+    if (sbSession) { net.loaded = false; await cloudSync(); await loadSocial(); syncShared(); }
   } catch (e) { social.authMsg = e.message || 'Something went wrong'; }
   social.busy = false; render();
 }
@@ -4851,7 +4921,7 @@ async function socialRename(name) {
    and the Friends button can show new requests or nudges */
 function socialBoot() {
   if (!hadSession()) return;
-  sbStart().then(() => sbSession && loadSocial().then(() => { syncShared(); if (activeTab === 'home') render(); announceSocial(); })).catch(() => {});
+  sbStart().then(() => sbSession && cloudSync().then(() => loadSocial()).then(() => { syncShared(); if (activeTab === 'home') render(); announceSocial(); })).catch(() => {});
 }
 
 /* cheers and nudges you haven't seen yet pop up, once each */
@@ -4953,7 +5023,7 @@ function renderOnboarding() {
         <button type="button" id="obMode" class="w-full text-[13px] font-bold text-[var(--text-dim)] pt-1">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
       </form>
       <button id="obSkip" class="text-[13px] font-bold text-[var(--text-faint)]">Not now</button>
-      <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Your habits stay on this phone either way.</p>`);
+      <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Sign in to keep your habits on every device.</p>`);
     el.querySelector('#obForm').onsubmit = e => { e.preventDefault(); onboardAuth(); };
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
     el.querySelector('#obForgot')?.addEventListener('click', () => showForgotPage(el.querySelector('#obEmail').value, () => renderOnboarding()));
@@ -5076,7 +5146,7 @@ async function onboardAuth() {
       sbSession = data.session;
     }
     net.loaded = false;
-    loadSocial().then(() => { syncShared(); announceSocial(); });
+    cloudSync().then(() => { render(); return loadSocial(); }).then(() => { syncShared(); announceSocial(); });
     onboardStep = 1;
   } catch (e) {
     onboardMsg = e.message === 'offline' ? "You're offline. Tap Not now and sign in later from the Social tab." : (e.message || 'Something went wrong');

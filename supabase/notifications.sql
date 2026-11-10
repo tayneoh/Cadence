@@ -1,4 +1,4 @@
--- Cadence notifications and friend suggestions.
+-- Cadence notifications, friend suggestions and account sync.
 -- Run once after schema.sql and feed.sql (safe to run again).
 -- Before running, replace the two placeholders below:
 --   PUSH_FUNCTION_URL  your function's address, e.g. https://<project>.supabase.co/functions/v1/push
@@ -137,3 +137,16 @@ end $$;
 
 revoke all on function public.friend_suggestions(), public.request_friend(uuid) from public, anon;
 grant execute on function public.friend_suggestions(), public.request_friend(uuid) to authenticated;
+
+-- ---------- account sync ----------
+-- one row per account holding your habits, check-ins, to-dos and settings,
+-- so they follow you to any device. Only you can read or change it.
+create table if not exists public.user_data (
+  user_id uuid primary key references public.profiles(id) on delete cascade default auth.uid(),
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.user_data enable row level security;
+drop policy if exists "own data" on public.user_data;
+create policy "own data" on public.user_data for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
