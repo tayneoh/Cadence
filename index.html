@@ -4057,13 +4057,7 @@ function renderSocialTab() {
     if (!net.loading && !net.error) refreshSocial();
   } else {
     const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'smile'], ['groups', 'Groups', 'group-fill'], ['profile', 'Privacy', 'lock']], social.view, true);
-    const nudges = net.nudgesIn.length ? `
-      <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
-        <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
-        <div class="flex-1 min-w-0 text-[13px] leading-snug">${net.nudgesIn.map(n => {
-          const g = net.groups.find(x => x.id === n.group_id);
-          return `<div><b>${escapeHtml(firstName(n.sender))}</b> nudged you${g ? ` in ${escapeHtml(g.name)}` : ''}</div>`; }).join('')}</div>
-      </div>` : '';
+    const nudges = '';  // nudges arrive as a pop-up, so no notice in the feed
     const v = social.view;
     const inner = v === 'feed' ? socialFeedHTML() : v === 'friends' ? socialFriendsHTML()
       : v === 'groups' ? (social.openGroup ? socialGroupHTML() : social.creating ? socialCreateHTML() : socialGroupsHTML())
@@ -4286,11 +4280,7 @@ function socialFriendsHTML() {
         </div>` : ''}
       </div>`;
   }).join('');
-  const cheers = net.cheersIn.length ? `
-    <div class="surface rounded-2xl p-4 flex items-center gap-3">
-      <i data-lucide="sparkles" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
-      <div class="flex-1 min-w-0 text-[13px]"><b>${net.cheersIn.map(id => escapeHtml(firstName(id))).join(', ')}</b> cheered you on today</div>
-    </div>` : '';
+  const cheers = '';  // cheers arrive as a pop-up, so no notice here
   return `
     ${cheers}
     <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
