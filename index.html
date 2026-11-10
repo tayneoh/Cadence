@@ -3447,6 +3447,8 @@ function switchTab(tab) {
     editDraft = null;
     formCustomColor = null;
   }
+  // opening Social: fetch the latest in the background
+  if (tab === 'social' && activeTab !== 'social' && sbSession && net.loaded && !net.loading) refreshSocial().catch(() => {});
   activeTab = tab;
   ['home','stats','new','calendar','settings','social'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
@@ -3540,7 +3542,7 @@ const SB_AUTH_KEY = 'cadence.auth';
 let sb = null, sbSession = null, sbStarting = null;
 const net = { loaded: false, loading: false, error: null, me: null, people: {}, friends: [], requests: [], sent: [],
   habits: {}, groups: [], members: {}, checkins: new Set(), cheersIn: [], cheersOut: new Set(), nudgesIn: [], nudgesOut: new Set(), blocked: [] };
-const social = { view: 'feed', openComments: null, posting: false, openFriend: null, openGroup: null, creating: false, adding: false, joining: false,
+const social = { view: 'feed', openComments: null, openReact: null, drafts: {}, posting: false, openFriend: null, openGroup: null, creating: false, adding: false, joining: false,
   confirmLeave: null, authMode: 'signin', authMsg: '', busy: false, draft: { name: '', habit: null, days: [...ALL_DAYS] } };
 
 function loadSupabaseLib() {
@@ -3731,10 +3733,16 @@ function socialFeedHTML() {
         : `<div class="feed-badge mt-2"><i data-lucide="circle-check" class="w-5 h-5"></i><div><div class="text-[15px] font-bold">${escapeHtml(x.habit_title || '')}</div><div class="text-[12px] text-[var(--text-dim)]">${x.streak > 1 ? `${x.streak} days in a row` : 'Done today'}</div></div></div>`;
     const rs = net.reactions.filter(r => r.post_id === x.id);
     const cs = net.comments.filter(c => c.post_id === x.id);
+    // heart is always there; other emoji show up once someone has used them
+    const picking = social.openReact === x.id;
     const bar = REACTIONS.map(([k, e]) => {
       const n = rs.filter(r => r.emoji === k).length, me = rs.some(r => r.emoji === k && r.user_id === uid);
+      if (k !== 'heart' && !n) return '';
       return `<button data-s="react" data-v="${x.id}|${k}" class="react-btn ${me ? 'on' : ''}" aria-label="${k}">${e}${n ? `<span>${n}</span>` : ''}</button>`;
-    }).join('');
+    }).join('') + `<button data-s="reactMenu" data-v="${x.id}" class="react-btn ${picking ? 'on' : ''}" aria-label="Add a reaction"><i data-lucide="smile-plus" class="w-4 h-4"></i></button>`;
+    const picker = picking ? `
+        <div class="flex items-center gap-1.5 mt-2 flex-wrap">${REACTIONS.filter(([k]) => k !== 'heart' && !rs.some(r => r.emoji === k && r.user_id === uid))
+          .map(([k, e]) => `<button data-s="react" data-v="${x.id}|${k}" class="react-btn" aria-label="${k}">${e}</button>`).join('')}</div>` : '';
     const open = social.openComments === x.id;
     return `
       <div class="surface rounded-2xl p-4">
@@ -3748,7 +3756,7 @@ function socialFeedHTML() {
         <div class="flex items-center gap-1.5 mt-3 flex-wrap">
           ${bar}
           <button data-s="comments" data-v="${x.id}" class="react-btn ml-auto"><i data-lucide="message-circle" class="w-4 h-4"></i>${cs.length ? `<span>${cs.length}</span>` : ''}</button>
-        </div>
+        </div>${picker}
         ${open ? `
         <div class="mt-3 pt-3 border-t border-[var(--border)] space-y-2.5">
           ${cs.map(c => `
@@ -3841,7 +3849,11 @@ function renderSocialTab() {
       : socialProfileHTML();
     body = `${tabs}${nudges}${inner}${net.error ? `<p class="text-[12px] text-[var(--text-dim)] px-1">Last refresh failed: ${escapeHtml(net.error)}</p>` : ''}`;
   }
+  // keep half-written posts and comments when the page redraws
+  const drafts = social.drafts;
+  root.querySelectorAll('#sPostBody, [id^="sComment-"]').forEach(f => { drafts[f.id] = f.value; });
   root.innerHTML = `<div class="tab-enter space-y-6">${head}${body}</div>`;
+  root.querySelectorAll('#sPostBody, [id^="sComment-"]').forEach(f => { if (drafts[f.id]) f.value = drafts[f.id]; });
   root.onclick = socialClick;
   root.oninput = e => { if (e.target.id === 'sGroupName') social.draft.name = e.target.value; };
   root.onsubmit = e => { e.preventDefault(); if (e.target.id === 'sAuthForm') socialAuth(); };
@@ -4214,20 +4226,30 @@ async function socialClick(e) {
     case 'post': {
       const body = document.getElementById('sPostBody').value.trim();
       if (!body) return;
-      return act(() => sb.from('posts').insert({ user_id: uid, kind: 'text', body: body.slice(0, 280), day: todayISO() }), 'Posted');
+      return act(async () => {
+        const r = await sb.from('posts').insert({ user_id: uid, kind: 'text', body: body.slice(0, 280), day: todayISO() });
+        if (!r?.error) { social.drafts.sPostBody = ''; document.getElementById('sPostBody').value = ''; }
+        return r;
+      }, 'Posted');
     }
     case 'delPost': return act(() => sb.from('posts').delete().eq('id', v).eq('user_id', uid));
     case 'react': {
       const [pid, k] = v.split('|');
       const mine = net.reactions.some(r => r.post_id === pid && r.emoji === k && r.user_id === uid);
+      social.openReact = null;
       return act(() => mine ? sb.from('reactions').delete().eq('post_id', pid).eq('user_id', uid).eq('emoji', k)
         : sb.from('reactions').insert({ post_id: pid, user_id: uid, emoji: k }));
     }
+    case 'reactMenu': social.openReact = social.openReact === v ? null : v; break;
     case 'comments': social.openComments = social.openComments === v ? null : v; break;
     case 'comment': {
       const body = document.getElementById('sComment-' + v)?.value.trim();
       if (!body) return;
-      return act(() => sb.from('comments').insert({ post_id: v, body: body.slice(0, 300) }));
+      return act(async () => {
+        const r = await sb.from('comments').insert({ post_id: v, body: body.slice(0, 300) });
+        if (!r?.error) { social.drafts['sComment-' + v] = ''; document.getElementById('sComment-' + v).value = ''; }
+        return r;
+      });
     }
     case 'delComment': return act(() => sb.from('comments').delete().eq('id', v));
     case 'friend': social.openFriend = social.openFriend === v ? null : v; break;
@@ -4338,6 +4360,17 @@ function announceSocial() {
   achQueue.push(...items);
   if (document.getElementById('achievementModal').classList.contains('hidden')) showNextAchievement();
 }
+
+/* while Social is open, check for new posts every 30 seconds. Skipped while
+   you're typing a post or comment, so nothing you're writing gets cleared. */
+function socialTyping() {
+  const el = document.activeElement;
+  return !!el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && !!el.closest('#tab-social');
+}
+setInterval(() => {
+  if (activeTab !== 'social' || document.visibilityState !== 'visible' || !sbSession || !net.loaded || net.loading || socialTyping()) return;
+  refreshSocial().catch(() => {});
+}, 30000);
 
 /* coming back to the app: check for new cheers, nudges and friend activity */
 document.addEventListener('visibilitychange', () => {
