@@ -417,6 +417,35 @@
   .wv-bar span.on { background: var(--gold); border-color: var(--gold); }
   .wv-plain { font-size: 13px; font-weight: 700; letter-spacing: 4px; color: var(--gold); }
   .wv-chip > span:last-child { font-size: 11px; font-weight: 700; }
+  /* dropdown pickers in Settings */
+  .dd-current { flex-shrink: 0; width: 132px; pointer-events: none; padding: 0 8px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .dd-current.wv-chip { height: 56px; }
+  .dd-current.sv-chip, .dd-current.fv-chip { height: 40px; }
+  .dd-current.ac-chip { width: auto; padding: 0; }
+  .dd-chev { transition: transform 0.18s ease; }
+  .dd-chev.open { transform: rotate(180deg); }
+  .ac-chip { display: inline-flex; }
+  /* month and year look samples */
+  .ml-row { display: flex; gap: 3px; height: 22px; }
+  .ml-cell { width: 20px; height: 22px; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-style: normal; line-height: 1; }
+  .ml-cell.rd { border-radius: 6px; }
+  .ml-cell.sq { background: var(--surface-2); }
+  .ml-cell b { font-size: 7px; font-weight: 700; }
+  .ml-cell.sq b { position: absolute; top: 2px; left: 3px; font-size: 6px; opacity: 0.8; }
+  .ml-cell b.c { font-size: 8px; }
+  .ml-cell em { font-size: 7px; font-weight: 700; font-style: normal; margin-top: 1px; }
+  .ml-cell.sq em { margin-top: 5px; }
+  .ml-dots { display: flex; gap: 1px; margin-top: 2px; }
+  .ml-dots i { width: 4px; height: 4px; border-radius: 99px; border: 1px solid var(--gold); }
+  .ml-dots i.on { background: var(--gold); }
+  .yl-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .yl-wrap b { font-size: 7px; font-weight: 700; color: var(--text-dim); }
+  .yl-grid { display: grid; grid-template-columns: repeat(7, 7px); gap: 2px; }
+  .yl-grid i { width: 7px; height: 7px; border-radius: 1.5px; background: var(--surface-2); }
+  .yl-tiles { display: flex; gap: 4px; }
+  .yl-tiles span { width: 34px; height: 22px; border-radius: 4px; background: var(--surface-2); display: flex; flex-direction: column; justify-content: space-between; padding: 3px; }
+  .yl-tiles b { font-size: 7px; font-weight: 700; color: var(--text-dim); line-height: 1; }
+  .yl-tiles i { height: 3px; border-radius: 2px; background: var(--gold); }
 
   /* week style: bars (seven segments per habit) */
   .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
@@ -530,6 +559,8 @@
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 58%),
       conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
   .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
+  .custom-swatch-wrap.pending { background: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text-faint); }
+  .custom-swatch-wrap.pending .custom-color-input { opacity: 1; }
   /* strip the native color-picker padding on all browsers */
   .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
   .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
@@ -2242,7 +2273,7 @@ function renderHomeTab(page = 'home') {
   // Focus: Home lists every section (the Stats ones hidden unless added),
   // Stats lists only its own
   const order = focus && page === 'stats'
-    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k))
+    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k) && k !== 'week')   // This week lives on Home only
     : state.settings.homeOrder;
   const parts = order.map((key, i) => {
     const meta = HOME_SECTIONS[key];
@@ -2418,7 +2449,8 @@ let formColor = PALETTE[0];
 let formTrackingMode = 'check';  // 'check' | 'measure'
 let formKind = 'build';          // 'build' | 'quit' (new habits only)
 let formDays = [];    // weekdays the new habit is due (none until picked)
-let formCustomColor = null;      // hex string when user picks via the color input
+let formCustomColor = null;
+let lastPresetColor = null;        // preset in use before a custom color, for Reset      // hex string when user picks via the color input
 let editingId = null;            // when set, form is editing an existing habit
 let editDraft = null;            // working copy of the habit being edited;
                                  // committed by Save Changes, discarded by Cancel
@@ -2534,36 +2566,33 @@ function renderNewTab() {
         <textarea id="habitNote" rows="1" maxlength="200" placeholder="Optional: why, when, or how"
           class="w-full px-4 py-2.5 text-sm mb-4 resize-none">${escapeHtml(initNote)}</textarea>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Type</label>
-        <div class="grid grid-cols-2 gap-2 mb-4">
-          ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
-            <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
-              class="btn-press surface-2 border rounded-xl px-3 py-2 flex items-center gap-2 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
-              style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-              <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">${label}</span>
-            </button>`).join('')}
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Type</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
+                <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
+                  class="btn-press surface-2 border rounded-xl py-2 flex flex-col items-center gap-1 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
+                  style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+                  <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+                  <span class="text-[12px] font-bold">${label}</span>
+                </button>`).join('')}
+            </div>
+          </div>
+          <div id="trackingField" class="${initKind === 'quit' ? 'invisible' : ''}">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Tracking</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              ${[['check', 'Checkbox', 'check-square'], ['measure', 'Measured', 'sliders-horizontal']].map(([m, label, icon]) => `
+                <button data-mode="${m}" class="mode-btn ${initMode === m ? 'selected' : ''} btn-press surface-2 border rounded-xl py-2 flex flex-col items-center gap-1"
+                  style="border-color:${initMode === m ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+                  <i data-lucide="${icon}" class="w-4 h-4" style="color:${initMode === m ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+                  <span class="text-[12px] font-bold">${label}</span>
+                </button>`).join('')}
+            </div>
+          </div>
         </div>
 
         <div id="buildFields" class="${initKind === 'quit' ? 'hidden' : ''}">
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Tracking</label>
-        <div class="grid grid-cols-2 gap-2 mb-4">
-          <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl px-3 py-2 text-left"
-            style="border-color:${initMode==='check' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2">
-              <i data-lucide="check-square" class="w-4 h-4" style="color:${initMode==='check' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">Checkbox</span>
-            </div>
-          </button>
-          <button data-mode="measure" class="mode-btn ${initMode==='measure'?'selected':''} btn-press surface-2 border rounded-xl px-3 py-2 text-left"
-            style="border-color:${initMode==='measure' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2">
-              <i data-lucide="sliders-horizontal" class="w-4 h-4" style="color:${initMode==='measure' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">Measured</span>
-            </div>
-          </button>
-        </div>
-
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Daily target</label>
         <div class="flex items-center gap-2.5 mb-2.5">
           <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
@@ -2584,7 +2613,13 @@ function renderNewTab() {
         <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-4">${dayChips}</div>
 
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Color</label>
-        <div id="colorPalette" class="flex flex-wrap gap-2 mb-5">${swatches}${customSwatch}</div>
+        <div id="colorPalette" class="flex flex-wrap gap-2 mb-3">${swatches}${customSwatch}</div>
+        <div id="customColorBar" class="hidden items-center gap-2 mb-3">
+          <span class="text-[12px] font-bold text-[var(--text-dim)] flex-1" id="customColorLabel">New color</span>
+          <button type="button" id="customColorReset" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[12px] font-bold">Reset</button>
+          <button type="button" id="customColorOk" class="btn-press bg-[var(--text)] text-[var(--bg)] rounded-lg h-8 px-3 text-[12px] font-bold">Confirm</button>
+        </div>
+        <div class="mb-2"></div>
 
         <p id="habitFormError" class="hidden text-[12px] mb-3" style="color:#b03b3b;"></p>
 
@@ -2656,7 +2691,8 @@ function renderNewTab() {
       formColor = chosen;
       formCustomColor = null;
       if (editing) editing.color = chosen;
-      refreshSelections();
+      pendingColor = null;
+      refreshSelections(); showBar();
     });
   });
 
@@ -2665,15 +2701,40 @@ function renderNewTab() {
   // fires when they confirm. Only refresh the selection visuals — never
   // re-render the whole form, so typed input in the title/goal fields
   // is preserved.
+  // a picked custom color waits for Confirm; Reset throws it away (or, if a
+  // custom color is already in use, goes back to the last preset)
   const customInput = root.querySelector('#habitCustomColor');
+  const bar = root.querySelector('#customColorBar');
+  const wrap = root.querySelector('.custom-swatch-wrap');
+  let pendingColor = null;
+  const showBar = () => {
+    const custom = !PALETTE.includes(formColor);
+    const on = !!pendingColor || custom;
+    bar.classList.toggle('hidden', !on); bar.classList.toggle('flex', on);
+    root.querySelector('#customColorOk').classList.toggle('hidden', !pendingColor);
+    root.querySelector('#customColorLabel').textContent = pendingColor ? 'Use this color?' : 'Custom color';
+    wrap.classList.toggle('pending', !!pendingColor);
+  };
   if (customInput) {
-    customInput.addEventListener('change', () => {
-      const chosen = customInput.value;
-      formColor = chosen;
-      formCustomColor = chosen;
-      if (editing) editing.color = chosen;
-      refreshSelections();
+    const pick = () => { pendingColor = customInput.value; showBar(); };
+    customInput.addEventListener('input', pick);
+    customInput.addEventListener('change', pick);
+    root.querySelector('#customColorOk').addEventListener('click', () => {
+      if (PALETTE.includes(formColor)) lastPresetColor = formColor;
+      formColor = pendingColor; formCustomColor = pendingColor;
+      if (editing) editing.color = pendingColor;
+      pendingColor = null; refreshSelections(); showBar();
     });
+    root.querySelector('#customColorReset').addEventListener('click', () => {
+      if (!pendingColor && !PALETTE.includes(formColor)) {
+        formColor = lastPresetColor || PALETTE[0]; formCustomColor = null;
+        if (editing) editing.color = formColor;
+      }
+      pendingColor = null;
+      customInput.value = PALETTE.includes(formColor) ? '#666666' : formColor;
+      refreshSelections(); showBar();
+    });
+    showBar();
   }
 
   // tracking-mode buttons
@@ -2698,6 +2759,7 @@ function renderNewTab() {
         if (icon) icon.style.color = on ? 'var(--gold)' : 'var(--text-dim)';
       });
       root.querySelector('#buildFields').classList.toggle('hidden', formKind === 'quit');
+      root.querySelector('#trackingField').classList.toggle('invisible', formKind === 'quit');
     });
   });
 
@@ -3165,18 +3227,45 @@ function segHTML(key, options) {
     </div>`;
 }
 
-/* a 3-column picker whose buttons preview their own option */
-function pickerHTML(label, key, options, chipClass, inner, hint) {
+/* a dropdown that shows the current option as its own preview; tapping it
+   opens every option (each drawn in its own look) and picking one closes it */
+let openPicker = null;
+function dropdownHTML(label, key, options, chipClass, inner, current = state.settings[key]) {
+  const cur = options.find(o => o[0] === current) || options[0];
+  const open = openPicker === key;
   return `
-    <div class="py-3 border-t border-[var(--border)]">
-      <div class="text-[13px] font-bold">${label}</div>
-      ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
-      <div class="grid grid-cols-3 gap-2.5 mt-3">
+    <div class="py-3 border-t border-[var(--border)] first:border-t-0">
+      <button type="button" data-dd="${key}" class="w-full flex items-center gap-3 text-left" aria-expanded="${open}">
+        <span class="flex-1 min-w-0 text-[13px] font-bold">${label}</span>
+        <span class="${chipClass} dd-current" data-val="${cur[0]}">${inner(cur)}</span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)] shrink-0 dd-chev ${open ? 'open' : ''}"></i>
+      </button>
+      ${open ? `<div class="grid grid-cols-3 gap-2.5 mt-3">
         ${options.map(opt => `
-          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${state.settings[key] === opt[0]}"
-            class="${chipClass} btn-press ${state.settings[key] === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
-      </div>
+          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${current === opt[0]}"
+            class="${chipClass} btn-press ${current === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
+      </div>` : ''}
     </div>`;
+}
+
+/* tiny samples of each month / year look, for their pickers */
+function monthLookSample(look) {
+  const days = [[1, 2, 3], [2, 3, 3], [3, 1, 3], [4, 3, 3]];
+  const shade = (d, n) => `background:color-mix(in srgb, var(--gold) ${Math.round(10 + 90 * d / n)}%, var(--surface-2));${d / n >= 0.8 ? 'color:var(--bg);' : ''}`;
+  const cell = ([num, d, n]) => {
+    if (look === 'squares') return `<span class="ml-cell sq" style="${shade(d, n)}"><b>${num}</b><em>${d}/${n}</em></span>`;
+    if (look === 'dots') return `<span class="ml-cell"><b class="c">${num}</b><span class="ml-dots">${[0, 1, 2].map(k => `<i class="${k < d ? 'on' : ''}"></i>`).join('')}</span></span>`;
+    if (look === 'color') return `<span class="ml-cell rd" style="${shade(d, n)}"><b class="c">${num}</b></span>`;
+    if (look === 'colorcount') return `<span class="ml-cell rd" style="${shade(d, n)}"><b class="c">${num}</b><em>${d}/${n}</em></span>`;
+    return `<span class="ml-cell rd"><b class="c">${num}</b><em>${d}/${n}</em></span>`;
+  };
+  return `<span class="ml-row" aria-hidden="true">${days.map(cell).join('')}</span>`;
+}
+function yearLookSample(look) {
+  if (look === 'count') return `<span class="yl-tiles" aria-hidden="true">${[['Jan', 70], ['Feb', 45]].map(([m, p]) => `<span><b>${m}</b><i style="width:${p}%"></i></span>`).join('')}</span>`;
+  const v = [3, 1, 0, 2, 3, 2, 1, 3, 3, 0, 2, 3, 1, 3];
+  const grid = `<span class="yl-grid">${v.map(x => `<i style="${x ? `background:color-mix(in srgb, var(--gold) ${Math.round(10 + 30 * x)}%, var(--surface-2))` : ''}"></i>`).join('')}</span>`;
+  return `<span class="yl-wrap" aria-hidden="true">${look === 'colorcount' ? '<b>Jan 18/24</b>' : ''}${grid}</span>`;
 }
 
 /* four days of a week board drawn in the given week style */
@@ -3196,6 +3285,19 @@ function weekStyleSample(style) {
 
 function switchHTML(key) {
   return `<button data-switch="${key}" role="switch" aria-checked="${!!state.settings[key]}" class="switch" aria-label="${key}"></button>`;
+}
+
+function accentDropdown(cur, accents) {
+  const open = openPicker === 'accent';
+  return `
+    <div class="py-3 border-t border-[var(--border)]">
+      <button type="button" data-dd="accent" class="w-full flex items-center gap-3 text-left" aria-expanded="${open}">
+        <span class="flex-1 min-w-0 text-[13px] font-bold">Accent color</span>
+        <span class="shrink-0" style="width:30px;height:30px;border-radius:9px;background:${cur}"></span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)] shrink-0 dd-chev ${open ? 'open' : ''}"></i>
+      </button>
+      ${open ? `<div class="flex flex-wrap gap-2.5 mt-3">${accents}</div>` : ''}
+    </div>`;
 }
 
 function renderSettingsTab() {
@@ -3225,10 +3327,7 @@ function renderSettingsTab() {
           `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
         settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
         settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
-        `<div class="py-3 border-t border-[var(--border)]">
-           <div class="text-[13px] font-bold mb-2.5">Accent color</div>
-           <div class="flex flex-wrap gap-2.5">${accents}</div>
-         </div>` +
+        accentDropdown(st.accent, accents) +
         settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']])) +
         settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
         settingsRow('Notifications', '', switchHTML('badge')) +
@@ -3236,15 +3335,15 @@ function renderSettingsTab() {
       )}
 
       ${section('Calendar',
-        pickerHTML('Month view', 'monthLook', MONTH_LOOKS, 'sv-chip', ([, name]) => name) +
-        pickerHTML('Year view', 'yearLook', YEAR_LOOKS, 'sv-chip', ([, name]) => name)
+        dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
+        dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
+        dropdownHTML('Year view', 'yearLook', YEAR_LOOKS, 'wv-chip', ([val, name]) => yearLookSample(val) + `<span>${name}</span>`)
       )}
 
       ${section('Appearance',
         settingsRow('Color-code habits', '', switchHTML('habitColors')) +
-        pickerHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
-        pickerHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
-        pickerHTML('Week view style', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`)
+        dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
+        dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name)
       )}
 
       ${section('Home screen',
@@ -3286,9 +3385,13 @@ function renderSettingsTab() {
   const nameInput = root.querySelector('#setName');
   nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
 
+  root.querySelectorAll('[data-dd]').forEach(btn => {
+    btn.addEventListener('click', () => { openPicker = openPicker === btn.dataset.dd ? null : btn.dataset.dd; render(); });
+  });
   root.querySelectorAll('[data-seg]').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.seg;
+      if (openPicker === key) openPicker = null;
       const val = key === 'weekStart' ? Number(btn.dataset.val) : btn.dataset.val;
       updateSetting(key, val);
       if (key === 'weekStart') weekStart = startOfWeek(selectedDay);
@@ -3301,7 +3404,7 @@ function renderSettingsTab() {
     if (homeEditing) switchTab('home'); else render();
   });
   root.querySelectorAll('[data-accent]').forEach(btn => {
-    btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); render(); });
+    btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); openPicker = null; render(); });
   });
   root.querySelectorAll('[data-switch]').forEach(btn => {
     btn.addEventListener('click', () => {
