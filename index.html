@@ -107,6 +107,11 @@
   @media (hover: hover) { .cal-cell.toggleable:hover { background: var(--surface-2); } }
   .cal-cell.future { color: var(--text-faint); cursor: not-allowed; opacity: 0.55; }
   .cal-cell.outside { visibility: hidden; }
+  .cal-cell.cal-sq { border-radius: 8px; background: var(--surface-2); min-height: 40px; }
+  .cal-sq .sq-num { position: absolute; top: 4px; left: 6px; font-size: 10px; line-height: 1; opacity: 0.75; }
+  .cal-sq .sq-frac { font-size: 14px; line-height: 1; margin-top: 6px; }
+  .cal-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .cal-cell.cal-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .cal-cell.today-ring { box-shadow: inset 0 0 0 1.5px var(--gold); }
   .cal-cell.selected-day { box-shadow: inset 0 0 0 2px var(--text); }
 
@@ -860,7 +865,7 @@ const DEFAULT_SETTINGS = {
   style: 'classic',       // shapes, surfaces and textures: a key of APP_STYLES
   font: 'auto',           // type: 'auto' follows the style, or a key of APP_STYLES
   weekStyle: 'circles',
-  monthLook: 'dots',      // month calendar: 'dots' | 'color' | 'colorcount' | 'count'
+  monthLook: 'squares',   // month calendar: 'squares' | 'dots' | 'color' | 'colorcount' | 'count'
   yearLook: 'color',      // year calendar: 'color' | 'colorcount' | 'count'   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
@@ -888,7 +893,7 @@ const APP_STYLES = [
   ['graph','Graph paper'], ['dotted','Dot grid'], ['linen','Linen'], ['outline','Outline'],
   ['elevated','Elevated'],
 ];
-const MONTH_LOOKS = [['dots', 'Dots'], ['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
+const MONTH_LOOKS = [['squares', 'Squares'], ['dots', 'Dots'], ['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
 const YEAR_LOOKS = [['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
 const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
   ['bars','Bars'],['plain','Plain']];
@@ -1756,7 +1761,22 @@ function buildUnifiedCalendar() {
     // one dot per habit: hollow if nothing logged, filled if goal met,
     // partial (with fill up to progress %) for measure-mode in between
     const look = state.settings.monthLook;
-    if (look !== 'dots') {
+    if (look === 'squares') {
+      // like the year view: a shaded square, date in the corner, done/due in the middle
+      cell.classList.add('cal-sq');
+      num.className = 'sq-num';
+      if (!isFuture) {
+        const c = dayCount(iso), score = dayScore(iso);
+        cell.style.cssText += heatBg(score);
+        if (score >= 0.6) cell.style.color = 'var(--bg)';
+        if (c.due) {
+          const r = document.createElement('span');
+          r.className = 'sq-frac';
+          r.innerHTML = `${c.done}<small>/${c.due}</small>`;
+          cell.appendChild(r);
+        }
+      }
+    } else if (look !== 'dots') {
       if (!isFuture) {
         const c = dayCount(iso), score = dayScore(iso);
         if (look !== 'count') {
@@ -1793,7 +1813,7 @@ function buildUnifiedCalendar() {
          prog > 0 ? ` — ${val} / ${h.goal} ${h.unit}` : '');
       dots.appendChild(d);
     });
-    cell.appendChild(dots);
+    if (look !== 'squares') cell.appendChild(dots);
 
     if (isToday) cell.classList.add('today-ring');
     if (iso === selectedDay) cell.classList.add('selected-day');
@@ -2876,7 +2896,7 @@ function renderCalendarTab() {
     </div>`;
 
   const legend = state.settings.monthLook !== 'dots'
-    ? `<p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.monthLook === 'count' ? 'Habits done out of habits scheduled.' : 'Darker days mean more habits done.'}</p>`
+    ? `<p class="text-[11px] text-[var(--text-faint)] mt-4">${state.settings.monthLook === 'count' ? 'Habits done out of habits scheduled.' : state.settings.monthLook === 'squares' ? 'Darker days mean more habits done. Numbers show habits done out of habits scheduled.' : 'Darker days mean more habits done.'}</p>`
     : `
     <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-[var(--border)]">
       ${state.habits.map(h => `
