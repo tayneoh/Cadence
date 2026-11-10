@@ -402,6 +402,19 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
   .wv-chip.active { outline: 2px solid var(--gold); outline-offset: 2px; }
   .wv-row { display: flex; align-items: center; gap: 4px; height: 16px; }
+  .wv-sq { width: 18px; height: 16px; border-radius: 4px; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .wk-sq { position: relative; border-radius: 8px; background: var(--surface-2); aspect-ratio: 1 / 1.15; display: flex; align-items: center; justify-content: center; padding-top: 10px; }
+  .wk-sq .sq-num { position: absolute; top: 4px; left: 5px; font-size: 9px; line-height: 1; opacity: 0.75; white-space: nowrap; }
+  .wk-sq .sq-frac { font-size: 14px; font-weight: 700; line-height: 1; }
+  .wk-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .day-sq { border-radius: 14px; background: var(--surface-2); padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .day-sq .sq-frac { font-size: 30px; font-weight: 700; line-height: 1; }
+  .day-sq .sq-frac small { font-size: 16px; opacity: 0.75; }
+  .day-sq-sub { font-size: 12px; opacity: 0.8; }
+  .drag-handle { touch-action: none; cursor: grab; }
+  [data-habit-row].dragging { position: relative; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: none; }
+  .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+  .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
   .wv-circle i { width: 7px; height: 7px; border: 1.5px solid var(--text); border-radius: 2px; }
   .wv-circle.on i { background: color-mix(in srgb, var(--gold) 45%, transparent); }
@@ -416,6 +429,35 @@
   .wv-bar span.on { background: var(--gold); border-color: var(--gold); }
   .wv-plain { font-size: 13px; font-weight: 700; letter-spacing: 4px; color: var(--gold); }
   .wv-chip > span:last-child { font-size: 11px; font-weight: 700; }
+  /* dropdown pickers in Settings */
+  .dd-current { flex-shrink: 0; width: 132px; pointer-events: none; padding: 0 8px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .dd-current.wv-chip { height: 56px; }
+  .dd-current.sv-chip, .dd-current.fv-chip { height: 40px; }
+  .dd-current.ac-chip { width: auto; padding: 0; }
+  .dd-chev { transition: transform 0.18s ease; }
+  .dd-chev.open { transform: rotate(180deg); }
+  .ac-chip { display: inline-flex; }
+  /* month and year look samples */
+  .ml-row { display: flex; gap: 3px; height: 22px; }
+  .ml-cell { width: 20px; height: 22px; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-style: normal; line-height: 1; }
+  .ml-cell.rd { border-radius: 6px; }
+  .ml-cell.sq { background: var(--surface-2); }
+  .ml-cell b { font-size: 7px; font-weight: 700; }
+  .ml-cell.sq b { position: absolute; top: 2px; left: 3px; font-size: 6px; opacity: 0.8; }
+  .ml-cell b.c { font-size: 8px; }
+  .ml-cell em { font-size: 7px; font-weight: 700; font-style: normal; margin-top: 1px; }
+  .ml-cell.sq em { margin-top: 5px; }
+  .ml-dots { display: flex; gap: 1px; margin-top: 2px; }
+  .ml-dots i { width: 4px; height: 4px; border-radius: 99px; border: 1px solid var(--gold); }
+  .ml-dots i.on { background: var(--gold); }
+  .yl-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .yl-wrap b { font-size: 7px; font-weight: 700; color: var(--text-dim); }
+  .yl-grid { display: grid; grid-template-columns: repeat(7, 7px); gap: 2px; }
+  .yl-grid i { width: 7px; height: 7px; border-radius: 1.5px; background: var(--surface-2); }
+  .yl-tiles { display: flex; gap: 4px; }
+  .yl-tiles span { width: 34px; height: 22px; border-radius: 4px; background: var(--surface-2); display: flex; flex-direction: column; justify-content: space-between; padding: 3px; }
+  .yl-tiles b { font-size: 7px; font-weight: 700; color: var(--text-dim); line-height: 1; }
+  .yl-tiles i { height: 3px; border-radius: 2px; background: var(--gold); }
 
   /* week style: bars (seven segments per habit) */
   .wk-bar { height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border);
@@ -524,6 +566,19 @@
     border: 2px dashed var(--border);
     background: transparent; cursor: pointer; margin: 0; }
   .custom-swatch-wrap.selected .custom-color-input { border: none; }
+  /* until a custom color is chosen, the slot is a rainbow swirl */
+  .custom-swatch-wrap:not(.selected) {
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 58%),
+      conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
+  .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
+  .form-time { height: 44px; border-radius: 12px; }
+  .form-dd { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 12px;
+    border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); text-align: left; }
+  /* custom color picker window */
+  .cp-hue { background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+  .cp-range { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 99px; outline: none; }
+  .cp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 99px; background: #fff; border: 2px solid rgba(0,0,0,0.25); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .cp-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 99px; background: #fff; border: 2px solid rgba(0,0,0,0.25); }
   /* strip the native color-picker padding on all browsers */
   .custom-color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9px; }
   .custom-color-input::-webkit-color-swatch { border: none; border-radius: 9px; }
@@ -533,7 +588,7 @@
     transform: translate(-50%, -50%); pointer-events: none;
     color: var(--text-dim); }
 
-  input[type="text"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
+  input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="time"], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: 11px; color: var(--text); outline: none;
     transition: border-color 0.15s ease;
@@ -574,6 +629,7 @@
   .off-today[open] > summary::before { content: "\2212  "; }
   /* week board: days a habit isn't scheduled are faded but still tappable */
   [data-week-toggle][data-off] { opacity: 0.35; }
+  .cal-readonly [data-week-toggle], .cal-readonly [data-toggle-day] { pointer-events: none; cursor: default; }
   .day-chip { height: 36px; border-radius: 10px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border);
     background: var(--surface-2); color: var(--text-dim); }
   .day-chip.on, .day-preset.on { background: var(--gold); border-color: var(--gold); color: var(--bg); }
@@ -615,12 +671,15 @@
     background: transparent; height: 44px; padding: 0; margin: 0;
     outline: none; cursor: pointer;
   }
-  .measure-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
-  .measure-slider::-moz-range-track { height: 4px; border-radius: 99px; background: var(--surface-2); }
+  /* the part of the track left of the dot fills with the habit's color */
+  .measure-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 99px;
+    background: linear-gradient(to right, currentColor 0, currentColor var(--fill, 0%), var(--surface-2) var(--fill, 0%)); }
+  .measure-slider::-moz-range-track { height: 6px; border-radius: 99px; background: var(--surface-2); }
+  .measure-slider::-moz-range-progress { height: 6px; border-radius: 99px; background: currentColor; }
   .measure-slider::-webkit-slider-thumb { -webkit-appearance:none;
     width: 22px; height: 22px; border-radius: 99px;
     background: currentColor; border: 3px solid var(--surface);
-    margin-top: -9px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    margin-top: -8px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .measure-slider::-moz-range-thumb {
     width: 22px; height: 22px; border-radius: 99px;
@@ -660,6 +719,8 @@
   .s-vis button:disabled { opacity: 0.4; }
   .ob-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--border); transition: width 0.2s ease; }
   .ob-dot.on { width: 20px; background: var(--gold); }
+  .tour-lock, .tour-lock body { overflow: hidden !important; overscroll-behavior: none; }
+  #tour { touch-action: none; }
   #tourHole { position: fixed; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62), 0 0 0 2px var(--gold);
     transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease; pointer-events: none; }
   #tourHole.tour-none { box-shadow: 0 0 0 9999px rgba(10, 9, 7, 0.62); }
@@ -676,6 +737,7 @@
   .react-btn.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--text); }
   .s-row { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 12px; }
   .s-row + .s-row { border-top: 1px solid var(--border); }
+  .s-group-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; flex-shrink: 0; }
   .s-friends-btn { position: relative; width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .tab-dot { position: absolute; top: 2px; right: 10px; width: 8px; height: 8px; border-radius: 99px; background: var(--gold); box-shadow: 0 0 0 2px var(--surface); }
   .s-friends-btn .s-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 99px; background: var(--gold); box-shadow: 0 0 0 2px var(--surface); }
@@ -746,6 +808,24 @@
 </nav>
 
 <!-- ============ DELETE CONFIRM MODAL ============ -->
+<!-- ============ CUSTOM COLOR PICKER ============ -->
+<div id="colorModal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+  <div class="surface rounded-2xl p-5 w-full max-w-sm space-y-4" role="dialog" aria-label="Custom color">
+    <div class="flex items-center gap-3">
+      <span id="cpPreview" class="w-12 h-12 rounded-xl shrink-0"></span>
+      <div><div class="display text-xl font-semibold">Custom color</div><div id="cpHex" class="text-[12px] text-[var(--text-dim)] uppercase"></div></div>
+    </div>
+    <div class="space-y-1.5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">Color</div>
+      <input id="cpHue" type="range" min="0" max="359" class="cp-range cp-hue" aria-label="Color"></div>
+    <div class="space-y-1.5"><div class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)]">Shade</div>
+      <input id="cpShade" type="range" min="22" max="78" class="cp-range" aria-label="Shade"></div>
+    <div class="flex gap-2.5 pt-1">
+      <button type="button" id="cpReset" class="btn-press flex-1 surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold">Reset</button>
+      <button type="button" id="cpOk" class="btn-press flex-1 bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirmModal" class="hidden fixed inset-0 z-40 modal-backdrop items-center justify-center p-4">
   <div class="modal-enter surface rounded-2xl w-full max-w-xs p-6 text-center">
     <div class="surface-2 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border" style="border-color:#e3b3b3;">
@@ -867,9 +947,9 @@ const DEFAULT_SETTINGS = {
   calDefault: 'month',    // view the Calendar tab opens on
   style: 'classic',       // shapes, surfaces and textures: a key of APP_STYLES
   font: 'auto',           // type: 'auto' follows the style, or a key of APP_STYLES
-  weekStyle: 'circles',
+  weekStyle: 'gradient', // week board look: 'gradient' | 'circles' | 'tiles' | 'dots' | 'pills' | 'bars' | 'plain'
   monthLook: 'squares',   // month calendar: 'squares' | 'dots' | 'color' | 'colorcount' | 'count'
-  yearLook: 'color',      // year calendar: 'color' | 'colorcount' | 'count'   // week board look: 'circles' | 'tiles' | 'dots' | 'pills'
+  yearLook: 'colorcount', // year calendar: 'color' | 'colorcount' | 'count'
   habitColors: false,     // color-code habits instead of using the accent for all
   layout: 'focus',        // 'focus' = lean Home + Stats tab, 'full' = everything on Home
   textSize: 'l',          // 's' | 'm' | 'l' | 'xl': scales the whole app
@@ -887,6 +967,8 @@ const DEFAULT_SETTINGS = {
   homeMilestones: false,
   homeRecap: false,
   badge: false,           // habits-left count on the home-screen icon
+  postCheckins: true,     // feed: post when you finish a shared habit
+  postStreaks: true,      // feed: post when a shared habit hits a streak milestone
 };
 
 const APP_STYLES = [
@@ -898,7 +980,7 @@ const APP_STYLES = [
 ];
 const MONTH_LOOKS = [['squares', 'Squares'], ['dots', 'Dots'], ['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
 const YEAR_LOOKS = [['color', 'Color'], ['colorcount', 'Color + count'], ['count', 'Count']];
-const WEEK_STYLES = [['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
+const WEEK_STYLES = [['gradient','Gradient'],['circles','Circles'],['tiles','Tiles'],['dots','Compact'],['pills','Pills'],
   ['bars','Bars'],['plain','Plain']];
 /* light or dark, after resolving Auto against the device */
 function effectiveMode() {
@@ -975,7 +1057,7 @@ function cleanSettings(raw) {
   if (WEEK_STYLES.some(([v]) => v === raw.weekStyle)) out.weekStyle = raw.weekStyle;
   if (MONTH_LOOKS.some(([v]) => v === raw.monthLook)) out.monthLook = raw.monthLook;
   if (YEAR_LOOKS.some(([v]) => v === raw.yearLook)) out.yearLook = raw.yearLook;
-  if (raw.layout === 'focus' || raw.layout === 'full') out.layout = raw.layout;
+  out.layout = 'focus';   // the Everything layout was retired; Home is always Focus
   if (['s','m','l','xl'].includes(raw.textSize)) out.textSize = raw.textSize;
   if (Array.isArray(raw.homeOrder)) {
     // keep known sections in the saved order, then append any new ones
@@ -989,7 +1071,7 @@ function cleanSettings(raw) {
     });
     out.homeOrder = order;
   }
-  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
+  ['showSummary','showTodos','showWeek','showStats','showChart','showMilestones','showRecap','homeChart','homeGlance','homeWeek','homeMilestones','homeRecap','badge','habitColors','postCheckins','postStreaks'].forEach(k => { if (typeof raw[k] === 'boolean') out[k] = raw[k]; });
   return out;
 }
 
@@ -1040,6 +1122,7 @@ function migrateData(raw) {
         kind: h.kind === 'quit' ? 'quit' : 'build',
         days: cleanDays(h.days),
         share: ['friends', 'public'].includes(h.share) ? h.share : 'private',
+        remind: cleanRemind(h.remind),
       }));
     // a habit to quit is always a simple yes/no
     safe.habits.forEach(h => { if (h.kind === 'quit') h.trackingMode = 'check'; });
@@ -1140,8 +1223,16 @@ function addHabit(title, goal, unit, color, trackingMode, extra = {}) {
     note: String(extra.note || '').trim().slice(0, 200),
     kind,
     days: cleanDays(extra.days),
+    remind: cleanRemind(extra.remind),
   });
   saveData();
+}
+/* reminder time as 'HH:MM' (24h), or '' for none */
+function cleanRemind(v) { return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : ''; }
+function remindLabel(v) {
+  if (!v) return '';
+  const [h, m] = v.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 /* Update an existing habit's editable fields in place. History is
@@ -1160,6 +1251,7 @@ function updateHabit(id, patch) {
   }
   if (typeof patch.note === 'string') h.note = patch.note.trim().slice(0, 200);
   if (Array.isArray(patch.days)) h.days = cleanDays(patch.days);
+  if (typeof patch.remind === 'string') h.remind = cleanRemind(patch.remind);
   if (h.kind === 'quit') h.trackingMode = 'check';
   saveData();
 }
@@ -1172,6 +1264,48 @@ function deleteHabit(id) {
 
 /* Move a habit up (delta = -1) or down (delta = +1) in the list.
    No-ops silently at the ends. */
+/* drag a habit by its grip to a new place in the list. The row follows the
+   finger; the others slide past it, and the new order is saved on release */
+function bindHabitDrag(list) {
+  if (!list) return;
+  list.querySelectorAll('[data-drag]').forEach(handle => {
+    handle.addEventListener('pointerdown', e => {
+      const row = handle.closest('[data-habit-row]');
+      if (!row) return;
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      const startY = e.clientY, startTop = row.offsetTop;
+      row.classList.add('dragging');
+      const wrapped = ev => {
+        // swap with a neighbour once the finger passes its middle
+        const prev = row.previousElementSibling, next = row.nextElementSibling;
+        const mid = el => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+        if (next && ev.clientY > mid(next)) list.insertBefore(next, row);
+        else if (prev && ev.clientY < mid(prev)) list.insertBefore(row, prev);
+        row.style.transform = `translateY(${ev.clientY - startY - (row.offsetTop - startTop)}px)`;
+      };
+      const end = () => {
+        handle.removeEventListener('pointermove', wrapped);
+        handle.removeEventListener('pointerup', end);
+        handle.removeEventListener('pointercancel', end);
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        const ids = [...list.querySelectorAll('[data-habit-row]')].map(el => el.dataset.habitRow);
+        const before = state.habits.map(h => h.id).join();
+        if (ids.join() !== before) {
+          state.habits.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+          state.habits.forEach((h, i) => { h.order = i; });
+          saveData();
+          render();
+        }
+      };
+      handle.addEventListener('pointermove', wrapped);
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    });
+  });
+}
+
 function reorderHabit(id, delta) {
   const idx = state.habits.findIndex(h => h.id === id);
   if (idx < 0) return;
@@ -1570,6 +1704,25 @@ function weekGridHTML(start) {
     ? `<span style="position:absolute;left:0;right:0;bottom:0;height:${Math.round(prog*100)}%;background:${hc(h)};opacity:${opacity};"></span>` : '';
   const countOf = h => days.filter(iso => isDayDone(h, iso)).length;
 
+  if (style === 'gradient') {
+    // like the month squares: each day shaded by how close it got to 100%,
+    // with done/due in the middle, then each habit's count for the week
+    const sq = days.map(iso => {
+      const future = iso > today, c = dayCount(iso), score = c.due ? c.done / c.due : 0;
+      return `<div class="wk-sq ${future ? 'future' : ''} ${iso === today ? 'is-today' : ''}" style="${future ? '' : heatBg(score)}${!future && score >= 0.8 ? 'color:var(--bg);' : ''}">
+          <span class="sq-num">${letter(iso)} ${fromISO(iso).getDate()}</span>
+          ${!future && c.due ? `<span class="sq-frac">${c.done}<small>/${c.due}</small></span>` : ''}</div>`;
+    }).join('');
+    const rows = state.habits.map(h => {
+      const due = days.filter(iso => isDue(h, iso) && iso >= habitStart(h)).length;
+      return `<div class="flex items-center gap-2 text-[12px]">
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${hc(h)}"></span>
+          <span class="truncate flex-1">${escapeHtml(h.title)}</span>
+          <span class="text-[var(--text-dim)] shrink-0">${countOf(h)}/${due}</span></div>`;
+    }).join('');
+    return `<div class="grid grid-cols-7 gap-1.5">${sq}</div>${rows ? `<div class="space-y-2 mt-4">${rows}</div>` : ''}`;
+  }
+
   if (style === 'dots') {
     let html = `<div class="wk-dots"><div></div>${head('wk-head')}<div></div>`;
     state.habits.forEach(h => {
@@ -1863,7 +2016,7 @@ function render() {
     now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
 
   const greet = document.getElementById('greeting');
-  const name = state.settings.name.trim();
+  const name = state.settings.name.trim().split(/\s+/)[0];
   greet.classList.toggle('hidden', !name);
   if (name) {
     const hr = now.getHours();
@@ -1958,7 +2111,7 @@ function renderHomeTab(page = 'home') {
           <div class="flex items-center gap-3 mt-2">
             <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
               data-measured-slider="${h.id}" aria-label="${escapeHtml(h.title)} amount"
-              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)}; ${sliderFill(currentVal, h.goal)}">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;" aria-label="Add 1 ${escapeHtml(h.unit)}">+1</button>
@@ -1987,7 +2140,7 @@ function renderHomeTab(page = 'home') {
           <div class="flex items-center gap-3">
             <input type="range" min="0" max="${h.goal}" value="${Math.min(currentVal, h.goal)}"
               data-measured-slider="${h.id}"
-              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)};">
+              class="flex-1 measure-slider" style="color:${hc(h)}; accent-color:${hc(h)}; ${sliderFill(currentVal, h.goal)}">
             <button data-measured-inc="${h.id}"
               class="btn-press shrink-0 surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold"
               style="min-height:44px; min-width:44px;">+1</button>
@@ -2232,7 +2385,7 @@ function renderHomeTab(page = 'home') {
   // Focus: Home lists every section (the Stats ones hidden unless added),
   // Stats lists only its own
   const order = focus && page === 'stats'
-    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k))
+    ? state.settings.homeOrder.filter(k => !FOCUS_HOME.includes(k) && k !== 'week')   // This week lives on Home only
     : state.settings.homeOrder;
   const parts = order.map((key, i) => {
     const meta = HOME_SECTIONS[key];
@@ -2273,14 +2426,14 @@ function renderHomeTab(page = 'home') {
   } else {
     const now = new Date();
     const hr = now.getHours();
-    const name = state.settings.name.trim();
+    const name = state.settings.name.trim().split(/\s+/)[0];   // first name only
     dashHeader = `
       <div class="pt-1 flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="dash-eyebrow">${now.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}</div>
           <h1 class="dash-title display">${hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'}${name ? ', ' + escapeHtml(name) : ''}</h1>
         </div>
-        <button onclick="switchTab('settings')" class="s-friends-btn s-settings-btn surface btn-press" aria-label="Settings">
+        <button onclick="settingsPage=null; switchTab('settings')" class="s-friends-btn s-settings-btn surface btn-press" aria-label="Settings">
           <i data-lucide="settings" class="w-5 h-5"></i></button>
       </div>`;
   }
@@ -2322,6 +2475,7 @@ function renderHomeTab(page = 'home') {
       const label = root.querySelector(`[data-measured-val="${id}"]`);
       if (bar) bar.style.width = Math.round((v / h.goal) * 100) + '%';
       if (label) label.textContent = v;
+      slider.style.setProperty('--fill', sliderFillAt(v, h.goal));
       const chip = root.querySelector(`[data-measured-pct="${id}"]`);
       if (chip) chip.textContent = Math.round((v / h.goal) * 100) + '%';
     });
@@ -2407,7 +2561,43 @@ let formColor = PALETTE[0];
 let formTrackingMode = 'check';  // 'check' | 'measure'
 let formKind = 'build';          // 'build' | 'quit' (new habits only)
 let formDays = [];    // weekdays the new habit is due (none until picked)
-let formCustomColor = null;      // hex string when user picks via the color input
+let formCustomColor = null;
+let lastPresetColor = null;        // preset in use before a custom color, for Reset
+
+/* custom color window: a hue slider and a shade slider. done(hex) on
+   Confirm, done(null) on Reset; tapping outside closes without a change */
+function hslHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, '0');
+  return '#' + f(0) + f(8) + f(4);
+}
+function hexHsl(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: Math.round((h * 60 + 360) % 360), l: Math.round(l * 100) };
+}
+function openColorPicker(current, done) {
+  const m = document.getElementById('colorModal');
+  const hue = m.querySelector('#cpHue'), shade = m.querySelector('#cpShade');
+  const start = current && /^#[0-9a-f]{6}$/i.test(current) ? hexHsl(current) : { h: 165, l: 45 };
+  hue.value = start.h; shade.value = Math.max(22, Math.min(78, start.l));
+  const color = () => hslHex(+hue.value, 62, +shade.value);
+  const paint = () => {
+    const c = color();
+    m.querySelector('#cpPreview').style.background = c;
+    m.querySelector('#cpHex').textContent = c;
+    shade.style.background = `linear-gradient(to right, ${hslHex(+hue.value, 62, 22)}, ${hslHex(+hue.value, 62, 50)}, ${hslHex(+hue.value, 62, 78)})`;
+  };
+  hue.oninput = paint; shade.oninput = paint; paint();
+  const close = () => m.classList.add('hidden');
+  m.querySelector('#cpOk').onclick = () => { close(); done(color()); };
+  m.querySelector('#cpReset').onclick = () => { close(); done(null); };
+  m.onclick = e => { if (e.target === m) close(); };
+  m.classList.remove('hidden');
+}      // hex string when user picks via the color input
 let editingId = null;            // when set, form is editing an existing habit
 let editDraft = null;            // working copy of the habit being edited;
                                  // committed by Save Changes, discarded by Cancel
@@ -2454,10 +2644,9 @@ function renderNewTab() {
   // a hidden input. Programmatic .click() on a hidden color input is refused
   // by Safari; a directly-tappable, visible input works everywhere.
   const customSwatch = `
-    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color">
-      <input type="color" id="habitCustomColor" value="${customSwatchColor}"
-        class="custom-color-input" aria-label="Pick a custom color">
-      ${customSelected ? '' : "<i data-lucide='plus' class='custom-plus w-4 h-4'></i>"}
+    <span class="custom-swatch-wrap ${customSelected?'selected':''}" title="Custom color" style="${customSelected ? `background:${initColor}` : ''}">
+      <button type="button" id="habitCustomColor" class="custom-color-input" aria-label="Pick a custom color"></button>
+
     </span>`;
 
   const unitOpts = UNIT_PRESETS.map(u =>
@@ -2469,27 +2658,17 @@ function renderNewTab() {
     existing = `<p class="text-[12px] text-[var(--text-dim)] px-1">No habits yet — create your first above.</p>`;
   } else {
     state.habits.forEach((h, i) => {
-      const isFirst = i === 0, isLast = i === state.habits.length - 1;
       existing += `
-        <div class="surface rounded-xl p-3.5 flex items-center gap-2">
-          <div class="flex flex-col shrink-0">
-            <button data-move-up="${h.id}" ${isFirst?'disabled':''}
-              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isFirst?'opacity-30 cursor-not-allowed':''}"
-              aria-label="Move up">
-              <i data-lucide="chevron-up" class="w-4 h-4 text-[var(--text-dim)]"></i>
-            </button>
-            <button data-move-down="${h.id}" ${isLast?'disabled':''}
-              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isLast?'opacity-30 cursor-not-allowed':''}"
-              aria-label="Move down">
-              <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)]"></i>
-            </button>
-          </div>
+        <div class="surface rounded-xl p-3.5 flex items-center gap-2" data-habit-row="${h.id}">
+          <button data-drag="${h.id}" class="drag-handle shrink-0 w-8 h-11 -ml-1 flex items-center justify-center" aria-label="Drag to reorder">
+            <i data-lucide="grip-vertical" class="w-4 h-4 text-[var(--text-faint)]"></i>
+          </button>
           <span class="shrink-0 w-3 h-3 rounded-full ml-1" style="background:${h.color}"></span>
           <div class="min-w-0 flex-1 pl-1">
             <div class="display text-base font-semibold truncate">${escapeHtml(h.title)}</div>
             <div class="text-[11px] text-[var(--text-dim)]">
               ${isQuit(h) ? "<span style='color:var(--gold)'>quit</span>" : `${h.goal} ${escapeHtml(h.unit)}`}
-              &middot; ${daysLabel(h.days)}
+              &middot; ${daysLabel(h.days)}${h.remind ? ` &middot; ${remindLabel(h.remind)}` : ''}
               ${h.trackingMode === 'measure' ? "&middot; <span style='color:var(--gold)'>measured</span>" : ''}
             </div>
           </div>
@@ -2509,73 +2688,88 @@ function renderNewTab() {
 
   root.innerHTML = `
     <div class="tab-enter space-y-6">
-      <div class="surface rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-6">
+      <div class="surface rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
           <h2 class="display text-2xl font-semibold">${isEditing ? 'Edit Habit' : 'New Habit'}</h2>
           ${isEditing ? `<button id="cancelEditBtn" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-9 px-3 text-[12px] font-bold">Cancel</button>` : ''}
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Title</label>
+        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Title</label>
         <input id="habitTitle" type="text" placeholder="e.g. Drink water" maxlength="40" value="${escapeHtml(initTitle)}"
-          class="w-full px-4 py-3 text-sm mb-5">
+          class="w-full px-4 py-2.5 text-sm mb-4">
 
         <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2" for="habitNote">Note</label>
-        <textarea id="habitNote" rows="2" maxlength="200" placeholder="Optional: why, when, or how"
-          class="w-full px-4 py-3 text-sm mb-5 resize-none">${escapeHtml(initNote)}</textarea>
+        <textarea id="habitNote" rows="1" maxlength="200" placeholder="Optional: why, when, or how"
+          class="w-full px-4 py-2.5 text-sm mb-4 resize-none">${escapeHtml(initNote)}</textarea>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Type</label>
-        <div class="grid grid-cols-2 gap-2 mb-5">
-          ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
-            <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
-              class="btn-press surface-2 border rounded-xl p-3 flex items-center gap-2 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
-              style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-              <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">${label}</span>
-            </button>`).join('')}
-        </div>
-
-        <div id="buildFields" class="${initKind === 'quit' ? 'hidden' : ''}">
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Tracking</label>
-        <div class="grid grid-cols-2 gap-2 mb-5">
-          <button data-mode="check" class="mode-btn ${initMode==='check'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
-            style="border-color:${initMode==='check' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2 mb-0.5">
-              <i data-lucide="check-square" class="w-4 h-4" style="color:${initMode==='check' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">Checkbox</span>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Type</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              ${[['build', 'Build', 'sprout'], ['quit', 'Quit', 'shield']].map(([k, label, icon]) => `
+                <button type="button" data-kind="${k}" ${isEditing && k !== initKind ? 'disabled' : ''}
+                  class="btn-press surface-2 border rounded-xl py-2 flex flex-col items-center gap-1 ${isEditing && k !== initKind ? 'opacity-40 cursor-not-allowed' : ''}"
+                  style="border-color:${initKind === k ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+                  <i data-lucide="${icon}" class="w-4 h-4" style="color:${initKind === k ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+                  <span class="text-[12px] font-bold">${label}</span>
+                </button>`).join('')}
             </div>
-            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Tap once to mark done.</div>
-          </button>
-          <button data-mode="measure" class="mode-btn ${initMode==='measure'?'selected':''} btn-press surface-2 border rounded-xl p-3 text-left"
-            style="border-color:${initMode==='measure' ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
-            <div class="flex items-center gap-2 mb-0.5">
-              <i data-lucide="sliders-horizontal" class="w-4 h-4" style="color:${initMode==='measure' ? 'var(--gold)' : 'var(--text-dim)'}"></i>
-              <span class="text-[13px] font-bold">Measured</span>
+          </div>
+          <div id="trackingField" class="${initKind === 'quit' ? 'invisible' : ''}">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Tracking</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              ${[['check', 'Checkbox', 'check-square'], ['measure', 'Measured', 'sliders-horizontal']].map(([m, label, icon]) => `
+                <button data-mode="${m}" class="mode-btn ${initMode === m ? 'selected' : ''} btn-press surface-2 border rounded-xl py-2 flex flex-col items-center gap-1"
+                  style="border-color:${initMode === m ? 'var(--gold)' : 'var(--border)'}; min-height:44px;">
+                  <i data-lucide="${icon}" class="w-4 h-4" style="color:${initMode === m ? 'var(--gold)' : 'var(--text-dim)'}"></i>
+                  <span class="text-[12px] font-bold">${label}</span>
+                </button>`).join('')}
             </div>
-            <div class="text-[10px] text-[var(--text-dim)] leading-snug">Log an amount each day.</div>
-          </button>
+          </div>
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Daily target</label>
-        <div class="flex items-center gap-2.5 mb-2.5">
-          <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
-            class="w-20 px-3 py-3 text-sm text-center font-bold">
-          <select id="habitUnit" class="flex-1 px-4 py-3 text-sm">${unitOpts}</select>
+        <div class="flex gap-3 mb-4">
+          <div id="buildFields" class="flex-1 min-w-0 ${initKind === 'quit' ? 'hidden' : ''}">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Daily target</label>
+            <div class="flex items-center gap-1.5">
+              <input id="habitGoal" type="number" min="1" max="9999" value="${initGoal}"
+                class="w-11 px-1 py-2.5 text-sm text-center font-bold">
+              <select id="habitUnit" class="flex-1 min-w-0 pl-2.5 pr-5 py-2.5 text-sm" style="background-position:right 7px center">${unitOpts}</select>
+            </div>
+            <input id="habitCustomUnit" type="text" placeholder="Custom unit" maxlength="16"
+              value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
+              class="w-full px-3 py-2.5 text-sm mt-1.5 ${unitIsPreset ? 'hidden' : ''}">
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Days</label>
+            <button type="button" id="daysToggle" class="form-dd w-full" aria-expanded="false">
+              <span id="daysLabel" class="truncate">${curDays().length ? daysLabel(curDays()) : 'Pick days'}</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 dd-chev"></i>
+            </button>
+          </div>
         </div>
-        <input id="habitCustomUnit" type="text" placeholder="Enter custom unit (e.g. chapters)" maxlength="16"
-          value="${unitIsPreset ? '' : escapeHtml(initUnit)}"
-          class="w-full px-4 py-3 text-sm ${unitIsPreset ? 'hidden' : ''}">
-        <div class="mb-5"></div>
+        <div id="daysPanel" class="hidden mb-4">
+          <div class="flex gap-1.5 mb-1.5">
+            ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
+              `<button type="button" data-day-preset="${k}" class="day-preset btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold ${presetOf(curDays()) === k ? 'on' : ''}">${l}</button>`).join('')}
+          </div>
+          <div id="dayChips" class="grid grid-cols-7 gap-1.5">${dayChips}</div>
         </div>
 
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2">Days</label>
-        <div class="flex gap-1.5 mb-2">
-          ${[['all', 'Every day'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([k, l]) =>
-            `<button type="button" data-day-preset="${k}" class="day-preset btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold ${presetOf(curDays()) === k ? 'on' : ''}">${l}</button>`).join('')}
+        <div class="flex gap-3 mb-4">
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5">Color</label>
+            <button type="button" id="colorToggle" class="form-dd w-full" aria-expanded="false">
+              <span id="colorCurrent" class="w-6 h-6 rounded-md shrink-0" style="background:${initColor}"></span>
+              <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 dd-chev"></i>
+            </button>
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-1.5" for="habitRemind">Reminder</label>
+            <input id="habitRemind" type="time" value="${editing ? (editing.remind || '') : ''}" class="w-full px-3 text-sm form-time" aria-label="Reminder time (optional)">
+          </div>
         </div>
-        <div id="dayChips" class="grid grid-cols-7 gap-1.5 mb-5">${dayChips}</div>
-
-        <label class="block text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-2.5">Color</label>
-        <div id="colorPalette" class="flex flex-wrap gap-2.5 mb-6">${swatches}${customSwatch}</div>
+        <div id="colorPalette" class="hidden flex-wrap gap-2 mb-4">${swatches}${customSwatch}</div>
 
         <p id="habitFormError" class="hidden text-[12px] mb-3" style="color:#b03b3b;"></p>
 
@@ -2588,7 +2782,7 @@ function renderNewTab() {
 
       <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Your habits (${state.habits.length})</h3>
-        <div class="space-y-2.5">${existing}</div>
+        <div id="habitOrderList" class="space-y-2.5">${existing}</div>
       </div>
     </div>`;
 
@@ -2616,21 +2810,13 @@ function renderNewTab() {
     });
     // custom swatch: selected if formColor isn't in the preset list
     const customWrap = root.querySelector('.custom-swatch-wrap');
-    const customInputEl = root.querySelector('#habitCustomColor');
-    if (customWrap && customInputEl) {
+    if (customWrap) {
       const isCustom = !PALETTE.includes(formColor);
       customWrap.classList.toggle('selected', isCustom);
-      if (isCustom) {
-        // show the picked color as the swatch fill; hide the "+" glyph
-        customInputEl.value = formColor;
-        const plus = customWrap.querySelector('.custom-plus');
-        if (plus) plus.style.display = 'none';
-      } else {
-        // reset visible fill and restore the "+" glyph
-        const plus = customWrap.querySelector('.custom-plus');
-        if (plus) plus.style.display = '';
-      }
+      customWrap.style.background = isCustom ? formColor : '';
     }
+    const cur = root.querySelector('#colorCurrent');
+    if (cur) cur.style.background = formColor;
     // mode buttons: swap the accent border/icon color
     root.querySelectorAll('[data-mode]').forEach(el => {
       const active = el.dataset.mode === formTrackingMode;
@@ -2656,16 +2842,33 @@ function renderNewTab() {
   // fires when they confirm. Only refresh the selection visuals — never
   // re-render the whole form, so typed input in the title/goal fields
   // is preserved.
-  const customInput = root.querySelector('#habitCustomColor');
-  if (customInput) {
-    customInput.addEventListener('change', () => {
-      const chosen = customInput.value;
-      formColor = chosen;
-      formCustomColor = chosen;
-      if (editing) editing.color = chosen;
+  // custom color: our own picker window, with Reset and Confirm inside it
+  root.querySelector('#habitCustomColor')?.addEventListener('click', () => {
+    openColorPicker(PALETTE.includes(formColor) ? null : formColor, chosen => {
+      if (chosen === null) {
+        // Reset: back to the preset used before the custom color
+        if (!PALETTE.includes(formColor)) formColor = lastPresetColor || PALETTE[0];
+        formCustomColor = null;
+      } else {
+        if (PALETTE.includes(formColor)) lastPresetColor = formColor;
+        formColor = chosen; formCustomColor = chosen;
+      }
+      if (editing) editing.color = formColor;
       refreshSelections();
     });
-  }
+  });
+  const togglePanel = (btnId, panelId, flex) => {
+    const btn = root.querySelector(btnId), panel = root.querySelector(panelId);
+    btn.addEventListener('click', () => {
+      const open = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !open);
+      if (flex) panel.classList.toggle('flex', open);
+      btn.setAttribute('aria-expanded', open);
+      btn.querySelector('.dd-chev')?.classList.toggle('open', open);
+    });
+  };
+  togglePanel('#daysToggle', '#daysPanel');
+  togglePanel('#colorToggle', '#colorPalette', true);
 
   // tracking-mode buttons
   root.querySelectorAll('[data-mode]').forEach(btn => {
@@ -2689,6 +2892,7 @@ function renderNewTab() {
         if (icon) icon.style.color = on ? 'var(--gold)' : 'var(--text-dim)';
       });
       root.querySelector('#buildFields').classList.toggle('hidden', formKind === 'quit');
+      root.querySelector('#trackingField').classList.toggle('invisible', formKind === 'quit');
     });
   });
 
@@ -2703,6 +2907,7 @@ function renderNewTab() {
     });
     const preset = presetOf(next);
     root.querySelectorAll('[data-day-preset]').forEach(el => el.classList.toggle('on', el.dataset.dayPreset === preset));
+    root.querySelector('#daysLabel').textContent = next.length ? daysLabel(next) : 'Pick days';
   };
   root.querySelectorAll('[data-day]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2743,12 +2948,7 @@ function renderNewTab() {
   });
 
   // reorder / edit / delete buttons on existing habits
-  root.querySelectorAll('[data-move-up]').forEach(btn => {
-    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveUp, -1); renderNewTab(); drawIcons(); } });
-  });
-  root.querySelectorAll('[data-move-down]').forEach(btn => {
-    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveDown, 1); renderNewTab(); drawIcons(); } });
-  });
+  bindHabitDrag(root.querySelector('#habitOrderList'));
   root.querySelectorAll('[data-edit]').forEach(btn => {
     btn.addEventListener('click', () => {
       editingId = btn.dataset.edit;
@@ -2774,6 +2974,7 @@ function submitHabit() {
   const unit = unitSel.value === 'custom' ? customUnit.value.trim() : unitSel.value;
   const err = root.querySelector('#habitFormError');
   const note = root.querySelector('#habitNote').value;
+  const remind = root.querySelector('#habitRemind').value;
   const days = editingId && editDraft ? editDraft.days : formDays;
   const quit = (editingId && editDraft ? editDraft.kind : formKind) === 'quit';
 
@@ -2787,12 +2988,12 @@ function submitHabit() {
     // source of truth for title/goal/unit
     const color = editDraft ? editDraft.color : formColor;
     const trackingMode = editDraft ? editDraft.trackingMode : formTrackingMode;
-    updateHabit(editingId, quit ? { title, color, note, days } : { title, goal, unit, color, trackingMode, note, days });
+    updateHabit(editingId, quit ? { title, color, note, days, remind } : { title, goal, unit, color, trackingMode, note, days, remind });
     editingId = null;
     editDraft = null;
     showToast('Habit updated');
   } else {
-    addHabit(title, quit ? 1 : goal, quit ? 'times' : unit, formColor, formTrackingMode, { kind: formKind, note, days });
+    addHabit(title, quit ? 1 : goal, quit ? 'times' : unit, formColor, formTrackingMode, { kind: formKind, note, days, remind });
     showToast('Habit created');
   }
   formColor = PALETTE[0];
@@ -2927,7 +3128,9 @@ function renderCalendarTab() {
     body = `
       <div class="surface rounded-2xl p-5">
         ${nav}
-        <p class="text-[12px] text-[var(--text-dim)] text-center -mt-2 mb-4">${dueSel.length ? `${doneN} / ${dueSel.length} habits done` : 'Nothing scheduled'}</p>
+        <div class="day-sq mb-4" style="${dueSel.length ? heatBg(doneN / dueSel.length) : ''}${dueSel.length && doneN / dueSel.length >= 0.8 ? 'color:var(--bg);' : ''}">
+          ${dueSel.length ? `<span class="sq-frac">${doneN}<small>/${dueSel.length}</small></span><span class="day-sq-sub">habits done</span>` : '<span class="day-sq-sub">Nothing scheduled</span>'}
+        </div>
         <div class="space-y-2.5">${dayBreakdownHTML(isFutureSel)}</div>
       </div>`;
   } else if (calMode === 'week') {
@@ -2953,7 +3156,7 @@ function renderCalendarTab() {
       ${dayList}`;
   }
 
-  root.innerHTML = `<div class="tab-enter space-y-6">${seg}${body}</div>`;
+  root.innerHTML = `<div class="tab-enter space-y-6 cal-readonly">${seg}${body}</div>`;
 
   const calGrid = root.querySelector('#calGrid');
   if (calGrid) calGrid.appendChild(buildUnifiedCalendar());
@@ -2972,16 +3175,7 @@ function renderCalendarTab() {
     });
   });
 
-  root.querySelectorAll('[data-toggle-day]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      toggleCompletion(btn.dataset.toggleDay, selectedDay);
-      renderCalendarTab();
-      drawIcons();
-    });
-  });
-
-  bindWeekGrid(root, renderCalendarTab);
+  // the calendar is for looking back only: habits are checked off on Home
 
   root.querySelectorAll('[data-year-day]').forEach(el => {
     el.addEventListener('click', () => { selectedDay = el.dataset.yearDay; calMode = 'day'; renderCalendarTab(); });
@@ -3156,18 +3350,45 @@ function segHTML(key, options) {
     </div>`;
 }
 
-/* a 3-column picker whose buttons preview their own option */
-function pickerHTML(label, key, options, chipClass, inner, hint) {
+/* a dropdown that shows the current option as its own preview; tapping it
+   opens every option (each drawn in its own look) and picking one closes it */
+let openPicker = null;
+function dropdownHTML(label, key, options, chipClass, inner, current = state.settings[key]) {
+  const cur = options.find(o => o[0] === current) || options[0];
+  const open = openPicker === key;
   return `
-    <div class="py-3 border-t border-[var(--border)]">
-      <div class="text-[13px] font-bold">${label}</div>
-      ${hint ? `<div class="text-[11px] text-[var(--text-dim)] leading-snug mt-0.5">${hint}</div>` : ''}
-      <div class="grid grid-cols-3 gap-2.5 mt-3">
+    <div class="py-3 border-t border-[var(--border)] first:border-t-0">
+      <button type="button" data-dd="${key}" class="w-full flex items-center gap-3 text-left" aria-expanded="${open}">
+        <span class="flex-1 min-w-0 text-[13px] font-bold">${label}</span>
+        <span class="${chipClass} dd-current" data-val="${cur[0]}">${inner(cur)}</span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)] shrink-0 dd-chev ${open ? 'open' : ''}"></i>
+      </button>
+      ${open ? `<div class="grid grid-cols-3 gap-2.5 mt-3">
         ${options.map(opt => `
-          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${state.settings[key] === opt[0]}"
-            class="${chipClass} btn-press ${state.settings[key] === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
-      </div>
+          <button data-seg="${key}" data-val="${opt[0]}" aria-pressed="${current === opt[0]}"
+            class="${chipClass} btn-press ${current === opt[0] ? 'active' : ''}">${inner(opt)}</button>`).join('')}
+      </div>` : ''}
     </div>`;
+}
+
+/* tiny samples of each month / year look, for their pickers */
+function monthLookSample(look) {
+  const days = [[1, 2, 3], [2, 3, 3], [3, 1, 3], [4, 3, 3]];
+  const shade = (d, n) => `background:color-mix(in srgb, var(--gold) ${Math.round(10 + 90 * d / n)}%, var(--surface-2));${d / n >= 0.8 ? 'color:var(--bg);' : ''}`;
+  const cell = ([num, d, n]) => {
+    if (look === 'squares') return `<span class="ml-cell sq" style="${shade(d, n)}"><b>${num}</b><em>${d}/${n}</em></span>`;
+    if (look === 'dots') return `<span class="ml-cell"><b class="c">${num}</b><span class="ml-dots">${[0, 1, 2].map(k => `<i class="${k < d ? 'on' : ''}"></i>`).join('')}</span></span>`;
+    if (look === 'color') return `<span class="ml-cell rd" style="${shade(d, n)}"><b class="c">${num}</b></span>`;
+    if (look === 'colorcount') return `<span class="ml-cell rd" style="${shade(d, n)}"><b class="c">${num}</b><em>${d}/${n}</em></span>`;
+    return `<span class="ml-cell rd"><b class="c">${num}</b><em>${d}/${n}</em></span>`;
+  };
+  return `<span class="ml-row" aria-hidden="true">${days.map(cell).join('')}</span>`;
+}
+function yearLookSample(look) {
+  if (look === 'count') return `<span class="yl-tiles" aria-hidden="true">${[['Jan', 70], ['Feb', 45]].map(([m, p]) => `<span><b>${m}</b><i style="width:${p}%"></i></span>`).join('')}</span>`;
+  const v = [3, 1, 0, 2, 3, 2, 1, 3, 3, 0, 2, 3, 1, 3];
+  const grid = `<span class="yl-grid">${v.map(x => `<i style="${x ? `background:color-mix(in srgb, var(--gold) ${Math.round(10 + 30 * x)}%, var(--surface-2))` : ''}"></i>`).join('')}</span>`;
+  return `<span class="yl-wrap" aria-hidden="true">${look === 'colorcount' ? '<b>Jan 18/24</b>' : ''}${grid}</span>`;
 }
 
 /* four days of a week board drawn in the given week style */
@@ -3175,6 +3396,7 @@ function weekStyleSample(style) {
   const on = [1, 1, 0, 1];
   const cells = cls => on.map(v => `<span class="${cls} ${v ? 'on' : ''}"><i></i></span>`).join('');
   const body = {
+    gradient: [[2, 3], [3, 3], [1, 3], [3, 3]].map(([d, n]) => `<span class="wv-sq" style="background:color-mix(in srgb, var(--gold) ${Math.round(10 + 90 * d / n)}%, var(--surface-2));${d / n >= 0.8 ? 'color:var(--bg);' : ''}">${d}/${n}</span>`).join(''),
     circles: cells('wv-circle'),
     tiles: cells('wv-tile'),
     dots: cells('wv-dot'),
@@ -3189,92 +3411,112 @@ function switchHTML(key) {
   return `<button data-switch="${key}" role="switch" aria-checked="${!!state.settings[key]}" class="switch" aria-label="${key}"></button>`;
 }
 
+function accentDropdown(cur, accents) {
+  const open = openPicker === 'accent';
+  return `
+    <div class="py-3 border-t border-[var(--border)]">
+      <button type="button" data-dd="accent" class="w-full flex items-center gap-3 text-left" aria-expanded="${open}">
+        <span class="flex-1 min-w-0 text-[13px] font-bold">Accent color</span>
+        <span class="shrink-0" style="width:30px;height:30px;border-radius:9px;background:${cur}"></span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)] shrink-0 dd-chev ${open ? 'open' : ''}"></i>
+      </button>
+      ${open ? `<div class="flex flex-wrap gap-2.5 mt-3">${accents}</div>` : ''}
+    </div>`;
+}
+
+/* Settings is a short menu; each entry opens its own page */
+let settingsPage = null;   // null = menu, or 'personal' | 'custom' | 'appearance' | 'calendar'
+function openSettingsPage(pg) { settingsPage = pg; openPicker = null; render(); window.scrollTo(0, 0); }
+
 function renderSettingsTab() {
   const root = document.getElementById('tab-settings');
   const st = state.settings;
-  const last = readLastBackup();
-  const lastLabel = last
-    ? 'Last backup: ' + new Date(last).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })
-    : 'No backup saved from this device yet.';
   const accents = PALETTE.map(c =>
     `<button data-accent="${c}" class="swatch ${c === st.accent ? 'selected' : ''}" style="background:${c}; width:30px; height:30px; border-radius:9px;" aria-label="Accent ${c}"></button>`).join('');
-  const section = (title, body) => `
-    <div>
-      <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${title}</h3>
-      <div class="surface rounded-2xl px-4 py-1">${body}</div>
-    </div>`;
+  const card = body => `<div class="surface rounded-2xl px-4 py-1">${body}</div>`;
+  const label = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
+  const smallBtn = (attrs, text) => `<button ${attrs} class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">${text}</button>`;
+  const menuRow = (pg, icon, text) => `
+    <button data-page="${pg}" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] first:border-t-0 text-left">
+      <i data-lucide="${icon}" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
+      <span class="flex-1 min-w-0 text-[14px] font-bold">${text}</span>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
+    </button>`;
+  const titles = { personal: 'Personal information', custom: 'Customizations', appearance: 'Appearance', calendar: 'Calendar' };
+  const header = settingsPage
+    ? `<button data-page="" class="home-edit-btn" aria-label="Back to Settings"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+       <h2 class="display text-2xl font-semibold">${titles[settingsPage]}</h2>`
+    : `<button onclick="switchTab('home')" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+       <h2 class="display text-3xl font-semibold">Settings</h2>`;
+
+  let body;
+  if (settingsPage === 'personal') {
+    const email = sbSession?.user?.email || '';
+    body = card(
+      settingsRow('Name', '',
+        `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-40 px-3 py-2 text-[13px]">`) +
+      settingsRow('Email', '', email
+        ? `<span class="text-[12px] text-[var(--text-dim)] truncate max-w-[180px]">${escapeHtml(email)}</span>`
+        : `<span class="text-[12px] text-[var(--text-faint)]">Not signed in</span>`) +
+      settingsRow('Password', '', email
+        ? smallBtn(`onclick="showNewPasswordForm('', true)"`, 'Change password')
+        : smallBtn(`onclick="settingsPage=null; switchTab('social')"`, 'Sign in'))
+    );
+  } else if (settingsPage === 'custom') {
+    body = card(
+      settingsRow('Edit home layout', '', smallBtn('id="homeEditBtn"', 'Edit')) +
+      settingsRow('Notifications', '', switchHTML('badge')) +
+      settingsRow('Calendar opens to', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
+      settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']]))
+    );
+  } else if (settingsPage === 'appearance') {
+    body = card(
+      settingsRow('Color-code habits', '', switchHTML('habitColors')) +
+      accentDropdown(st.accent, accents) +
+      dropdownHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
+      dropdownHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
+      settingsRow('Font size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
+      settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']]))
+    );
+  } else if (settingsPage === 'calendar') {
+    body = card(
+      dropdownHTML('Week view', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`) +
+      dropdownHTML('Month view', 'monthLook', MONTH_LOOKS, 'wv-chip', ([val, name]) => monthLookSample(val) + `<span>${name}</span>`) +
+      dropdownHTML('Year view', 'yearLook', YEAR_LOOKS, 'wv-chip', ([val, name]) => yearLookSample(val) + `<span>${name}</span>`)
+    );
+  } else {
+    body = card(
+      menuRow('personal', 'user', 'Personal information') +
+      menuRow('custom', 'sliders-horizontal', 'Customizations') +
+      menuRow('appearance', 'palette', 'Appearance') +
+      menuRow('calendar', 'calendar', 'Calendar') +
+      `<button onclick="startOnboarding(1)" class="w-full flex items-center gap-3 py-3.5 border-t border-[var(--border)] text-left">
+        <i data-lucide="map" class="w-[18px] h-[18px] text-[var(--text-dim)] shrink-0"></i>
+        <span class="flex-1 min-w-0 text-[14px] font-bold">Walkthrough</span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[var(--text-faint)] shrink-0"></i>
+      </button>`
+    );
+  }
 
   root.innerHTML = `
     <div class="tab-enter space-y-6">
-      <div class="flex items-center gap-3 px-1">
-        <button onclick="switchTab('home')" class="home-edit-btn" aria-label="Back to Home"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-        <h2 class="display text-3xl font-semibold">Settings</h2>
-      </div>
-
-      ${section('Personalize',
-        settingsRow('Your name', '',
-          `<input id="setName" type="text" maxlength="30" placeholder="Optional" value="${escapeHtml(st.name)}" class="w-32 px-3 py-2 text-[13px]">`) +
-        settingsRow('Theme', '', segHTML('theme', [['system','Auto'],['light','Light'],['dark','Dark']])) +
-        settingsRow('Text size', '', segHTML('textSize', [['s','S'],['m','M'],['l','L'],['xl','XL']])) +
-        `<div class="py-3 border-t border-[var(--border)]">
-           <div class="text-[13px] font-bold mb-2.5">Accent color</div>
-           <div class="flex flex-wrap gap-2.5">${accents}</div>
-         </div>` +
-        settingsRow('Week starts on', '', segHTML('weekStart', [[1,'Mon'],[0,'Sun']])) +
-        settingsRow('Calendar opens on', '', segHTML('calDefault', [['day','D'],['week','W'],['month','M'],['year','Y']])) +
-        settingsRow('Notifications', '', switchHTML('badge')) +
-        settingsRow('Walkthrough', '', `<button onclick="startOnboarding(1)" class="btn-press surface-2 border border-[var(--border)] rounded-lg h-8 px-3 text-[11px] font-bold">Show again</button>`)
-      )}
-
-      ${section('Calendar',
-        pickerHTML('Month view', 'monthLook', MONTH_LOOKS, 'sv-chip', ([, name]) => name) +
-        pickerHTML('Year view', 'yearLook', YEAR_LOOKS, 'sv-chip', ([, name]) => name)
-      )}
-
-      ${section('Appearance',
-        settingsRow('Color-code habits', '', switchHTML('habitColors')) +
-        pickerHTML('Style', 'style', APP_STYLES, 'sv-chip', ([, name]) => name) +
-        pickerHTML('Font', 'font', [['auto', 'Match style'], ...APP_STYLES], 'fv-chip', ([, name]) => name) +
-        pickerHTML('Week view style', 'weekStyle', WEEK_STYLES, 'wv-chip', ([val, name]) => weekStyleSample(val) + `<span>${name}</span>`)
-      )}
-
-      ${section('Home screen',
-        settingsRow('Layout', '', segHTML('layout', [['focus','Focus'],['full','Everything']])) +
-        settingsRow('Edit layout', '',
-          `<button id="homeEditSwitch" role="switch" aria-checked="${homeEditing}" class="switch" aria-label="Edit layout"></button>`)
-      )}
-
-      ${section('Your data',
-        `<div class="py-3">
-           <p class="text-[12px] font-bold mb-3" style="color:${last ? 'var(--text)' : '#b5651d'}">${lastLabel}</p>
-           <button id="downloadBackupBtn"
-             class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 mb-2.5" style="min-height:44px;">
-             <i data-lucide="download" class="w-4 h-4"></i><span>Save backup file</span>
-           </button>
-           <label for="restoreFileInput"
-             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2 cursor-pointer" style="min-height:44px;">
-             <i data-lucide="upload" class="w-4 h-4"></i><span>Restore from file…</span>
-           </label>
-           <input id="restoreFileInput" type="file" accept=".json,application/json,text/plain" class="visually-hidden">
-         </div>`
-      )}
-
-      ${section('Widget',
-        `<div class="py-3">
-           <button id="exportBtn"
-             class="btn-press w-full surface-2 border border-[var(--border)] rounded-xl h-11 text-sm font-bold flex items-center justify-center gap-2" style="min-height:44px;">
-             <i data-lucide="smartphone" class="w-4 h-4"></i> Export Widget Data
-           </button>
-         </div>`
-      )}
+      <div class="flex items-center gap-3 px-1">${header}</div>
+      ${body}
     </div>`;
 
+  root.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => openSettingsPage(btn.dataset.page || null));
+  });
   const nameInput = root.querySelector('#setName');
-  nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
+  if (nameInput) nameInput.addEventListener('change', () => { updateSetting('name', nameInput.value.trim()); render(); });
 
+  root.querySelectorAll('[data-dd]').forEach(btn => {
+    btn.addEventListener('click', () => { openPicker = openPicker === btn.dataset.dd ? null : btn.dataset.dd; render(); });
+  });
   root.querySelectorAll('[data-seg]').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.seg;
+      if (openPicker === key) openPicker = null;
       const val = key === 'weekStart' ? Number(btn.dataset.val) : btn.dataset.val;
       updateSetting(key, val);
       if (key === 'weekStart') weekStart = startOfWeek(selectedDay);
@@ -3282,12 +3524,9 @@ function renderSettingsTab() {
       render();
     });
   });
-  root.querySelector('#homeEditSwitch').addEventListener('click', () => {
-    homeEditing = !homeEditing;
-    if (homeEditing) switchTab('home'); else render();
-  });
+  root.querySelector('#homeEditBtn')?.addEventListener('click', () => { homeEditing = true; switchTab('home'); });
   root.querySelectorAll('[data-accent]').forEach(btn => {
-    btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); render(); });
+    btn.addEventListener('click', () => { updateSetting('accent', btn.dataset.accent); openPicker = null; render(); });
   });
   root.querySelectorAll('[data-switch]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3298,13 +3537,6 @@ function renderSettingsTab() {
       render();
     });
   });
-
-  root.querySelector('#downloadBackupBtn').addEventListener('click', downloadBackup);
-  root.querySelector('#restoreFileInput').addEventListener('change', e => {
-    handleRestoreFile(e.target.files[0]);
-    e.target.value = '';   // allow picking the same file again
-  });
-  root.querySelector('#exportBtn').addEventListener('click', openExportModal);
 }
 
 /* ---------------------------------------------------------------------
@@ -3548,7 +3780,8 @@ function init() {
   render();
   drawIcons();
   socialBoot();
-  if (needsOnboarding()) startOnboarding(0);
+  if (RECOVERING) checkPasswordRecovery();
+  else if (needsOnboarding()) startOnboarding(0);
 }
 
 /* =====================================================================
@@ -3608,6 +3841,12 @@ function personColor(id) {
   return S_COLORS[h % S_COLORS.length];
 }
 function firstName(id) { return personName(id).split(/\s+/)[0]; }
+/* where the colored fill ends on a measured habit's slider: the dot's centre */
+function sliderFillAt(v, goal) {
+  const f = goal > 0 ? Math.max(0, Math.min(1, v / goal)) : 0;
+  return `calc(11px + (100% - 22px) * ${f.toFixed(4)})`;
+}
+const sliderFill = (v, goal) => `--fill:${sliderFillAt(Math.min(v, goal), goal)};`;
 function avatarHTML(id, size = 36) {
   const n = personName(id).split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const c = personColor(id);
@@ -3714,7 +3953,8 @@ async function syncPosts() {
     const shared = habitShare(h) !== 'private';
     const done = shared && isDayDone(h, today);
     const streak = currentStreak(h);
-    const want = { checkin: done && h.kind !== 'quit', streak: done && STREAK_MILESTONES.includes(streak) };
+    const want = { checkin: done && h.kind !== 'quit' && state.settings.postCheckins !== false,
+      streak: done && STREAK_MILESTONES.includes(streak) && state.settings.postStreaks !== false };
     for (const kind of ['checkin', 'streak']) {
       const key = `${today}|${h.id}|${kind}`;
       if (want[kind] && !posted[key]) {
@@ -3841,9 +4081,11 @@ function groupStreak(g) {
 }
 
 /* ---- UI ---- */
-function socialSeg(key, options, current) {
+/* filled three-person icon for groups */
+const GROUP_SVG = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3"/><path d="M6.5 20v-1a5.5 5.5 0 0 1 11 0v1"/><circle cx="4.8" cy="9.5" r="2"/><path d="M1.5 19v-.5a3.5 3.5 0 0 1 4-3.45"/><circle cx="19.2" cy="9.5" r="2"/><path d="M22.5 19v-.5a3.5 3.5 0 0 0-4-3.45"/></svg>`;
+function socialSeg(key, options, current, iconsOnly = false) {
   return `<div class="surface rounded-xl p-1 grid gap-1" style="grid-template-columns:repeat(${options.length},1fr)">
-    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg h-9 text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}">${ic ? `<i data-lucide="${ic}" class="w-3.5 h-3.5"></i>` : ''}${l}</button>`).join('')}
+    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic === 'group-fill' ? GROUP_SVG(iconsOnly ? 20 : 14) : ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
   </div>`;
 }
 const sLabel = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
@@ -3870,14 +4112,8 @@ function renderSocialTab() {
     body = `<div class="surface rounded-2xl p-5 text-[13px] text-[var(--text-dim)]">${net.error ? `Couldn't load: ${escapeHtml(net.error)}` : 'Loading...'}</div>`;
     if (!net.loading && !net.error) refreshSocial();
   } else {
-    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'users'], ['groups', 'Groups', 'users-round'], ['profile', 'Privacy', 'lock']], social.view);
-    const nudges = net.nudgesIn.length ? `
-      <div class="surface rounded-2xl p-4 flex items-center gap-3" style="border-color:var(--gold)">
-        <i data-lucide="bell" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
-        <div class="flex-1 min-w-0 text-[13px] leading-snug">${net.nudgesIn.map(n => {
-          const g = net.groups.find(x => x.id === n.group_id);
-          return `<div><b>${escapeHtml(firstName(n.sender))}</b> nudged you${g ? ` in ${escapeHtml(g.name)}` : ''}</div>`; }).join('')}</div>
-      </div>` : '';
+    const tabs = socialSeg('view', [['feed', 'Feed', 'newspaper'], ['friends', 'Friends', 'smile'], ['groups', 'Groups', 'group-fill'], ['profile', 'Privacy', 'lock']], social.view, true);
+    const nudges = '';  // nudges arrive as a pop-up, so no notice in the feed
     const v = social.view;
     const inner = v === 'feed' ? socialFeedHTML() : v === 'friends' ? socialFriendsHTML()
       : v === 'groups' ? (social.openGroup ? socialGroupHTML() : social.creating ? socialCreateHTML() : socialGroupsHTML())
@@ -3920,8 +4156,87 @@ function socialAuthHTML() {
         ${social.authMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(social.authMsg)}</p>` : ''}
         <button type="submit" ${social.busy ? 'disabled' : ''} class="${sBtn} w-full h-12">${social.busy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
       </form>
+      ${up ? '' : `<button data-s="forgot" class="w-full text-[13px] font-bold text-[var(--text-faint)]">Forgot password?</button>`}
       <button data-s="authMode" class="w-full text-[13px] font-bold text-[var(--text-dim)]">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
     </div>`;
+}
+
+/* forgot password: Supabase emails a link back to this app; opening it
+   signs you in for long enough to choose a new password */
+async function sendPasswordReset(email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!email) return 'Type your email first.';
+  try {
+    await sbStart();
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if (error) throw error;
+    return 'Check your email for a link to reset your password.';
+  } catch (e) {
+    return e.message === 'offline' ? "You're offline. Try again with a connection." : (e.message || 'Something went wrong');
+  }
+}
+/* its own page: just an email box and a button that sends the link */
+function showForgotPage(email = '', back = () => {}, msg = '') {
+  const el = document.getElementById('onboard');
+  el.classList.remove('hidden');
+  el.innerHTML = `<div class="max-w-md mx-auto min-h-full flex flex-col justify-center gap-6" style="padding:max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))">
+      <div class="text-center">
+        <div class="ach-badge mb-5" style="animation:none"><i data-lucide="mail" class="w-10 h-10"></i></div>
+        <h1 class="display text-3xl font-semibold">Reset your password</h1>
+        <p class="text-[13px] text-[var(--text-dim)] mt-2">Enter your email and we'll send you a link to choose a new password.</p>
+      </div>
+      <form id="fpForm" class="surface rounded-2xl p-5 space-y-3">
+        <input id="fpEmail" type="email" placeholder="Email" value="${escapeHtml(email || '')}" class="w-full px-4 py-3 text-sm" autocomplete="email" autocapitalize="off" required>
+        ${msg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(msg)}</p>` : ''}
+        <button type="submit" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">Send reset link</button>
+      </form>
+      <button id="fpBack" class="text-[13px] font-bold text-[var(--text-dim)]">Back to sign in</button>
+    </div>`;
+  drawIcons();
+  el.scrollTop = 0;
+  el.querySelector('#fpBack').onclick = back;
+  el.querySelector('#fpForm').onsubmit = async e => {
+    e.preventDefault();
+    const typed = el.querySelector('#fpEmail').value;
+    el.querySelector('#fpForm button').disabled = true;
+    showForgotPage(typed, back, await sendPasswordReset(typed));
+  };
+}
+const RECOVERING = /type=recovery/.test(location.hash);
+async function checkPasswordRecovery() {
+  if (!RECOVERING) return;
+  try { await sbStart(); } catch (e) { return; }
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!sbSession) { showToast('That reset link has expired. Ask for a new one.'); return; }
+  showNewPasswordForm();
+}
+function showNewPasswordForm(msg = '', cancellable = false) {
+  const el = document.getElementById('onboard');
+  el.classList.remove('hidden');
+  el.innerHTML = `<div class="max-w-md mx-auto min-h-full flex flex-col justify-center gap-6" style="padding:max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))">
+      <div class="text-center">
+        <div class="ach-badge mb-5" style="animation:none"><i data-lucide="key-round" class="w-10 h-10"></i></div>
+        <h1 class="display text-3xl font-semibold">Choose a new password</h1>
+        <p class="text-[13px] text-[var(--text-dim)] mt-2">${escapeHtml(sbSession?.user?.email || '')}</p>
+      </div>
+      <form id="npForm" class="surface rounded-2xl p-5 space-y-3">
+        <input id="npPass" type="password" placeholder="New password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm" autocomplete="new-password" required>
+        ${msg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(msg)}</p>` : ''}
+        <button type="submit" class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">Save password</button>
+      </form>
+      ${cancellable ? `<button id="npCancel" class="text-[13px] font-bold text-[var(--text-dim)]">Cancel</button>` : ''}
+    </div>`;
+  drawIcons();
+  el.querySelector('#npCancel')?.addEventListener('click', () => el.classList.add('hidden'));
+  el.querySelector('#npForm').onsubmit = async e => {
+    e.preventDefault();
+    const { error } = await sb.auth.updateUser({ password: el.querySelector('#npPass').value });
+    if (error) return showNewPasswordForm(error.message || 'Something went wrong', cancellable);
+    el.classList.add('hidden');
+    try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (err) {}
+    showToast('Password updated');
+    net.loaded = false; refreshSocial().catch(() => {});
+  };
 }
 
 async function socialAuth() {
@@ -4021,11 +4336,7 @@ function socialFriendsHTML() {
         </div>` : ''}
       </div>`;
   }).join('');
-  const cheers = net.cheersIn.length ? `
-    <div class="surface rounded-2xl p-4 flex items-center gap-3">
-      <i data-lucide="sparkles" class="w-5 h-5 shrink-0" style="color:var(--gold)"></i>
-      <div class="flex-1 min-w-0 text-[13px]"><b>${net.cheersIn.map(id => escapeHtml(firstName(id))).join(', ')}</b> cheered you on today</div>
-    </div>` : '';
+  const cheers = '';  // cheers arrive as a pop-up, so no notice here
   return `
     ${cheers}
     <button data-s="toggleAdd" class="btn-press w-full surface rounded-2xl h-12 text-[13px] font-bold flex items-center justify-center gap-2">
@@ -4037,6 +4348,11 @@ function socialFriendsHTML() {
 }
 
 /* groups */
+/* groups get a rounded square with the group icon; people get round initials */
+function groupBadgeHTML(g, size = 40) {
+  const c = personColor('group:' + g.id);
+  return `<span class="s-group-badge" style="width:${size}px;height:${size}px;background:${c};color:${inkOn(c)}">${GROUP_SVG(Math.round(size * 0.6))}</span>`;
+}
 function socialGroupsHTML() {
   const today = todayISO();
   const cards = net.groups.map(g => {
@@ -4046,6 +4362,7 @@ function socialGroupsHTML() {
     return `
       <button data-s="group" data-v="${g.id}" class="w-full surface rounded-2xl p-4 text-left block">
         <div class="flex items-start gap-3">
+          ${groupBadgeHTML(g, 40)}
           <div class="flex-1 min-w-0">
             <div class="text-[15px] font-bold truncate">${escapeHtml(g.name)}</div>
             <div class="text-[11px] text-[var(--text-dim)] mt-0.5">${escapeHtml(g.habit)} · ${daysLabel(g.days)} · ${members.length} ${members.length === 1 ? 'member' : 'members'}</div>
@@ -4194,6 +4511,15 @@ function socialProfileHTML() {
         <span class="flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i>Anyone</span>
       </div></div>
 
+    <div>${sLabel('Post automatically')}
+      <div class="surface rounded-2xl px-4 py-1">
+        <div class="s-row"><span class="text-[14px] font-bold">When I finish a habit</span>
+          <button data-s="autoPost" data-v="postCheckins" class="switch" role="switch" aria-checked="${state.settings.postCheckins !== false}" aria-label="Post when I finish a habit"></button></div>
+        <div class="s-row"><span class="text-[14px] font-bold">Streak milestones</span>
+          <button data-s="autoPost" data-v="postStreaks" class="switch" role="switch" aria-checked="${state.settings.postStreaks !== false}" aria-label="Post streak milestones"></button></div>
+      </div>
+      <p class="text-[11px] text-[var(--text-faint)] mt-2 px-1">Only for habits you share. Turning one off removes today's post.</p></div>
+
     <div class="surface rounded-2xl px-4 py-1">
       <div class="s-row"><span class="text-[14px] font-bold">Show notes</span>
         <button data-s="toggleNotes" class="switch" role="switch" aria-checked="${!!me.show_notes}" aria-label="Show notes"></button></div>
@@ -4245,6 +4571,11 @@ async function socialClick(e) {
   switch (a) {
     case 'back': switchTab('home'); return;
     case 'refresh': net.loading = true; render(); return refreshSocial();
+    case 'autoPost':
+      updateSetting(v, state.settings[v] === false);
+      syncPosts().then(() => refreshSocial()).catch(() => {});
+      break;
+    case 'forgot': showForgotPage(document.getElementById('sEmail')?.value, () => document.getElementById('onboard').classList.add('hidden')); return;
     case 'authMode': social.authMode = social.authMode === 'signup' ? 'signin' : 'signup'; social.authMsg = ''; break;
     case 'view': social.view = v; social.openGroup = null; social.creating = false; break;
     case 'toggleAdd': social.adding = !social.adding; break;
@@ -4435,10 +4766,10 @@ const ONBOARD_KEY = 'cadence.beta.onboarded';
 // each stop points at the real screen: which tab to show and what to light up
 const TOUR = [
   { tab: 'home', target: '[data-tour="habits"] > *', title: 'Check off your habits', body: "These are today's habits. Tap one to mark it done, or slide to log an amount." },
-  { tab: 'home', target: '.tab-btn[data-tab="new"]', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
+  { tab: 'home', target: '.tab-btn[data-tab="new"] .tab-icon-wrap', title: 'Add a habit', body: 'Tap + to add one. Build a good habit or quit a bad one, and pick the days it repeats.' },
   { tab: 'social', target: '.tab-btn[data-tab="social"]', title: 'Do it with friends', body: 'Social has your feed, friends and groups. You choose which habits anyone can see.' },
   { tab: 'stats', target: '.tab-btn[data-tab="stats"]', title: 'See your progress', body: 'Stats has your recaps for yesterday, last week, month and year, plus the milestones you unlock.' },
-  { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year. Tap a day to fix a missed check-in.' },
+  { tab: 'calendar', target: '.tab-btn[data-tab="calendar"]', title: 'Look back', body: 'Calendar shows any day, week, month or year, shaded by how much you got done.' },
   { tab: 'home', target: '.s-settings-btn', title: 'Make it yours', body: 'Settings has themes, styles, text size, calendar looks and your home layout. You can replay this tour there too.' },
 ];
 let onboardStep = 0, onboardMode = 'signup', onboardMsg = '', onboardBusy = false;
@@ -4448,6 +4779,7 @@ function finishOnboarding() {
   try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
   document.getElementById('onboard').classList.add('hidden');
   document.getElementById('tour').classList.add('hidden');
+  document.documentElement.classList.remove('tour-lock');
   tourOn = false;
   switchTab('home');
   if (net.loaded) announceSocial();
@@ -4477,12 +4809,14 @@ function renderOnboarding() {
         <input id="obPass" type="password" placeholder="Password (6+ characters)" minlength="6" class="w-full px-4 py-3 text-sm" autocomplete="${up ? 'new-password' : 'current-password'}" required>
         ${onboardMsg ? `<p class="text-[12px] px-1" style="color:var(--gold)">${escapeHtml(onboardMsg)}</p>` : ''}
         <button type="submit" ${onboardBusy ? 'disabled' : ''} class="btn-press w-full bg-[var(--text)] text-[var(--bg)] rounded-xl h-12 text-sm font-bold">${onboardBusy ? 'One moment...' : up ? 'Create account' : 'Sign in'}</button>
+        ${up ? '' : `<button type="button" id="obForgot" class="w-full text-[13px] font-bold text-[var(--text-faint)]">Forgot password?</button>`}
         <button type="button" id="obMode" class="w-full text-[13px] font-bold text-[var(--text-dim)] pt-1">${up ? 'Have an account? Sign in' : 'New here? Create an account'}</button>
       </form>
       <button id="obSkip" class="text-[13px] font-bold text-[var(--text-faint)]">Not now</button>
       <p class="text-[11px] text-[var(--text-faint)] text-center -mt-3">Your habits stay on this phone either way.</p>`);
     el.querySelector('#obForm').onsubmit = e => { e.preventDefault(); onboardAuth(); };
     el.querySelector('#obMode').onclick = () => { onboardMode = up ? 'signin' : 'signup'; onboardMsg = ''; renderOnboarding(); };
+    el.querySelector('#obForgot')?.addEventListener('click', () => showForgotPage(el.querySelector('#obEmail').value, () => renderOnboarding()));
     el.querySelector('#obSkip').onclick = () => { onboardStep = 1; renderOnboarding(); };
   } else {
     el.classList.add('hidden');
@@ -4508,6 +4842,7 @@ function showTourStep(i) {
   if (ov.parentNode !== document.documentElement) document.documentElement.appendChild(ov);
   ov.style.fontFamily = getComputedStyle(document.body).fontFamily;
   ov.classList.remove('hidden');
+  document.documentElement.classList.add('tour-lock');
   const last = i === TOUR.length - 1;
   document.getElementById('tourTip').innerHTML = `
     <span id="tourCaret" aria-hidden="true"></span>
@@ -4548,7 +4883,9 @@ function placeTour(i) {
   const r = el ? el.getBoundingClientRect() : null;
   if (r) {
     const top = Math.max(6, r.top - pad), bottom = Math.min(vh - 6, r.bottom + pad);
-    hole.style.cssText = `top:${top}px;left:${Math.max(6, r.left - pad)}px;width:${Math.min(vw - 12, r.width + pad * 2)}px;height:${bottom - top}px;`;
+    // round targets (the raised + button) get a round spotlight
+    const round = parseFloat(getComputedStyle(el).borderRadius) >= Math.min(r.width, r.height) / 2 - 1;
+    hole.style.cssText = `top:${top}px;left:${Math.max(6, r.left - pad)}px;width:${Math.min(vw - 12, r.width + pad * 2)}px;height:${bottom - top}px;border-radius:${round ? '999px' : '16px'};`;
     hole.classList.remove('tour-none');
   } else {
     hole.style.cssText = `top:${vh / 2}px;left:${vw / 2}px;width:0;height:0;`;
@@ -4572,6 +4909,12 @@ function placeTour(i) {
   }
 }
 window.addEventListener('resize', () => { if (tourOn) placeTour(onboardStep - 1); });
+// during the tour only Back, Next and Skip work: no scrolling, no other taps or keys
+['wheel', 'touchmove'].forEach(t => window.addEventListener(t, e => { if (tourOn) e.preventDefault(); }, { passive: false }));
+window.addEventListener('keydown', e => {
+  if (!tourOn) return;
+  if (!e.target.closest?.('#tourTip')) e.preventDefault();
+}, true);
 
 async function onboardAuth() {
   const email = (document.getElementById('obEmail')?.value || '').trim().toLowerCase();
