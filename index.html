@@ -412,6 +412,8 @@
   .day-sq .sq-frac { font-size: 30px; font-weight: 700; line-height: 1; }
   .day-sq .sq-frac small { font-size: 16px; opacity: 0.75; }
   .day-sq-sub { font-size: 12px; opacity: 0.8; }
+  .drag-handle { touch-action: none; cursor: grab; }
+  [data-habit-row].dragging { position: relative; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: none; }
   .wk-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .wk-sq.is-today { box-shadow: inset 0 0 0 2px var(--text); }
   .wv-circle { width: 16px; height: 16px; border-radius: 99px; background: var(--wk-cell); display: flex; align-items: center; justify-content: center; }
@@ -1259,6 +1261,48 @@ function deleteHabit(id) {
 
 /* Move a habit up (delta = -1) or down (delta = +1) in the list.
    No-ops silently at the ends. */
+/* drag a habit by its grip to a new place in the list. The row follows the
+   finger; the others slide past it, and the new order is saved on release */
+function bindHabitDrag(list) {
+  if (!list) return;
+  list.querySelectorAll('[data-drag]').forEach(handle => {
+    handle.addEventListener('pointerdown', e => {
+      const row = handle.closest('[data-habit-row]');
+      if (!row) return;
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      const startY = e.clientY, startTop = row.offsetTop;
+      row.classList.add('dragging');
+      const wrapped = ev => {
+        // swap with a neighbour once the finger passes its middle
+        const prev = row.previousElementSibling, next = row.nextElementSibling;
+        const mid = el => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+        if (next && ev.clientY > mid(next)) list.insertBefore(next, row);
+        else if (prev && ev.clientY < mid(prev)) list.insertBefore(row, prev);
+        row.style.transform = `translateY(${ev.clientY - startY - (row.offsetTop - startTop)}px)`;
+      };
+      const end = () => {
+        handle.removeEventListener('pointermove', wrapped);
+        handle.removeEventListener('pointerup', end);
+        handle.removeEventListener('pointercancel', end);
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        const ids = [...list.querySelectorAll('[data-habit-row]')].map(el => el.dataset.habitRow);
+        const before = state.habits.map(h => h.id).join();
+        if (ids.join() !== before) {
+          state.habits.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+          state.habits.forEach((h, i) => { h.order = i; });
+          saveData();
+          render();
+        }
+      };
+      handle.addEventListener('pointermove', wrapped);
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    });
+  });
+}
+
 function reorderHabit(id, delta) {
   const idx = state.habits.findIndex(h => h.id === id);
   if (idx < 0) return;
@@ -2611,21 +2655,11 @@ function renderNewTab() {
     existing = `<p class="text-[12px] text-[var(--text-dim)] px-1">No habits yet — create your first above.</p>`;
   } else {
     state.habits.forEach((h, i) => {
-      const isFirst = i === 0, isLast = i === state.habits.length - 1;
       existing += `
-        <div class="surface rounded-xl p-3.5 flex items-center gap-2">
-          <div class="flex flex-col shrink-0">
-            <button data-move-up="${h.id}" ${isFirst?'disabled':''}
-              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isFirst?'opacity-30 cursor-not-allowed':''}"
-              aria-label="Move up">
-              <i data-lucide="chevron-up" class="w-4 h-4 text-[var(--text-dim)]"></i>
-            </button>
-            <button data-move-down="${h.id}" ${isLast?'disabled':''}
-              class="btn-press w-8 h-6 rounded flex items-center justify-center ${isLast?'opacity-30 cursor-not-allowed':''}"
-              aria-label="Move down">
-              <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-dim)]"></i>
-            </button>
-          </div>
+        <div class="surface rounded-xl p-3.5 flex items-center gap-2" data-habit-row="${h.id}">
+          <button data-drag="${h.id}" class="drag-handle shrink-0 w-8 h-11 -ml-1 flex items-center justify-center" aria-label="Drag to reorder">
+            <i data-lucide="grip-vertical" class="w-4 h-4 text-[var(--text-faint)]"></i>
+          </button>
           <span class="shrink-0 w-3 h-3 rounded-full ml-1" style="background:${h.color}"></span>
           <div class="min-w-0 flex-1 pl-1">
             <div class="display text-base font-semibold truncate">${escapeHtml(h.title)}</div>
@@ -2745,7 +2779,7 @@ function renderNewTab() {
 
       <div>
         <h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">Your habits (${state.habits.length})</h3>
-        <div class="space-y-2.5">${existing}</div>
+        <div id="habitOrderList" class="space-y-2.5">${existing}</div>
       </div>
     </div>`;
 
@@ -2911,12 +2945,7 @@ function renderNewTab() {
   });
 
   // reorder / edit / delete buttons on existing habits
-  root.querySelectorAll('[data-move-up]').forEach(btn => {
-    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveUp, -1); renderNewTab(); drawIcons(); } });
-  });
-  root.querySelectorAll('[data-move-down]').forEach(btn => {
-    btn.addEventListener('click', () => { if (!btn.disabled) { reorderHabit(btn.dataset.moveDown, 1); renderNewTab(); drawIcons(); } });
-  });
+  bindHabitDrag(root.querySelector('#habitOrderList'));
   root.querySelectorAll('[data-edit]').forEach(btn => {
     btn.addEventListener('click', () => {
       editingId = btn.dataset.edit;
