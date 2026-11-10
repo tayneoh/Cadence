@@ -4026,10 +4026,10 @@ function groupStreak(g) {
 
 /* ---- UI ---- */
 /* filled three-person icon for groups */
-const GROUP_SVG = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="6.6" r="3.3"/><circle cx="5" cy="9" r="2.4"/><circle cx="19" cy="9" r="2.4"/><path d="M5.6 20.5c0-3.9 2.9-6.8 6.4-6.8s6.4 2.9 6.4 6.8z"/><path d="M4.3 19.3H.9c0-2.9 1.8-5 4.1-5 .8 0 1.5.2 2.1.6-1.6 1.1-2.6 2.6-2.8 4.4z"/><path d="M19.7 19.3h3.4c0-2.9-1.8-5-4.1-5-.8 0-1.5.2-2.1.6 1.6 1.1 2.6 2.6 2.8 4.4z"/></svg>`;
+const GROUP_SVG = (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3"/><path d="M6.5 20v-1a5.5 5.5 0 0 1 11 0v1"/><circle cx="4.8" cy="9.5" r="2"/><path d="M1.5 19v-.5a3.5 3.5 0 0 1 4-3.45"/><circle cx="19.2" cy="9.5" r="2"/><path d="M22.5 19v-.5a3.5 3.5 0 0 0-4-3.45"/></svg>`;
 function socialSeg(key, options, current, iconsOnly = false) {
   return `<div class="surface rounded-xl p-1 grid gap-1" style="grid-template-columns:repeat(${options.length},1fr)">
-    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic === 'group-fill' ? GROUP_SVG(iconsOnly ? 22 : 14) : ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
+    ${options.map(([v, l, ic]) => `<button data-s="${key}" data-v="${v}" class="seg-btn btn-press rounded-lg ${iconsOnly ? 'h-10' : 'h-9'} text-[12px] font-bold flex items-center justify-center gap-1.5 ${current === v ? 'active' : 'text-[var(--text-dim)]'}" ${iconsOnly ? `aria-label="${l}" title="${l}"` : ''}>${ic === 'group-fill' ? GROUP_SVG(iconsOnly ? 20 : 14) : ic ? `<i data-lucide="${ic}" class="${iconsOnly ? 'w-5 h-5' : 'w-3.5 h-3.5'}"></i>` : ''}${iconsOnly ? '' : l}</button>`).join('')}
   </div>`;
 }
 const sLabel = t => `<h3 class="text-[11px] uppercase tracking-[0.18em] text-[var(--text-faint)] mb-3 px-1">${t}</h3>`;
