@@ -108,9 +108,9 @@
   .cal-cell.future { color: var(--text-faint); cursor: not-allowed; opacity: 0.55; }
   .cal-cell.outside { visibility: hidden; }
   .cal-cell.cal-sq { border-radius: 8px; background: var(--surface-2); min-height: 40px; }
-  .cal-sq .sq-num { position: absolute; top: 4px; left: 6px; font-size: 10px; line-height: 1; opacity: 0.75; }
-  .cal-sq .sq-frac { font-size: 14px; line-height: 1; margin-top: 6px; }
-  .cal-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .cal-sq .sq-num { position: absolute; top: 4px; left: 6px; font-size: 12px; line-height: 1; opacity: 0.9; }
+  .cal-sq .sq-frac { font-size: 9px; font-weight: 600; line-height: 1; margin-top: 10px; opacity: 0.8; }
+  .cal-sq .sq-frac small { font-size: 9px; opacity: 1; }
   .cal-cell.cal-sq.future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
   .cal-cell.today-ring { box-shadow: inset 0 0 0 1.5px var(--gold); }
   .cal-cell.selected-day { box-shadow: inset 0 0 0 2px var(--text); }
@@ -405,9 +405,9 @@
   .wv-row { display: flex; align-items: center; gap: 4px; height: 16px; }
   .wv-sq { width: 18px; height: 16px; border-radius: 4px; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .wk-sq { position: relative; border-radius: 8px; background: var(--surface-2); aspect-ratio: 1 / 1.15; display: flex; align-items: center; justify-content: center; padding-top: 10px; }
-  .wk-sq .sq-num { position: absolute; top: 4px; left: 5px; font-size: 9px; line-height: 1; opacity: 0.75; white-space: nowrap; }
-  .wk-sq .sq-frac { font-size: 14px; font-weight: 700; line-height: 1; }
-  .wk-sq .sq-frac small { font-size: 10px; opacity: 0.75; }
+  .wk-sq .sq-num { position: absolute; top: 4px; left: 5px; font-size: 11px; font-weight: 700; line-height: 1; opacity: 0.9; white-space: nowrap; }
+  .wk-sq .sq-frac { font-size: 9px; font-weight: 600; line-height: 1; opacity: 0.8; margin-top: 4px; }
+  .wk-sq .sq-frac small { font-size: 9px; opacity: 1; }
   .day-sq { border-radius: 14px; background: var(--surface-2); padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
   .day-sq .sq-frac { font-size: 30px; font-weight: 700; line-height: 1; }
   .day-sq .sq-frac small { font-size: 16px; opacity: 0.75; }
@@ -574,7 +574,14 @@
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 58%),
       conic-gradient(from 200deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff2d55, #ff3b30); }
   .custom-swatch-wrap:not(.selected) .custom-color-input { opacity: 0; border: none; }
-  .form-time { height: 44px; border-radius: 12px; }
+  /* iPhone draws time boxes at their own size; make it fit the column like the other fields */
+  .form-time { height: 44px; border-radius: 12px; -webkit-appearance: none; appearance: none; display: block;
+    width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; line-height: 42px; padding-top: 0; padding-bottom: 0; padding-right: 40px; }
+  .form-time::-webkit-date-and-time-value { text-align: left; margin: 0; min-height: 42px; line-height: 42px; }
+  .form-time::-webkit-datetime-edit { padding: 0; }
+  .form-time::-webkit-calendar-picker-indicator { display: none; }
+  .form-time { padding-left: 10px !important; padding-right: 36px !important; }
+  .remind-clear { right: 6px; }
   .remind-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 99px;
     background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); display: flex; align-items: center; justify-content: center; }
   .remind-clear.hidden { display: none; }
